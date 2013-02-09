@@ -99,7 +99,7 @@ function _upsearch () {
  # Fetch production files to local
  #
 function fetch_files() {
-  if [ ! "$production_files" ] || [ ! "$local_files" ]
+  if [ ! "$production_files" ] || [ ! "$local_files" ] || [ "$production_files" == "$local_files" ]
   then
     end "Bad config"
   fi
@@ -115,17 +115,24 @@ function fetch_files() {
  #
 function fetch_db() {
   confirm 'Are you sure you want to OVERWRITE YOUR LOCAL DB with the production db'
-  ssh $production_server . $production_db_tag fetch_db
+  suffix='fetch_db'
+
+  echo "Exporting production db..."
+  ssh $production_server . dump_db $suffix
   wait
   _current_db_paths fetch_db
-  scp $production_server://$production_db_dir/${production_db_name}_fetch_db.sql $current_db_dir
+  scp $production_server://$production_db_dir/${production_db_name}_$suffix.sql $current_db_dir
 
   #backup local
-  dump_db local_backup
+  _current_db_paths fetch_backup
+  echo "Backing up local db to $current_db_dir$current_db_filename..."
+  dump_db fetch_backup
 
   #import production to local
+  echo "Importing $current_db_dir${production_db_name}_$suffix.sql"
+  import_db ${production_db_name}_$suffix.sql
 
-
+  echo "DB Update complete; please test your local site."
 }
 
 ##
@@ -137,7 +144,7 @@ function push_db() {
     warning "You cannot push your database unless you define a staging environment."
     end
   fi
-  confirm 'Are you sure you want to push your local db to staging'
+  confirm "Are you sure you want to push your local db to staging"
 
   suffix='push_db'
   dump_db $suffix
@@ -262,11 +269,7 @@ function confirm() {
  # Display help for this script
  #
 function show_help() {
-  echo
-  echo '~ LOFT DEPLOY HELP ~'
-  echo
   echo '~ WORKFLOW COMMANDS ~'
-  echo
   access=false
   _access_check dump_db
   if [ $access ]
@@ -274,7 +277,6 @@ function show_help() {
     echo 'loft_deploy dump_db [suffix]'
     echo '    Dump the local db with an optional suffix'
     echo '    LOCAL DB ---> ???'
-    echo
   fi
   access=false
   _access_check push_db
@@ -283,7 +285,6 @@ function show_help() {
     echo 'loft_deploy push_db'
     echo '    Dump local db and push it to staging for manual import'
     echo '    LOCAL DB ---> STAGING DB'
-    echo
   fi
   access=false
   _access_check fetch_db
@@ -292,7 +293,6 @@ function show_help() {
     echo 'loft_deploy fetch_db'
     echo '    Pull production db and import it to local, overwriting local'
     echo '    LOCAL DB <--- PRODUCTION DB'
-    echo
   fi
   access=false
   _access_check import_db
@@ -301,7 +301,6 @@ function show_help() {
     echo 'loft_deploy import_db [suffix]'
     echo '    Import a db dump file overwriting local'
     echo '    LOCAL DB <--- ???'
-    echo
   fi
   access=false
   _access_check fetch_files
@@ -310,20 +309,17 @@ function show_help() {
     echo 'loft_deploy fetch_files'
     echo '    Fetch production files to local, overwriting local files'
     echo '    LOCAL FILES <--- PRODUCTION FILES'
-    echo
   fi
   echo
   echo '~ HELPER COMMANDS ~'
-  echo
   echo 'loft_deploy help'
   echo '    Show this help screen'
-  echo
   echo 'loft_deploy config'
-  echo '    Review the configuration'
-  echo
+  echo '    Review/Test the configuration'
+  echo 'loft_deploy ls (db|files) (ls flags)'
+  echo '    List contents of db or files directories.  Flags for ls may be added.'
   echo 'loft_deploy pass p (or s)'
   echo '    Display the production or staging server password'
-  echo
 }
 
 ##
@@ -385,21 +381,21 @@ function show_config() {
   echo "Testing..."
 
   # Test if the staging and production files are the same
-  #if [ "$staging_files" == "$production_files" ]
-  #then
-  #  warning 'Your production files directory and staging files directory should not be the same'
-  #fi
-
-  # Test if the staging and production files are the same
   if [ "$local_files" == "$production_files" ]
   then
     warning 'Your local files directory and production files directory should not be the same'
   fi
 
   # Test for prod server password in prod environments
-  if [ "$local_role" == 'prod' ] && [ "$production_pass" ] || [ "$local_role" == 'staging' ] && [ "$staging_pass" ]
+  if ([ "$local_role" == 'prod' ] && [ "$production_pass" ]) || ([ "$local_role" == 'staging' ] && [ "$staging_pass" ])
   then
     warning "For security purposes you should remove the $local_role server password from your config file in a $local_role environment."
+  fi
+
+  # Test for other environments than prod, in prod environment
+  if [ "$local_role" == 'prod' ] && ( [ "$prod_server" ] || [ "$staging_server" ] )
+  then
+    warning "In a $local_role environment, no other environments should be defined.  Remove extra settings from config."
   fi
 
   # Test for directories
@@ -492,11 +488,17 @@ function _access_check() {
       dump_db)
         access=true
         ;;
+      db)
+        access=true
+        ;;
     esac
   elif [ "$local_role" == 'staging' ]
   then
     case $1 in
       import_db)
+        access=true
+        ;;
+      db)
         access=true
         ;;
       fetch_files)
@@ -506,7 +508,7 @@ function _access_check() {
         access=true
         ;;
     esac
-  elif [ "$local_role" == 'local' ]
+  elif [ "$local_role" == 'dev' ]
   then
     access=true
   fi
@@ -552,6 +554,18 @@ fi
  # Call the correct handler
  #
 case $op in
+  'ls')
+    case $2 in
+      'db')
+        dir="$local_db_dir"
+        ;;
+      'files')
+        dir="$local_files"
+        ;;
+    esac
+    ls $3 $dir
+    end
+    ;;
   'dump_db')
     dump_db $2
     ;;
