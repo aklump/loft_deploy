@@ -25,9 +25,28 @@ INSTALLATION:
   in the $PATH so that you may execute this script
 * Make sure that loft_deploy.sh is user executable, e.g. chmod u+x
   loft_deploy.sh
-* Optional, create an alias, e.g. 'alias ld=loft_deploy' in ~/.profile or
-  ~/.bash_profile
 
+* How to install the package on each of your servers...
+@code
+  $ cd ~
+  $ mkdir bin
+  $ cd bin
+  $ git clone git://github.com/aklump/loft_deploy.git loft_deploy_files
+  $ ln -s loft_deploy_files/loft_deploy.sh loft_deploy
+  $ chmod u+x loft_deploy_files/loft_deploy.sh
+@endcode
+
+* Open up and modify ~/.bash_profile
+@code
+  alias ld="loft_deploy"
+  export PATH=$PATH:~/bin
+@endcode
+
+* Reload your profile and test, you should see the loft_deploy help screen
+@code
+  $ . ~/.bash_profile
+  $ ld
+@
 
 CONFIGURATION:
 * For each website project that you want to use this for, you must create a

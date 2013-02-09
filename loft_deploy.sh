@@ -71,6 +71,9 @@ current_db_filename=''
 # holds the directory of the config file
 config_dir=$cwd
 
+# holds the result of connect()
+mysql_check_result=false
+
 ##
  # Load the configuration file
  #
@@ -302,6 +305,36 @@ function show_help() {
 }
 
 ##
+ # Test for a mysql connection
+ #
+ # @param string $1
+ #   username
+ # @param string $2
+ #   The password
+ # @param string $3
+ #   The database name
+ # @param string $4
+ #   Optional; defaults to localhost
+ #
+ # @return bool
+ #   Sets the value of $mysql_check_result
+ #
+function mysql_check() {
+  db_user=$1
+  db_pass=$2
+  db_name=$3
+  db_host=$4
+  mysql -u "${db_user}" -p"${db_pass}" -h "${db_host}" "${db_name}" -e exit 2>/dev/null
+  db_status=`echo $?`
+  if [ $db_status -ne 0 ]
+  then
+    mysql_check_result=false;
+  else
+    mysql_check_result=true;
+  fi
+}
+
+##
  # Display configuation info
  #
 function show_config() {
@@ -318,6 +351,28 @@ function show_config() {
   then
     warning 'Your local files directory and production files directory should not be the same'
   fi
+
+  # Test for directories
+  if [ ! -d "$local_db_dir" ]
+  then
+    warning "local_db_dir: $local_db_dir does not exist."
+  elif [ ! -d "$local_files" ]
+  then
+    warning "local_files: $local_files does not exist."
+  fi
+
+  # Test for db access
+  mysql_check_result=false
+  mysql_check $local_db_user $local_db_pass $local_db_name $local_db_host
+  if [ $mysql_check_result == false ]
+  then
+    warning "Can't connect to local DB; check credentials"
+  fi
+
+  # @todo test for ssh connection to prod
+  # @todo test for ssh connection to staging
+
+
   echo '~ LOFT_DEPLOY CONFIGURATION ~'
   echo
   echo '~ LOCAL ~'
@@ -460,5 +515,3 @@ case $op in
     show_config
     ;;
 esac
-
-
