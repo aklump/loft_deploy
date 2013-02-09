@@ -99,7 +99,7 @@ function _upsearch () {
  # Fetch production files to local
  #
 function fetch_files() {
-  if [ ! "$production_files" ] || [ ! "$local_files" ]
+  if [ ! "$production_files" ] || [ ! "$local_files" ] || [ "$production_files" == "$local_files" ]
   then
     end "Bad config"
   fi
@@ -115,7 +115,7 @@ function fetch_files() {
  #
 function fetch_db() {
   confirm 'Are you sure you want to OVERWRITE YOUR LOCAL DB with the production db'
-  ssh $production_server . $production_db_tag fetch_db
+  ssh $production_server . $production_db_tag dump_db
   wait
   _current_db_paths fetch_db
   scp $production_server://$production_db_dir/${production_db_name}_fetch_db.sql $current_db_dir
@@ -137,7 +137,7 @@ function push_db() {
     warning "You cannot push your database unless you define a staging environment."
     end
   fi
-  confirm 'Are you sure you want to push your local db to staging'
+  confirm "Are you sure you want to push your local db to staging"
 
   suffix='push_db'
   dump_db $suffix
@@ -321,6 +321,9 @@ function show_help() {
   echo 'loft_deploy config'
   echo '    Review the configuration'
   echo
+  echo 'loft_deploy go (top|db|files)'
+  echo '    Quickly jump to a directory.'
+  echo
   echo 'loft_deploy pass p (or s)'
   echo '    Display the production or staging server password'
   echo
@@ -383,12 +386,6 @@ function show_config() {
   version
   echo "~ LOFT_DEPLOY$version_result ~"
   echo "Testing..."
-
-  # Test if the staging and production files are the same
-  #if [ "$staging_files" == "$production_files" ]
-  #then
-  #  warning 'Your production files directory and staging files directory should not be the same'
-  #fi
 
   # Test if the staging and production files are the same
   if [ "$local_files" == "$production_files" ]
@@ -498,11 +495,17 @@ function _access_check() {
       dump_db)
         access=true
         ;;
+      db)
+        access=true
+        ;;
     esac
   elif [ "$local_role" == 'staging' ]
   then
     case $1 in
       import_db)
+        access=true
+        ;;
+      db)
         access=true
         ;;
       fetch_files)
@@ -512,7 +515,7 @@ function _access_check() {
         access=true
         ;;
     esac
-  elif [ "$local_role" == 'local' ]
+  elif [ "$local_role" == 'dev' ]
   then
     access=true
   fi
@@ -558,6 +561,21 @@ fi
  # Call the correct handler
  #
 case $op in
+  'go')
+    case $2 in
+      'db')
+        cd "$local_db_dir"
+        ;;
+      'files')
+        cd "$local_files"
+        ;;
+      'top')
+        cd "$config_dir"
+        ;;
+    esac
+    ls -AGF
+    end "You've moved to ${PWD}"
+    ;;
   'dump_db')
     dump_db $2
     ;;
