@@ -397,9 +397,15 @@ function show_config() {
   fi
 
   # Test for prod server password in prod environments
-  if [ "$local_role" == 'prod' ] && [ "$production_pass" ] || [ "$local_role" == 'staging' ] && [ "$staging_pass" ]
+  if ([ "$local_role" == 'prod' ] && [ "$production_pass" ]) || ([ "$local_role" == 'staging' ] && [ "$staging_pass" ])
   then
     warning "For security purposes you should remove the $local_role server password from your config file in a $local_role environment."
+  fi
+
+  # Test for other environments than prod, in prod environment
+  if [ "$local_role" == 'prod' ] && ( [ "$prod_server" ] || [ "$staging_server" ] )
+  then
+    warning "In a $local_role environment, no other environments should be defined.  Remove extra settings from config."
   fi
 
   # Test for directories
