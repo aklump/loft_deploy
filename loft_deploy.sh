@@ -134,7 +134,8 @@ function fetch_db() {
 function push_db() {
   if [ ! "$staging_db_dir" ] || [ ! "$staging_server" ]
   then
-    end "Bad config"
+    warning "You cannot push your database unless you define a staging environment."
+    end
   fi
   confirm 'Are you sure you want to push your local db to staging'
 
@@ -175,7 +176,12 @@ function dump_db() {
 
   if [ -f "$current_db_dir$current_db_filename" ]
   then
-    confirm "File $current_db_dir$current_db_filename exists, replace"
+    confirm_result=false
+    confirm "File $current_db_dir$current_db_filename exists, replace" --soft
+    if [ $confirm_result == false ]
+    then
+      return
+    fi
     rm $current_db_dir$current_db_filename
   fi
   if [ ! "$local_db_user" ] || [ ! "$local_db_pass" ] || [ ! "$local_db_name" ]
@@ -228,13 +234,26 @@ function _drop_tables() {
 ##
  # Accept a y/n confirmation message or end
  #
+ # @param string $1
+ #   A question to ask
+ # @param string $2
+ #   A flag, e.g. --soft; which means a n will not exit
+ #
+ # @return bool
+ #   Sets the value of confirm_result
+ #
 function confirm() {
   echo
   echo "$1 (y/n)?"
   read -n 1 a
+  confirm_result=true
   if [ "$a" != 'y' ]
   then
-    end 'CANCELLED!'
+    confirm_result=false
+    if [ "$2" != '--soft' ]
+    then
+      end 'CANCELLED!'
+    fi
   fi
   echo
 }
@@ -302,6 +321,9 @@ function show_help() {
   echo 'loft_deploy config'
   echo '    Review the configuration'
   echo
+  echo 'loft_deploy pass p (or s)'
+  echo '    Display the production or staging server password'
+  echo
 }
 
 ##
@@ -335,10 +357,32 @@ function mysql_check() {
 }
 
 ##
+ # Get the current version of the package
+ #
+ # @return string
+ #   Sets the value of version_result
+ #
+ # @todo Make this work for non-standard installation locations?
+ #
+function version() {
+  path="${HOME}/bin/loft_deploy_files/web_package.info"
+  if [ -f "$path" ]
+  then
+    version_result=$(grep "version" $path | cut -f2 -d "=");
+  fi
+
+}
+
+##
  # Display configuation info
  #
 function show_config() {
   clear
+
+  version_result='v?'
+  version
+  echo "~ LOFT_DEPLOY$version_result ~"
+  echo "Testing..."
 
   # Test if the staging and production files are the same
   #if [ "$staging_files" == "$production_files" ]
@@ -352,29 +396,41 @@ function show_config() {
     warning 'Your local files directory and production files directory should not be the same'
   fi
 
+  # Test for prod server password in prod environments
+  if [ "$local_role" == 'prod' ] && [ "$production_pass" ] || [ "$local_role" == 'staging' ] && [ "$staging_pass" ]
+  then
+    warning "For security purposes you should remove the $local_role server password from your config file in a $local_role environment."
+  fi
+
   # Test for directories
-  if [ ! -d "$local_db_dir" ]
+  if [ -d "$local_db_dir" ]
   then
+    echo "TEST: $local_db_dir exists."
+  else
     warning "local_db_dir: $local_db_dir does not exist."
-  elif [ ! -d "$local_files" ]
+  fi
+
+  if [ -d "$local_files" ]
   then
+    echo "TEST: $local_files exists."
+  else
     warning "local_files: $local_files does not exist."
   fi
 
   # Test for db access
   mysql_check_result=false
   mysql_check $local_db_user $local_db_pass $local_db_name $local_db_host
-  if [ $mysql_check_result == false ]
+  if [ $mysql_check_result == true ]
   then
+    echo "TEST: Local DB connection good."
+  else
     warning "Can't connect to local DB; check credentials"
   fi
 
   # @todo test for ssh connection to prod
   # @todo test for ssh connection to staging
-
-
-  echo '~ LOFT_DEPLOY CONFIGURATION ~'
   echo
+  echo "Configuration..."
   echo '~ LOCAL ~'
   echo "Role   : $local_role"
   echo "Config : $config_dir/.loft_deploy"
@@ -446,6 +502,9 @@ function _access_check() {
       fetch_files)
         access=true
         ;;
+      pass)
+        access=true
+        ;;
     esac
   elif [ "$local_role" == 'local' ]
   then
@@ -485,7 +544,7 @@ _access_check $op
 if [ $access == false ]
 then
   echo 'ACCESS DENIED!'
-  end "$local_role sites cannot $op"
+  end "$local_role sites may not invoke: loft_deploy $op"
 fi
 
 
@@ -513,5 +572,16 @@ case $op in
     ;;
   'config')
     show_config
+    ;;
+  'pass')
+    echo
+    if [ "$2" == 'p' ]
+    then
+      echo "Production Password: $production_pass"
+    elif [ "$2" == 's' ]
+    then
+      echo "Staging Password: $staging_pass"
+    fi
+    echo
     ;;
 esac
