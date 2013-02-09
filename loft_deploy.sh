@@ -115,17 +115,24 @@ function fetch_files() {
  #
 function fetch_db() {
   confirm 'Are you sure you want to OVERWRITE YOUR LOCAL DB with the production db'
-  ssh $production_server . $production_db_tag dump_db
+  suffix='fetch_db'
+
+  echo "Exporting production db..."
+  ssh $production_server . dump_db $suffix
   wait
   _current_db_paths fetch_db
-  scp $production_server://$production_db_dir/${production_db_name}_fetch_db.sql $current_db_dir
+  scp $production_server://$production_db_dir/${production_db_name}_$suffix.sql $current_db_dir
 
   #backup local
-  dump_db local_backup
+  _current_db_paths fetch_backup
+  echo "Backing up local db to $current_db_dir$current_db_filename..."
+  dump_db fetch_backup
 
   #import production to local
+  echo "Importing $current_db_dir${production_db_name}_$suffix.sql"
+  import_db ${production_db_name}_$suffix.sql
 
-
+  echo "DB Update complete; please test your local site."
 }
 
 ##
@@ -262,11 +269,7 @@ function confirm() {
  # Display help for this script
  #
 function show_help() {
-  echo
-  echo '~ LOFT DEPLOY HELP ~'
-  echo
   echo '~ WORKFLOW COMMANDS ~'
-  echo
   access=false
   _access_check dump_db
   if [ $access ]
@@ -274,7 +277,6 @@ function show_help() {
     echo 'loft_deploy dump_db [suffix]'
     echo '    Dump the local db with an optional suffix'
     echo '    LOCAL DB ---> ???'
-    echo
   fi
   access=false
   _access_check push_db
@@ -283,7 +285,6 @@ function show_help() {
     echo 'loft_deploy push_db'
     echo '    Dump local db and push it to staging for manual import'
     echo '    LOCAL DB ---> STAGING DB'
-    echo
   fi
   access=false
   _access_check fetch_db
@@ -292,7 +293,6 @@ function show_help() {
     echo 'loft_deploy fetch_db'
     echo '    Pull production db and import it to local, overwriting local'
     echo '    LOCAL DB <--- PRODUCTION DB'
-    echo
   fi
   access=false
   _access_check import_db
@@ -301,7 +301,6 @@ function show_help() {
     echo 'loft_deploy import_db [suffix]'
     echo '    Import a db dump file overwriting local'
     echo '    LOCAL DB <--- ???'
-    echo
   fi
   access=false
   _access_check fetch_files
@@ -310,23 +309,17 @@ function show_help() {
     echo 'loft_deploy fetch_files'
     echo '    Fetch production files to local, overwriting local files'
     echo '    LOCAL FILES <--- PRODUCTION FILES'
-    echo
   fi
   echo
   echo '~ HELPER COMMANDS ~'
-  echo
   echo 'loft_deploy help'
   echo '    Show this help screen'
-  echo
   echo 'loft_deploy config'
-  echo '    Review the configuration'
-  echo
-  echo 'loft_deploy go (top|db|files)'
-  echo '    Quickly jump to a directory.'
-  echo
+  echo '    Review/Test the configuration'
+  echo 'loft_deploy ls (db|files) (ls flags)'
+  echo '    List contents of db or files directories.  Flags for ls may be added.'
   echo 'loft_deploy pass p (or s)'
   echo '    Display the production or staging server password'
-  echo
 }
 
 ##
@@ -561,20 +554,17 @@ fi
  # Call the correct handler
  #
 case $op in
-  'go')
+  'ls')
     case $2 in
       'db')
-        cd "$local_db_dir"
+        dir="$local_db_dir"
         ;;
       'files')
-        cd "$local_files"
-        ;;
-      'top')
-        cd "$config_dir"
+        dir="$local_files"
         ;;
     esac
-    ls -AGF
-    end "You've moved to ${PWD}"
+    ls $3 $dir
+    end
     ;;
   'dump_db')
     dump_db $2
