@@ -83,6 +83,10 @@ CONFIGURATION:
 * Correct any mistakes now, before its too late!
 * Once the configuration files are in place and correct, REMOVE ALL WRITE
   PERMISSIONS to all copies of .loft_deploy configuration files.
+* Run a config test on each of the environments
+@code
+  $ loft_deploy config
+@endcode
 
 
 USAGE:
