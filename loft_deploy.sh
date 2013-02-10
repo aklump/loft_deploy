@@ -386,7 +386,7 @@ function _drop_tables() {
  #
  ##
 function complete() {
-  if [ $# == 0 ]
+  if [ $# > 0 ]
   then
     echo $1
   fi
@@ -495,8 +495,8 @@ function show_help() {
   echo '~ HELPER COMMANDS ~'
   echo 'loft_deploy help'
   echo '    Show this help screen'
-  echo 'loft_deploy config'
-  echo '    Review/Test the configuration'
+  echo 'loft_deploy info'
+  echo '    Test configuration & show info'
   echo 'loft_deploy ls (db|files) (ls flags)'
   echo '    List contents of db or files directories.  Flags for ls may be added.'
 
@@ -559,7 +559,7 @@ function version() {
 ##
  # Display configuation info
  #
-function show_config() {
+function show_info() {
   clear
 
   version_result='v?'
@@ -758,7 +758,6 @@ then
   end "$local_role sites may not invoke: loft_deploy $op"
 fi
 
-
 ##
  # Call the correct handler
  #
@@ -845,13 +844,12 @@ case $op in
     complete
     end
     ;;
-  'config')
-    show_config
+  'info')
+    show_info
     complete
     end
     ;;
   'pass')
-    echo
     if [ "$2" == 'prod' ]
     then
       complete "Production Password: $production_pass"
@@ -859,7 +857,6 @@ case $op in
     then
       complete "Staging Password: $staging_pass"
     fi
-    complete
     end
     ;;
 esac
