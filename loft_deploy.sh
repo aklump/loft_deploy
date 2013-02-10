@@ -622,8 +622,18 @@ function show_config() {
   echo "DB User       : $local_db_user"
   echo "Dumps         : $local_db_dir"
   echo "Files         : $local_files"
-  echo "DB Fetched    : " $(cat $config_dir/cached_db)
-  echo "Files Fetched : " $(cat $config_dir/cached_files)
+  access=false
+  _access_check 'fetch_db'
+  if [ "$access" == true ]
+  then
+    echo "DB Fetched    : " $(cat $config_dir/cached_db)
+  fi
+  access=false
+  _access_check 'fetch_files'
+  if [ "$access" == true ]
+  then
+    echo "Files Fetched : " $(cat $config_dir/cached_files)
+  fi
   echo
 
   if [ "$local_role" == 'dev' ]
