@@ -480,7 +480,8 @@ function show_config() {
 
   version_result='v?'
   version
-  echo "~ LOFT_DEPLOY$version_result ~"
+  echo "~ LOFT_DEPLOY Version$version_result ~ $local_role ~" | tr "[:lower:]" "[:upper:]"
+  echo
   echo "Testing..."
 
   # Test if the staging and production files are the same
@@ -531,7 +532,7 @@ function show_config() {
   echo
   echo "Configuration..."
   echo '~ LOCAL ~'
-  echo "Role     : $local_role"
+  echo "Role     : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config   : $config_dir/.loft_deploy"
   echo "DB       : $local_db_name"
   echo "DB User  : $local_db_user"
@@ -661,8 +662,12 @@ case $op in
         dir="$local_files"
         ;;
     esac
-    pwd
-    ls $3 $dir
+    echo $dir
+    if [ "$3" ]
+    then
+      flags=$3
+    fi
+    ls $dir
     end
     ;;
   'dump_db')
