@@ -45,12 +45,12 @@ INSTALLATION:
 
 * How to install the package on each of your servers...
 @code
-  $ cd ~
-  $ mkdir bin
-  $ cd bin
-  $ git clone git://github.com/aklump/loft_deploy.git loft_deploy_files
-  $ ln -s loft_deploy_files/loft_deploy.sh loft_deploy
-  $ chmod u+x loft_deploy_files/loft_deploy.sh
+  cd ~
+  mkdir bin
+  cd bin
+  git clone git://github.com/aklump/loft_deploy.git loft_deploy_files
+  ln -s loft_deploy_files/loft_deploy.sh loft_deploy
+  chmod u+x loft_deploy_files/loft_deploy.sh
 @endcode
 
 * Open up and modify ~/.bash_profile

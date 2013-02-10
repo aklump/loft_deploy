@@ -346,8 +346,8 @@ function dump_db() {
  #   $local_db_dir
  #
 function import_db() {
-  _current_db_paths
-  if file=$1 && [ ! -f $1 ] && file=$current_db_dir$1 && [ ! -f $file ]
+  _current_db_paths $1
+  if file=$1 && [ ! -f $1 ] && file=$current_db_dir$current_db_filename && [ ! -f $file ]
   then
     end "$file not found."
   fi
