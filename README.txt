@@ -1,12 +1,29 @@
 SUMMARY:
-A handy script to assist in deployment of websites using either of these
-scenarios:
+A handy script to assist in the workflow across servers involved with websites
+such as Drupal that have three distince elements to manage: codebase, database,
+and dynamic or user files. While it is not limited to Drupal, it does assume
+this type of tri-component scenario. If you have neither a database nor user
+files, you would be wise not to use this tool as it adds complexity without
+utility.
 
-  LOCAL DEV -> PRODUCTION
-  LOCAL DEV -> STAGING -> PRODUCTION
+In this scenario, the database lives and originates on the production server.
+Changes to the database should only be made there. Yet those changes need to be
+propogated to dev and staging environments; loft_deploy will do this.
 
-It was written to be agnositic of codebase and be super flexible to work with
-anything from Drupal to custom sites.
+User files, which are too dynamic to include in version management, also
+originate and must be changed on the production server. Just like the database,
+the dev and staging environments need to be brought to match production at
+times. loft_deploy will do this.
+
+loft_deploy is also used to push database and user files to a staging
+environment for preview by the client or end user.
+
+loft_deploy does not intend to replace codebase management with version control
+systems such as git. Such systems should continue to be used in tandem with
+loft_deploy.
+
+Neither database, nor user files are ever pushed to production, whether from dev
+or from staging.
 
 USE AT YOUR OWN RISK AS IMPROPER CONFIGURATION CAN RESULT IN DESTRUCTION OF
 DATABASE CONTENT AND FILES.

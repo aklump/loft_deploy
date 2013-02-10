@@ -74,6 +74,9 @@ config_dir=$cwd
 # holds the result of connect()
 mysql_check_result=false
 
+# holds a timestamp for backups, etc.
+now=$(date +"%Y%m%d_%H%M")
+
 ##
  # Load the configuration file
  #
@@ -103,36 +106,86 @@ function fetch_files() {
   then
     end "Bad config"
   fi
+  echo "This process will copy production files to local, removing any"
+  echo "local files that are not present on production.  You will be given"
+  echo "a preview of what will happen first."
+  echo
+  echo "End result: Your local files directory will match production."
+
   confirm 'Are you sure you want to fetch prod files OVERWRITING LOCAL files'
   echo 'Previewing...'
   rsync -av $production_server://$production_files/ $local_files/ --delete --dry-run
   confirm 'That was a preview... do it for real?'
   rsync -av $production_server://$production_files/ $local_files/ --delete
+
+  complete "Fetch files complete; please test your local site."
 }
 
 ##
  # Fetch the remote db and import it to local
  #
 function fetch_db() {
+  if [ ! "$production_script" ] || [ ! "$production_db_dir" ] || [ ! "$production_server" ] || [ ! "$production_db_name" ]
+  then
+    end "Bad config"
+  fi
+
+  echo "This process will take a copy of the production database, download it local,"
+  echo "back up your local database, and then import the production database over the"
+  echo "top of the local database."
+  echo
+  echo "End result: Your local database will be in sync with your production database."
   confirm 'Are you sure you want to OVERWRITE YOUR LOCAL DB with the production db'
-  suffix='fetch_db'
 
   echo "Exporting production db..."
-  ssh $production_server . dump_db $suffix
+  prod_suffix='fetch_db'
+  ssh $production_server "cd $production_db_dir && . $production_script dump_db $prod_suffix"
   wait
+
+  echo "Downloading from production..."
   _current_db_paths fetch_db
-  scp $production_server://$production_db_dir/${production_db_name}_$suffix.sql $current_db_dir
+  remote_file="$production_db_dir/${production_db_name}-$prod_suffix.sql"
+  scp $production_server://$remote_file $current_db_dir
+
+  # delete it from remote
+  echo "Deleting the production copy..."
+  ssh $production_server "rm $remote_file"
 
   #backup local
-  _current_db_paths fetch_backup
-  echo "Backing up local db to $current_db_dir$current_db_filename..."
-  dump_db fetch_backup
+  dump_db fetch_backup_$now
 
   #import production to local
-  echo "Importing $current_db_dir${production_db_name}_$suffix.sql"
-  import_db ${production_db_name}_$suffix.sql
+  echo "Importing $current_db_dir${production_db_name}-$prod_suffix.sql"
+  import_db ${production_db_name}-$prod_suffix.sql
 
-  echo "DB Update complete; please test your local site."
+  complete "Database Update complete; please test your local site."
+}
+
+##
+ # Push local files to staging
+ #
+function push_files() {
+  if [ ! "$staging_files" ]
+  then
+    end "You cannot push your files unless you define a staging environment."
+  fi
+  if [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]
+  then
+    end "BAD CONFIG"
+  fi
+
+  echo "This process will push your local files to your staging server, removing any"
+  echo "files on staging that are not present on local. You will be given"
+  echo "a preview of what will happen first."
+  echo
+  echo "End result: Your staging files directory will match your local."
+  confirm 'Are you sure you want to push local files OVERWRITING STAGING files'
+  echo 'Previewing...'
+  rsync -av $local_files/ $staging_server://$staging_files/ --delete --dry-run
+  confirm 'That was a preview... do it for real?'
+  rsync -av $local_files/ $staging_server://$staging_files/ --delete
+
+  complete "Push files complete; please test your staging site."
 }
 
 ##
@@ -141,15 +194,17 @@ function fetch_db() {
 function push_db() {
   if [ ! "$staging_db_dir" ] || [ ! "$staging_server" ]
   then
-    warning "You cannot push your database unless you define a staging environment."
-    end
+    end "You cannot push your database unless you define a staging environment."
   fi
   confirm "Are you sure you want to push your local db to staging"
 
+  # @todo make this push it and import into staging
   suffix='push_db'
   dump_db $suffix
   echo 'Pushing db to staging...'
   scp $current_db_dir$current_db_filename $staging_server://$staging_db_dir/$current_db_filename
+
+  complete "Push db complete; please test your staging site."
 }
 
 ##
@@ -200,7 +255,7 @@ function dump_db() {
     local_db_host="localhost"
   fi
 
-  echo "Dumping the database to $current_db_dir$current_db_filename..."
+  echo "Dumping the local database to $current_db_dir$current_db_filename..."
   mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r $current_db_dir$current_db_filename
 }
 
@@ -217,7 +272,7 @@ function import_db() {
     end "File $current_db_dir$1 not found."
   fi
   confirm "You are about to OVERWRITE YOUR LOCAL DATABASE, are you sure"
-  echo "We need remove all tables first for a clean slate."
+  echo "It's advisable to empty the database first."
   _drop_tables
   echo "Importing $current_db_dir$1 to $local_db_host $local_db_name database..."
   mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name < $current_db_dir$1
@@ -227,7 +282,12 @@ function import_db() {
  # Drop all local db tables
  #
 function _drop_tables() {
-  confirm "Do you really want to DUMP ALL TABLES from $local_db_host $local_db_name"
+  confirm_result=false;
+  confirm "Should we DUMP ALL TABLES (empty database) from $local_db_host $local_db_name, first" --soft
+  if [ $confirm_result == false ]
+  then
+    return
+  fi
   tables=$(mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
   echo "Dropping all tables from the $local_db_name database..."
   for t	in $tables
@@ -236,6 +296,12 @@ function _drop_tables() {
     mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e "drop table $t"
   done
   echo
+}
+
+function complete() {
+  echo
+  echo $1
+  echo '----------------------------------------------------------'
 }
 
 ##
@@ -438,11 +504,12 @@ function show_config() {
   echo "Server : $staging_server"
   #echo "DB     : $staging_db_name"
   echo "Dumps  : $staging_db_dir"
-  #echo "Files  : $staging_files"
+  echo "Files  : $staging_files"
   echo
   echo '~ PRODUCTION ~'
   echo "Server : $production_server"
   echo "DB     : $production_db_name"
+  echo "Dumps  : $production_db_dir"
   echo "Files  : $production_files"
   echo
 }
@@ -475,7 +542,8 @@ function end() {
  # @return bool (sets value of global $access)
  #
 function _access_check() {
-  if [ "$1" == '' ] || [ "$1" == 'config' ]
+  # List out helper commands, with universal access regardless of local_role
+  if [ "$1" == '' ] || [ "$1" == 'config' ] || [ "$1" == 'ls' ]
   then
     access=true
     return
@@ -488,20 +556,11 @@ function _access_check() {
       dump_db)
         access=true
         ;;
-      db)
-        access=true
-        ;;
     esac
   elif [ "$local_role" == 'staging' ]
   then
     case $1 in
       import_db)
-        access=true
-        ;;
-      db)
-        access=true
-        ;;
-      fetch_files)
         access=true
         ;;
       pass)
@@ -517,7 +576,6 @@ function _access_check() {
 ##
  # End Functions
  #
-
 
 ##
  # Begin Controller
@@ -569,6 +627,9 @@ case $op in
   'dump_db')
     dump_db $2
     ;;
+  'push_files')
+    push_files
+    ;;
   'push_db')
     push_db
     ;;
@@ -577,6 +638,10 @@ case $op in
     ;;
   'fetch_db')
     fetch_db
+    ;;
+  'fetch')
+    fetch_db
+    fetch_files
     ;;
   'import_db')
     import_db $2
