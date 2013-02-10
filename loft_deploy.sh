@@ -148,7 +148,7 @@ function fetch_files() {
     end "Bad config"
   fi
   echo "Copying files from production server..."
-  rsync -av $production_server://$production_files/ $config_dir/files --delete
+  rsync -av $production_server://$production_files/ $config_dir/files/ --delete
 
   # record the fetch date
   echo $now > $config_dir/cached_files
@@ -178,9 +178,9 @@ function reset_files() {
   fi
   confirm 'Are you sure you want to OVERWRITE LOCAL files'
   echo 'Previewing...'
-  rsync -av $source $local_files/ --delete --dry-run
+  rsync -av $source/ $local_files/ --delete --dry-run
   confirm 'That was a preview... do it for real?'
-  rsync -av $source $local_files/ --delete
+  rsync -av $source/ $local_files/ --delete
 }
 
 
