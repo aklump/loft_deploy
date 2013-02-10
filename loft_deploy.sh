@@ -117,6 +117,8 @@ function fetch_files() {
   rsync -av $production_server://$production_files/ $local_files/ --delete --dry-run
   confirm 'That was a preview... do it for real?'
   rsync -av $production_server://$production_files/ $local_files/ --delete
+
+  complete "Fetch files complete; please test your local site."
 }
 
 ##
@@ -156,15 +158,18 @@ function fetch_db() {
   echo "Importing $current_db_dir${production_db_name}-$prod_suffix.sql"
   import_db ${production_db_name}-$prod_suffix.sql
 
-  echo
-  echo "Database Update complete; please test your local site."
+  complete "Database Update complete; please test your local site."
 }
 
 ##
  # Push local files to staging
  #
 function push_files() {
-  if [ ! "$local_files" ] || [ ! "$staging_files" ] || [ "$staging_files" == "$local_files" ]
+  if [ ! "$staging_files" ]
+  then
+    end "You cannot push your files unless you define a staging environment."
+  fi
+  if [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]
   then
     end "BAD CONFIG"
   fi
@@ -179,6 +184,8 @@ function push_files() {
   rsync -av $local_files/ $staging_server://$staging_files/ --delete --dry-run
   confirm 'That was a preview... do it for real?'
   rsync -av $local_files/ $staging_server://$staging_files/ --delete
+
+  complete "Push files complete; please test your staging site."
 }
 
 ##
@@ -187,15 +194,17 @@ function push_files() {
 function push_db() {
   if [ ! "$staging_db_dir" ] || [ ! "$staging_server" ]
   then
-    warning "You cannot push your database unless you define a staging environment."
-    end
+    end "You cannot push your database unless you define a staging environment."
   fi
   confirm "Are you sure you want to push your local db to staging"
 
+  # @todo make this push it and import into staging
   suffix='push_db'
   dump_db $suffix
   echo 'Pushing db to staging...'
   scp $current_db_dir$current_db_filename $staging_server://$staging_db_dir/$current_db_filename
+
+  complete "Push db complete; please test your staging site."
 }
 
 ##
@@ -287,6 +296,12 @@ function _drop_tables() {
     mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e "drop table $t"
   done
   echo
+}
+
+function complete() {
+  echo
+  echo $1
+  echo '----------------------------------------------------------'
 }
 
 ##
