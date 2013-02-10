@@ -87,6 +87,11 @@ function load_config() {
   then
     _upsearch $file
   fi
+
+  # these are defaults
+  local_role="prod"
+  local_db_host='localhost'
+  production_script='~/bin/loft_deploy'
   source $file
   cd $cwd
 }
@@ -335,47 +340,73 @@ function confirm() {
  # Display help for this script
  #
 function show_help() {
-  echo '~ WORKFLOW COMMANDS ~'
+  clear
+  echo "~ $local_role COMMANDS ~" | tr "[:lower:]" "[:upper:]"
   access=false
-  _access_check dump_db
-  if [ $access ]
+  _access_check fetch
+  if [ "$access" == true ]
   then
-    echo 'loft_deploy dump_db [suffix]'
-    echo '    Dump the local db with an optional suffix'
-    echo '    LOCAL DB ---> ???'
-  fi
-  access=false
-  _access_check push_db
-  if [ $access ]
-  then
-    echo 'loft_deploy push_db'
-    echo '    Dump local db and push it to staging for manual import'
-    echo '    LOCAL DB ---> STAGING DB'
+    echo 'loft_deploy fetch'
+    echo '    A fetch all shortcut'
+    echo '    LOCAL <--- PRODUCTION'
   fi
   access=false
   _access_check fetch_db
-  if [ $access ]
+  if [ "$access" == true ]
   then
     echo 'loft_deploy fetch_db'
     echo '    Pull production db and import it to local, overwriting local'
     echo '    LOCAL DB <--- PRODUCTION DB'
   fi
   access=false
-  _access_check import_db
-  if [ $access ]
-  then
-    echo 'loft_deploy import_db [suffix]'
-    echo '    Import a db dump file overwriting local'
-    echo '    LOCAL DB <--- ???'
-  fi
-  access=false
   _access_check fetch_files
-  if [ $access ]
+  if [ "$access" == true ]
   then
     echo 'loft_deploy fetch_files'
     echo '    Fetch production files to local, overwriting local files'
     echo '    LOCAL FILES <--- PRODUCTION FILES'
   fi
+  access=false
+  _access_check fetch
+  if [ "$access" == true ]
+  then
+    echo 'loft_deploy push'
+    echo '    A push all shortcut'
+    echo '    LOCAL ---> STAGING'
+  fi
+  access=false
+  _access_check push_db
+  if [ "$access" == true ]
+  then
+    echo 'loft_deploy push_db'
+    echo '    Dump local db and push it to staging for manual import'
+    echo '    LOCAL DB ---> STAGING DB'
+  fi
+  access=false
+  _access_check push_files
+  if [ "$access" == true ]
+  then
+    echo 'loft_deploy push_files'
+    echo '    Push local files to staging, overwriting staging files'
+    echo '    LOCAL FILES ---> STAGING FILES'
+  fi
+  access=false
+  _access_check dump_db
+  if [ "$access" == true ]
+  then
+    echo 'loft_deploy dump_db [suffix]'
+    echo '    Dump the local db with an optional suffix'
+    echo '    LOCAL DB ---> ???'
+  fi
+  access=false
+  _access_check import_db
+  if [ "$access" == true ]
+  then
+    echo 'loft_deploy import_db [suffix]'
+    echo '    Import a db dump file overwriting local'
+    echo '    LOCAL DB <--- ???'
+  fi
+
   echo
   echo '~ HELPER COMMANDS ~'
   echo 'loft_deploy help'
@@ -384,8 +415,14 @@ function show_help() {
   echo '    Review/Test the configuration'
   echo 'loft_deploy ls (db|files) (ls flags)'
   echo '    List contents of db or files directories.  Flags for ls may be added.'
-  echo 'loft_deploy pass p (or s)'
-  echo '    Display the production or staging server password'
+
+  access=false
+  _access_check import_db
+  if [ "$access" == true ]
+  then
+    echo 'loft_deploy pass (prod|staging)'
+    echo '    Display the production or staging server password'
+  fi
 }
 
 ##
@@ -494,24 +531,29 @@ function show_config() {
   echo
   echo "Configuration..."
   echo '~ LOCAL ~'
-  echo "Role   : $local_role"
-  echo "Config : $config_dir/.loft_deploy"
-  echo "DB     : $local_db_name"
-  echo "Dumps  : $local_db_dir"
-  echo "Files  : $local_files"
+  echo "Role     : $local_role"
+  echo "Config   : $config_dir/.loft_deploy"
+  echo "DB       : $local_db_name"
+  echo "DB User  : $local_db_user"
+  echo "Dumps    : $local_db_dir"
+  echo "Files    : $local_files"
   echo
-  echo '~ STAGING ~'
-  echo "Server : $staging_server"
-  #echo "DB     : $staging_db_name"
-  echo "Dumps  : $staging_db_dir"
-  echo "Files  : $staging_files"
-  echo
-  echo '~ PRODUCTION ~'
-  echo "Server : $production_server"
-  echo "DB     : $production_db_name"
-  echo "Dumps  : $production_db_dir"
-  echo "Files  : $production_files"
-  echo
+
+  if [ "$local_role" == 'dev' ]
+  then
+    echo '~ STAGING ~'
+    echo "Server   : $staging_server"
+    echo "DB       : $staging_db_name"
+    echo "Dumps    : $staging_db_dir"
+    echo "Files    : $staging_files"
+    echo
+    echo '~ PRODUCTION ~'
+    echo "Server   : $production_server"
+    echo "DB       : $production_db_name"
+    echo "Dumps    : $production_db_dir"
+    echo "Files    : $production_files"
+    echo
+  fi
 }
 
 function warning() {
@@ -548,22 +590,21 @@ function _access_check() {
     access=true
     return
   fi
-
   # For each role, list the ops they MAY execute
   if [ "$local_role" == 'prod' ]
   then
     case $1 in
-      dump_db)
+      'dump_db')
         access=true
         ;;
     esac
   elif [ "$local_role" == 'staging' ]
   then
     case $1 in
-      import_db)
+      'import_db')
         access=true
         ;;
-      pass)
+      'pass')
         access=true
         ;;
     esac
@@ -581,6 +622,8 @@ function _access_check() {
  # Begin Controller
  #
 
+load_config
+
 # We'll place this here before config and access check to help the user
 if [ ! "$op" ] || [ "$op" == 'help' ]
 then
@@ -590,18 +633,15 @@ then
   then
     echo "Please call with one or more arguments."
   fi
-  load_config
   end
 fi
-
-load_config
 
 ##
  # Access Check
  #
 access=false
 _access_check $op
-if [ $access == false ]
+if [ "$access" == false ]
 then
   echo 'ACCESS DENIED!'
   end "$local_role sites may not invoke: loft_deploy $op"
@@ -621,6 +661,7 @@ case $op in
         dir="$local_files"
         ;;
     esac
+    pwd
     ls $3 $dir
     end
     ;;
@@ -654,10 +695,10 @@ case $op in
     ;;
   'pass')
     echo
-    if [ "$2" == 'p' ]
+    if [ "$2" == 'prod' ]
     then
       echo "Production Password: $production_pass"
-    elif [ "$2" == 's' ]
+    elif [ "$2" == 'staging' ]
     then
       echo "Staging Password: $staging_pass"
     fi
