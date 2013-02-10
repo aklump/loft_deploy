@@ -682,7 +682,7 @@ function end() {
  #
 function _access_check() {
   # List out helper commands, with universal access regardless of local_role
-  if [ "$1" == '' ] || [ "$1" == 'config' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ]
+  if [ "$1" == '' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ]
   then
     access=true
     return
