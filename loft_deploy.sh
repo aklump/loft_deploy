@@ -62,6 +62,10 @@ op=$1
 # Holds the starting directory
 cwd=${PWD}
 
+# Holds the directory of our template files
+loft_deploy_source=$(which loft_deploy)_files
+
+
 # holds the full path to the last db dump
 current_db_dir=''
 
@@ -69,7 +73,7 @@ current_db_dir=''
 current_db_filename=''
 
 # holds the directory of the config file
-config_dir=$cwd
+config_dir=${PWD}/.loft_deploy
 
 # holds the result of connect()
 mysql_check_result=false
@@ -78,21 +82,53 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 ##
+ # Initialize a new project
+ #
+ # @param string $1
+ #   One of dev, staging or production
+ #
+ # @return NULL
+ #
+function init() {
+  if [ -d .loft_deploy ]
+  then
+    end "$cwd is already initialized."
+  fi
+  if [ $# -ne 1 ]
+  then
+    end "Please specific one of: dev, staging or prod.  e.g. loft_deploy init dev"
+  elif [ "$1" == 'dev' ] || [ "$1" == 'staging' ] || [ "$1" == 'prod' ]
+  then
+    mkdir .loft_deploy
+    cd .loft_deploy
+    cp $loft_deploy_source/example_configs/example_$1 config
+    mkdir db
+    touch cached_db
+    mkdir files
+    touch cached_files
+    cd $cwd
+    complete
+    end "Please configure and save $config_dir/config"
+  else
+    end "Invalid argument"
+  fi
+}
+
+##
  # Load the configuration file
  #
 function load_config() {
-  cd $config_dir
-  file=.loft_deploy
-  if [ ! -f "$file" ]
+  dir=.loft_deploy
+  if [ ! -d "$dir" ]
   then
-    _upsearch $file
+    _upsearch $dir
   fi
 
   # these are defaults
   local_role="prod"
   local_db_host='localhost'
   production_script='~/bin/loft_deploy'
-  source $file
+  source $dir/config
   cd $cwd
 }
 
@@ -100,7 +136,7 @@ function load_config() {
  # Recursive search for file in parent dirs
  #
 function _upsearch () {
-  test / == "$PWD" && echo && echo "NO CONFIG FILE FOUND!" && end "Please create .loft_deploy above web root" || test -e "$1" && config_dir=${PWD} && return || cd .. && _upsearch "$1"
+  test / == "$PWD" && echo && echo "NO CONFIG FILE FOUND!" && end "Please create .loft_deploy above web root" || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
 }
 
 ##
@@ -111,20 +147,42 @@ function fetch_files() {
   then
     end "Bad config"
   fi
-  echo "This process will copy production files to local, removing any"
-  echo "local files that are not present on production.  You will be given"
-  echo "a preview of what will happen first."
-  echo
-  echo "End result: Your local files directory will match production."
+  echo "Copying files from production server..."
+  rsync -av $production_server://$production_files/ $config_dir/files --delete
 
-  confirm 'Are you sure you want to fetch prod files OVERWRITING LOCAL files'
-  echo 'Previewing...'
-  rsync -av $production_server://$production_files/ $local_files/ --delete --dry-run
-  confirm 'That was a preview... do it for real?'
-  rsync -av $production_server://$production_files/ $local_files/ --delete
-
-  complete "Fetch files complete; please test your local site."
+  # record the fetch date
+  echo $now > $config_dir/cached_files
 }
+
+##
+ # Reset the local files with fetched production files
+ #
+ # @param string $1
+ #   description of param
+ #
+ # @return NULL
+ #   Sets the value of global $reset_files_return
+ #
+function reset_files() {
+  echo "This process will reset your local files to match the most recently fetched"
+  echo "production files, removing any local files that are not present in the fetched"
+  echo "set. You will be given a preview of what will happen first. To absolutely"
+  echo "match production, consider running fetch_files first, however it is slower."
+  echo
+  echo "End result: Your local files directory will match fetched production files."
+
+  source=$config_dir/files
+  if [ ! -d $source ]
+  then
+    end "Please fetch_files first"
+  fi
+  confirm 'Are you sure you want to OVERWRITE LOCAL files'
+  echo 'Previewing...'
+  rsync -av $source $local_files/ --delete --dry-run
+  confirm 'That was a preview... do it for real?'
+  rsync -av $source $local_files/ --delete
+}
+
 
 ##
  # Fetch the remote db and import it to local
@@ -135,36 +193,52 @@ function fetch_db() {
     end "Bad config"
   fi
 
-  echo "This process will take a copy of the production database, download it local,"
-  echo "back up your local database, and then import the production database over the"
-  echo "top of the local database."
-  echo
-  echo "End result: Your local database will be in sync with your production database."
-  confirm 'Are you sure you want to OVERWRITE YOUR LOCAL DB with the production db'
-
   echo "Exporting production db..."
   prod_suffix='fetch_db'
   ssh $production_server "cd $production_db_dir && . $production_script dump_db $prod_suffix"
   wait
 
   echo "Downloading from production..."
-  _current_db_paths fetch_db
   remote_file="$production_db_dir/${production_db_name}-$prod_suffix.sql"
-  scp $production_server://$remote_file $current_db_dir
+  local_file=$config_dir/db/fetched.sql
+  scp $production_server://$remote_file $local_file
+
+  # record the fetch date
+  echo $now > $config_dir/cached_db
 
   # delete it from remote
   echo "Deleting the production copy..."
   ssh $production_server "rm $remote_file"
+}
+
+##
+ # Reset the local database with a previously fetched copy
+ #
+ # @return NULL
+ #   Sets the value of global $reset_db_return
+ #
+function reset_db() {
+  echo "This process will reset your local db to match the most recently fetched"
+  echo "production db, first backing up your local db. To absolutely match production,"
+  echo "consider running fetch_db first, however it is slower.."
+  echo
+  echo "End result: Your local files directory will match the fetched prod db."
+
+  confirm 'Are you sure you want to OVERWRITE YOUR LOCAL DB with the production db'
+
+  file=$config_dir/db/fetched.sql
+  if [ ! -f $file ]
+  then
+    end "Please fetch_db first"
+  fi
 
   #backup local
-  dump_db fetch_backup_$now
+  dump_db reset_backup_$now
 
-  #import production to local
-  echo "Importing $current_db_dir${production_db_name}-$prod_suffix.sql"
-  import_db ${production_db_name}-$prod_suffix.sql
-
-  complete "Database Update complete; please test your local site."
+  echo "Importing $local_file"
+  import_db $file
 }
+
 
 ##
  # Push local files to staging
@@ -260,7 +334,7 @@ function dump_db() {
     local_db_host="localhost"
   fi
 
-  echo "Dumping the local database to $current_db_dir$current_db_filename..."
+  echo "Exporting database as $current_db_dir$current_db_filename..."
   mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r $current_db_dir$current_db_filename
 }
 
@@ -268,19 +342,20 @@ function dump_db() {
  # Import a db dump file into local db, overwriting local
  #
  # @param string $1
- #   The filename of the dumpfile
+ #   If this is not a path to a file, it will be assumed a filename in
+ #   $local_db_dir
  #
 function import_db() {
   _current_db_paths
-  if [ ! "$1" ] || [ ! -f $current_db_dir$1 ]
+  if file=$1 && [ ! -f $1 ] && file=$current_db_dir$1 && [ ! -f $file ]
   then
-    end "File $current_db_dir$1 not found."
+    end "$file not found."
   fi
   confirm "You are about to OVERWRITE YOUR LOCAL DATABASE, are you sure"
   echo "It's advisable to empty the database first."
   _drop_tables
   echo "Importing $current_db_dir$1 to $local_db_host $local_db_name database..."
-  mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name < $current_db_dir$1
+  mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name < $file
 }
 
 ##
@@ -303,9 +378,18 @@ function _drop_tables() {
   echo
 }
 
+###
+ # Complete an operation and optional exit
+ #
+ # @param string $1
+ #   The message to delive
+ #
+ ##
 function complete() {
-  echo
-  echo $1
+  if [ $# == 0 ]
+  then
+    echo $1
+  fi
   echo '----------------------------------------------------------'
 }
 
@@ -532,27 +616,29 @@ function show_config() {
   echo
   echo "Configuration..."
   echo '~ LOCAL ~'
-  echo "Role     : $local_role " | tr "[:lower:]" "[:upper:]"
-  echo "Config   : $config_dir/.loft_deploy"
-  echo "DB       : $local_db_name"
-  echo "DB User  : $local_db_user"
-  echo "Dumps    : $local_db_dir"
-  echo "Files    : $local_files"
+  echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
+  echo "Config        : $config_dir"
+  echo "DB            : $local_db_name"
+  echo "DB User       : $local_db_user"
+  echo "Dumps         : $local_db_dir"
+  echo "Files         : $local_files"
+  echo "DB Fetched    : " $(cat $config_dir/cached_db)
+  echo "Files Fetched : " $(cat $config_dir/cached_files)
   echo
 
   if [ "$local_role" == 'dev' ]
   then
     echo '~ STAGING ~'
-    echo "Server   : $staging_server"
-    echo "DB       : $staging_db_name"
-    echo "Dumps    : $staging_db_dir"
-    echo "Files    : $staging_files"
+    echo "Server        : $staging_server"
+    echo "DB            : $staging_db_name"
+    echo "Dumps         : $staging_db_dir"
+    echo "Files         : $staging_files"
     echo
     echo '~ PRODUCTION ~'
-    echo "Server   : $production_server"
-    echo "DB       : $production_db_name"
-    echo "Dumps    : $production_db_dir"
-    echo "Files    : $production_files"
+    echo "Server        : $production_server"
+    echo "DB            : $production_db_name"
+    echo "Dumps         : $production_db_dir"
+    echo "Files         : $production_files"
     echo
   fi
 }
@@ -586,7 +672,7 @@ function end() {
  #
 function _access_check() {
   # List out helper commands, with universal access regardless of local_role
-  if [ "$1" == '' ] || [ "$1" == 'config' ] || [ "$1" == 'ls' ]
+  if [ "$1" == '' ] || [ "$1" == 'config' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ]
   then
     access=true
     return
@@ -623,6 +709,20 @@ function _access_check() {
  # Begin Controller
  #
 
+# init has to come before configuration loading
+if [ $1 == 'init' ]
+then
+  access=false
+  _access_check $op
+  if [ "$access" == false ]
+  then
+    echo 'ACCESS DENIED!'
+    end "$local_role sites may not invoke: loft_deploy $op"
+  else
+    init $2
+  fi
+fi
+
 load_config
 
 # We'll place this here before config and access check to help the user
@@ -653,6 +753,11 @@ fi
  # Call the correct handler
  #
 case $op in
+  'init')
+    init $2
+    complete
+    end
+    ;;
   'ls')
     case $2 in
       'db')
@@ -668,45 +773,85 @@ case $op in
       flags=$3
     fi
     ls $dir
+    complete
     end
     ;;
   'dump_db')
     dump_db $2
+    complete
+    end
     ;;
   'push_files')
     push_files
+    complete
+    end
     ;;
   'push_db')
     push_db
+    complete
+    end
     ;;
   'fetch_files')
     fetch_files
+    complete "Production files have been fetched; use reset_files when ready."
+    end
+    ;;
+  'reset_files')
+    reset_files
+    complete
+    end
     ;;
   'fetch_db')
     fetch_db
+    complete 'Production database has been fetched; use reset_db when ready.'
+    end
+    ;;
+  'reset_db')
+    reset_db
+    complete
+    end
     ;;
   'fetch')
     fetch_db
+    complete
     fetch_files
+    complete
+    end
+    ;;
+  'reset')
+    reset_db
+    complete
+    reset_files
+    complete
+    end
     ;;
   'import_db')
     import_db $2
+    complete
+    end
     ;;
   'help')
     show_help
+    complete
+    end
     ;;
   'config')
     show_config
+    complete
+    end
     ;;
   'pass')
     echo
     if [ "$2" == 'prod' ]
     then
-      echo "Production Password: $production_pass"
+      complete "Production Password: $production_pass"
     elif [ "$2" == 'staging' ]
     then
-      echo "Staging Password: $staging_pass"
+      complete "Staging Password: $staging_pass"
     fi
-    echo
+    complete
+    end
     ;;
 esac
+
+end "loft_deploy $op is an unknown operation."
