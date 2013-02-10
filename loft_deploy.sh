@@ -60,7 +60,7 @@
 op=$1
 
 # Holds the starting directory
-cwd=${PWD}
+start_dir=${PWD}
 
 # Holds the directory of our template files
 loft_deploy_source=$(which loft_deploy)_files
@@ -92,7 +92,7 @@ now=$(date +"%Y%m%d_%H%M")
 function init() {
   if [ -d .loft_deploy ]
   then
-    end "$cwd is already initialized."
+    end "$start_dir is already initialized."
   fi
   if [ $# -ne 1 ]
   then
@@ -101,12 +101,12 @@ function init() {
   then
     mkdir .loft_deploy
     cd .loft_deploy
-    cp $loft_deploy_source/example_configs/example_$1 config
+    cp $loft_deploy_source/example_configs/example_$1 ./config
     mkdir db
     touch cached_db
     mkdir files
     touch cached_files
-    cd $cwd
+    cd $start_dir
     complete
     end "Please configure and save $config_dir/config"
   else
@@ -129,7 +129,7 @@ function load_config() {
   local_db_host='localhost'
   production_script='~/bin/loft_deploy'
   source $dir/config
-  cd $cwd
+  cd $start_dir
 }
 
 ##
@@ -386,7 +386,7 @@ function _drop_tables() {
  #
  ##
 function complete() {
-  if [ $# > 0 ]
+  if [ $# -ne 0 ]
   then
     echo $1
   fi

@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# @file
+# Configuration file for loft_deploy for a local development environment
+#
+
+##
+ # LOCAL CONFIGURATION (For Development)
+ #
+
+local_role="dev"
+
+# Where are your non-versioned, dynamic files kept?
+local_files='/Library/WebServer/Documents/path/to/dev/branch/site/public_html/sites/default/files'
+
+# Where do you want db dumps saved?
+local_db_dir='/Library/WebServer/Documents/path/to/dev/branch/site/db/tags'
+
+# What are the credentials for connecting to the database?
+#local_db_host='localhost'
+local_db_name='dev_db_name'
+local_db_user='dev_db_user'
+local_db_pass='dev_db_pass'
+
+##
+ # END LOCAL CONFIGURATION
+ #
+
+##
+ # PRODUCTION CONFIGURATION
+ #
+#production_script='~/bin/loft_deploy'
+production_server='prod_user@prod_host'
+production_pass='prod_pass'
+production_files='path/to/prod_branch/public_html/sites/default/files'
+production_db_name='prod_db_name'
+production_db_dir='path/to/prod_branch/releases/current/db/tags'
+
+##
+ # END PRODUCTION CONFIGURATION
+ #
+
+##
+ # STAGING SERVER
+ #
+staging_script='~/bin/loft_deploy'
+staging_server='staging_user@staging_host'
+staging_pass='staging_pass'
+staging_files='path/to/staging_branch/public_html/sites/default/files'
+staging_db_dir='path/to/staging_branch/releases/current/db/tags'
+
+##
+ # END STAGING CONFIGURATION
+ #
