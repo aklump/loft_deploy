@@ -66,26 +66,37 @@ INSTALLATION:
 @
 
 CONFIGURATION:
+* You must configure each environment for a given project. That is to say you
+  must run 'loft_deploy init dev' and 'loft_deploy init prod' and maybe
+  'loft_deploy init staging' on each of the appropriate servers.
+* The init process creates an empty config file in .loft_deply/config; this file
+  must be edited with all correct params for each environment.
+* The location where you run the init process determines the scope of usage. The
+  most common location is the directory above web root. You may runrun
+  loft_deploy operations in any child directory and including the directory
+  where it's initialized.
+* An exception to this rule is a Drupal multisite, in which case you must
+  descend into sites/[sitename] and run 'loft_deploy init' there. You will then
+  be restricted to running loft deploy oeprations to /sites/[sitename] and any
+  child directories.
 * For each website project that you want to use this for, you must create a
   configuration file for that website in all environments: local, production and
   staging if applicable.
-* Copy one of the provided files found in example_configs/ as .loft_deploy above
-  the web root for each environment. Notice the new name begins with a .
-* Carefully and meticulously configure these files making CERTAIN you pay
+* Carefully and meticulously edit .loft_deploy/config making CERTAIN you pay
   attention to the variable local_role. Setting this correctly ensures certain
   access checks, which may help to prevent damaging your production environment.
-* AGAIN, MAKE SURE TO CORRECTLY SET local_role
-* Also make certain that your paths are correct as incorrect paths may result in
+* AGAIN, MAKE SURE TO CORRECTLY SET local_role to: dev, prod or staging.
+* Also make certain that your paths are correct, as incorrect paths may result in
   data loss to your production website.
-* Navigate inside the webroot of each environment and test the configuration
-  with the command: loft_deploy config.
-* Verify that local > role is correct, as are all the paths.
-* Correct any mistakes now, before its too late!
+* Review your config info with 'loft_deploy info'.
+* Verify especially that local > role is correct, as are all the paths.
+* Correct any mistakes now, BEFORE ITS TOO LATE!
 * Once the configuration files are in place and correct, REMOVE ALL WRITE
-  PERMISSIONS to all copies of .loft_deploy configuration files.
-* Run a config test on each of the environments
+  PERMISSIONS to all copies of .loft_deploy/config files.
+* Finally, test each environment before first use. You may run 'configtest' at
+  any time in the future as well.
 @code
-  $ loft_deploy config
+  $ loft_deploy configtest
 @endcode
 
 

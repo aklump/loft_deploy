@@ -62,10 +62,6 @@ op=$1
 # Holds the starting directory
 start_dir=${PWD}
 
-# Holds the directory of our template files
-loft_deploy_source=$(which loft_deploy)_files
-
-
 # holds the full path to the last db dump
 current_db_dir=''
 
@@ -80,6 +76,7 @@ mysql_check_result=false
 
 # holds a timestamp for backups, etc.
 now=$(date +"%Y%m%d_%H%M")
+
 
 ##
  # Initialize a new project
@@ -99,6 +96,7 @@ function init() {
     end "Please specific one of: dev, staging or prod.  e.g. loft_deploy init dev"
   elif [ "$1" == 'dev' ] || [ "$1" == 'staging' ] || [ "$1" == 'prod' ]
   then
+    loft_deploy_source=$(which loft_deploy)_files
     mkdir .loft_deploy
     cd .loft_deploy
     cp $loft_deploy_source/example_configs/example_$1 ./config
@@ -136,7 +134,7 @@ function load_config() {
  # Recursive search for file in parent dirs
  #
 function _upsearch () {
-  test / == "$PWD" && echo && echo "NO CONFIG FILE FOUND!" && end "Please create .loft_deploy above web root" || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
+  test / == "$PWD" && echo && echo "NO CONFIG FILE FOUND!" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
 }
 
 ##
@@ -195,7 +193,7 @@ function fetch_db() {
 
   echo "Exporting production db..."
   prod_suffix='fetch_db'
-  ssh $production_server "cd $production_db_dir && . $production_script dump_db $prod_suffix"
+  ssh $production_server "cd $production_files && . $production_script dump_db $prod_suffix"
   wait
 
   echo "Downloading from production..."
@@ -496,7 +494,9 @@ function show_help() {
   echo 'loft_deploy help'
   echo '    Show this help screen'
   echo 'loft_deploy info'
-  echo '    Test configuration & show info'
+  echo '    Show info'
+  echo 'loft_deploy configtest'
+  echo '    Test configuration'
   echo 'loft_deploy ls (db|files) (ls flags)'
   echo '    List contents of db or files directories.  Flags for ls may be added.'
 
@@ -557,64 +557,91 @@ function version() {
 }
 
 ##
- # Display configuation info
+ # Print out the header
  #
-function show_info() {
-  clear
-
-  version_result='v?'
-  version
-  echo "~ LOFT_DEPLOY Version$version_result ~ $local_role ~" | tr "[:lower:]" "[:upper:]"
+ #
+function print_header() {
+  echo "~ $local_title ~ $local_role ~" | tr "[:lower:]" "[:upper:]"
   echo
-  echo "Testing..."
+}
 
+##
+ # Run a config test and printout results
+ #
+ # @param string $1
+ #   description of param
+ #
+ # @return NULL
+ #   Sets the value of global $configtest_return
+ #
+function configtest() {
+  configtest_return=true;
+  echo 'Testing...'
   # Test if the staging and production files are the same
   if [ "$local_files" == "$production_files" ]
   then
+    configtest_return=false;
     warning 'Your local files directory and production files directory should not be the same'
   fi
 
   # Test for prod server password in prod environments
   if ([ "$local_role" == 'prod' ] && [ "$production_pass" ]) || ([ "$local_role" == 'staging' ] && [ "$staging_pass" ])
   then
+    configtest_return=false;
     warning "For security purposes you should remove the $local_role server password from your config file in a $local_role environment."
   fi
 
   # Test for other environments than prod, in prod environment
   if [ "$local_role" == 'prod' ] && ( [ "$prod_server" ] || [ "$staging_server" ] )
   then
+    configtest_return=false;
     warning "In a $local_role environment, no other environments should be defined.  Remove extra settings from config."
   fi
 
   # Test for directories
-  if [ -d "$local_db_dir" ]
+  if [ ! -d "$local_db_dir" ]
   then
-    echo "TEST: $local_db_dir exists."
-  else
+    configtest_return=false;
     warning "local_db_dir: $local_db_dir does not exist."
   fi
 
-  if [ -d "$local_files" ]
+  if [ ! -d "$local_files" ]
   then
-    echo "TEST: $local_files exists."
-  else
+    configtest_return=false;
     warning "local_files: $local_files does not exist."
   fi
 
   # Test for db access
   mysql_check_result=false
   mysql_check $local_db_user $local_db_pass $local_db_name $local_db_host
-  if [ $mysql_check_result == true ]
+  if [ $mysql_check_result == false ]
   then
-    echo "TEST: Local DB connection good."
-  else
+    configtest_return=false;
     warning "Can't connect to local DB; check credentials"
   fi
 
   # @todo test for ssh connection to prod
   # @todo test for ssh connection to staging
-  echo
-  echo "Configuration..."
+
+  # @todo test local and remote paths match
+  if [ $configtest_return ]
+  then
+    echo 'All tests passed.'
+  else
+    echo 'Some tests failed; see earlier warnings!'
+  fi
+
+}
+
+
+##
+ # Display configuation info
+ #
+function show_info() {
+  clear
+  print_header
+
+  #echo "Configuration..."
   echo '~ LOCAL ~'
   echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config        : $config_dir"
@@ -638,19 +665,24 @@ function show_info() {
 
   if [ "$local_role" == 'dev' ]
   then
-    echo '~ STAGING ~'
-    echo "Server        : $staging_server"
-    echo "DB            : $staging_db_name"
-    echo "Dumps         : $staging_db_dir"
-    echo "Files         : $staging_files"
-    echo
     echo '~ PRODUCTION ~'
     echo "Server        : $production_server"
     echo "DB            : $production_db_name"
     echo "Dumps         : $production_db_dir"
     echo "Files         : $production_files"
     echo
+    echo "~ STAGING ~"
+    echo "Server        : $staging_server"
+    echo "DB            : $staging_db_name"
+    echo "Dumps         : $staging_db_dir"
+    echo "Files         : $staging_files"
+    echo
   fi
+
+  version_result='?'
+  version
+  echo '~ LOFT_DEPLOY ~'
+  echo "Version       : $version_result"
 }
 
 function warning() {
@@ -682,7 +714,7 @@ function end() {
  #
 function _access_check() {
   # List out helper commands, with universal access regardless of local_role
-  if [ "$1" == '' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ]
+  if [ "$1" == '' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'configtest' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ]
   then
     access=true
     return
@@ -761,6 +793,7 @@ fi
 ##
  # Call the correct handler
  #
+print_header
 case $op in
   'init')
     init $2
@@ -782,6 +815,11 @@ case $op in
       flags=$3
     fi
     ls $dir
+    complete
+    end
+    ;;
+  'configtest')
+    configtest
     complete
     end
     ;;

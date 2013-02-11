@@ -10,6 +10,9 @@
 
 local_role="prod"
 
+# An arbitrary title describing this environment to you for personal id
+local_title="Some Descriptive Title"
+
 # Where are your non-versioned, dynamic files kept?
 local_files='path/to/prod_branch/public_html/sites/default/files'
 
@@ -25,12 +28,3 @@ local_db_pass='prod_db_password'
 ##
  # END LOCAL CONFIGURATION
  #
-
-
-
-
-
-
-
-
-
