@@ -439,7 +439,7 @@ function show_help() {
   if [ "$access" == true ]
   then
     echo 'fetch_db'
-    echo '    Pull production db and import it to local, overwriting local'
+    echo '    Pull production db but do not import to local'
     echo '    LOCAL DB <--- PRODUCTION DB'
   fi
   access=false
@@ -447,7 +447,31 @@ function show_help() {
   if [ "$access" == true ]
   then
     echo 'fetch_files'
-    echo '    Fetch production files to local, overwriting local files'
+    echo '    Fetch production files to local, but do not overwrite local'
+    echo '    LOCAL FILES <--- PRODUCTION FILES'
+  fi
+  access=false
+  _access_check reset
+  if [ "$access" == true ]
+  then
+    echo 'reset'
+    echo '    A reset all shortcut (uses previously fetched data)'
+    echo '    LOCAL <--- PRODUCTION'
+  fi
+  access=false
+  _access_check reset_db
+  if [ "$access" == true ]
+  then
+    echo 'reset_db'
+    echo '    Overwrite local db with previously fetched production db'
+    echo '    LOCAL DB <--- PRODUCTION DB'
+  fi
+  access=false
+  _access_check reset_files
+  if [ "$access" == true ]
+  then
+    echo 'reset_files'
+    echo '    Replace local files with previously fetched production files'
     echo '    LOCAL FILES <--- PRODUCTION FILES'
   fi
   access=false
@@ -471,7 +495,7 @@ function show_help() {
   if [ "$access" == true ]
   then
     echo 'pull_files'
-    echo '    Fetch and pull files shortcut'
+    echo '    Fetch and reset files shortcut'
     echo '    LOCAL FILES <--- PRODUCTION FILES'
   fi
   access=false
