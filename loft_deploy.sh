@@ -126,8 +126,8 @@ function load_config() {
   local_role="prod"
   local_db_host='localhost'
   production_script='~/bin/loft_deploy'
-  production_pass='unknown'
-  staging_pass='unknown'
+  production_pass=''
+  staging_pass=''
   source $dir/config
   cd $start_dir
 }
