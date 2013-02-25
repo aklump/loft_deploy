@@ -629,7 +629,7 @@ function configtest() {
   configtest_return=true;
   echo 'Testing...'
   # Test if the staging and production files are the same, but only if we have production files
-  if [ "$production_files" ] && ["$local_files" == "$production_files"]
+  if [ "$production_files" ] && [ "$local_files" == "$production_files" ]
   then
     configtest_return=false;
     warning 'Your local files directory and production files directory should not be the same'
