@@ -32,9 +32,9 @@ DATABASE CONTENT AND FILES.
 REQUIREMENTS:
 The following assumptions are made about your project: 1) your project uses a
 database 2) your project's codebase is maintained using source control (git,
-svn, etc) 3) your project has a files directory that contains dynamic files,
-which are NOT in source control. If these assumptions are not true then this
-package may be less useful to you.
+svn, etc) 3) your project might have a files directory that contains dynamic
+files, which are NOT in source control. If these assumptions are not true then
+this package may be less useful to you.
 
 
 INSTALLATION:
@@ -98,6 +98,10 @@ CONFIGURATION:
 @code
   $ loft_deploy configtest
 @endcode
+
+FILES:
+* You may use this when you do not have a files directory, just omit any config
+  variables referencing files
 
 
 USAGE:
