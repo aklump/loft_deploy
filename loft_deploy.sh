@@ -190,12 +190,12 @@ function reset_files() {
 function fetch_db() {
   if [ ! "$production_script" ] || [ ! "$production_db_dir" ] || [ ! "$production_server" ] || [ ! "$production_db_name" ]
   then
-    end "Bad config"
+    end "Bad db config"
   fi
 
   echo "Exporting production db..."
   prod_suffix='fetch_db'
-  ssh $production_server "cd $production_files && . $production_script dump_db $prod_suffix"
+  ssh $production_server "cd $production_root && . $production_script dump_db $prod_suffix"
   wait
 
   echo "Downloading from production..."
@@ -603,8 +603,8 @@ function print_header() {
 function configtest() {
   configtest_return=true;
   echo 'Testing...'
-  # Test if the staging and production files are the same
-  if [ "$local_files" == "$production_files" ]
+  # Test if the staging and production files are the same, but only if we have production files
+  if [ "$production_files" ] && ["$local_files" == "$production_files"]
   then
     configtest_return=false;
     warning 'Your local files directory and production files directory should not be the same'
@@ -631,7 +631,7 @@ function configtest() {
     warning "local_db_dir: $local_db_dir does not exist."
   fi
 
-  if [ ! -d "$local_files" ]
+  if [ "$local_files" ] && [ ! -d "$local_files" ]
   then
     configtest_return=false;
     warning "local_files: $local_files does not exist."
