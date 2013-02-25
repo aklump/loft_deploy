@@ -126,6 +126,8 @@ function load_config() {
   local_role="prod"
   local_db_host='localhost'
   production_script='~/bin/loft_deploy'
+  production_pass='unknown'
+  staging_pass='unknown'
   source $dir/config
   cd $start_dir
 }
@@ -316,7 +318,7 @@ function dump_db() {
   if [ -f "$current_db_dir$current_db_filename" ]
   then
     confirm_result=false
-    confirm "File $current_db_dir$current_db_filename exists, replace" --soft
+    confirm "File $current_db_dir$current_db_filename exists, replace" noend
     if [ $confirm_result == false ]
     then
       return
@@ -361,7 +363,7 @@ function import_db() {
  #
 function _drop_tables() {
   confirm_result=false;
-  confirm "Should we DUMP ALL TABLES (empty database) from $local_db_host $local_db_name, first" --soft
+  confirm "Should we DUMP ALL TABLES (empty database) from $local_db_host $local_db_name, first" noend
   if [ $confirm_result == false ]
   then
     return
@@ -397,7 +399,7 @@ function complete() {
  # @param string $1
  #   A question to ask
  # @param string $2
- #   A flag, e.g. --soft; which means a n will not exit
+ #   A flag, e.g. noend; which means a n will not exit
  #
  # @return bool
  #   Sets the value of confirm_result
@@ -410,7 +412,7 @@ function confirm() {
   if [ "$a" != 'y' ]
   then
     confirm_result=false
-    if [ "$2" != '--soft' ]
+    if [ "$2" != 'noend' ]
     then
       end 'CANCELLED!'
     fi
@@ -428,7 +430,7 @@ function show_help() {
   _access_check fetch
   if [ "$access" == true ]
   then
-    echo 'loft_deploy fetch'
+    echo 'fetch'
     echo '    A fetch all shortcut'
     echo '    LOCAL <--- PRODUCTION'
   fi
@@ -436,7 +438,7 @@ function show_help() {
   _access_check fetch_db
   if [ "$access" == true ]
   then
-    echo 'loft_deploy fetch_db'
+    echo 'fetch_db'
     echo '    Pull production db and import it to local, overwriting local'
     echo '    LOCAL DB <--- PRODUCTION DB'
   fi
@@ -444,15 +446,39 @@ function show_help() {
   _access_check fetch_files
   if [ "$access" == true ]
   then
-    echo 'loft_deploy fetch_files'
+    echo 'fetch_files'
     echo '    Fetch production files to local, overwriting local files'
     echo '    LOCAL FILES <--- PRODUCTION FILES'
   fi
   access=false
-  _access_check fetch
+  _access_check pull
   if [ "$access" == true ]
   then
-    echo 'loft_deploy push'
+    echo 'pull'
+    echo '    A fetch and reset all shortcut'
+    echo '    LOCAL <--- PRODUCTION'
+  fi
+  access=false
+  _access_check pull_db
+  if [ "$access" == true ]
+  then
+    echo 'pull_db'
+    echo '    A fetch and reset database shortcut'
+    echo '    LOCAL DB <--- PRODUCTION DB'
+  fi
+  access=false
+  _access_check pull_files
+  if [ "$access" == true ]
+  then
+    echo 'pull_files'
+    echo '    Fetch and pull files shortcut'
+    echo '    LOCAL FILES <--- PRODUCTION FILES'
+  fi
+  access=false
+  _access_check push
+  if [ "$access" == true ]
+  then
+    echo 'push'
     echo '    A push all shortcut'
     echo '    LOCAL ---> STAGING'
   fi
@@ -460,7 +486,7 @@ function show_help() {
   _access_check push_db
   if [ "$access" == true ]
   then
-    echo 'loft_deploy push_db'
+    echo 'push_db'
     echo '    Dump local db and push it to staging for manual import'
     echo '    LOCAL DB ---> STAGING DB'
   fi
@@ -468,7 +494,7 @@ function show_help() {
   _access_check push_files
   if [ "$access" == true ]
   then
-    echo 'loft_deploy push_files'
+    echo 'push_files'
     echo '    Push local files to staging, overwriting staging files'
     echo '    LOCAL FILES ---> STAGING FILES'
   fi
@@ -476,7 +502,7 @@ function show_help() {
   _access_check dump_db
   if [ "$access" == true ]
   then
-    echo 'loft_deploy dump_db [suffix]'
+    echo 'dump_db [suffix]'
     echo '    Dump the local db with an optional suffix'
     echo '    LOCAL DB ---> ???'
   fi
@@ -484,27 +510,27 @@ function show_help() {
   _access_check import_db
   if [ "$access" == true ]
   then
-    echo 'loft_deploy import_db [suffix]'
+    echo 'import_db [suffix]'
     echo '    Import a db dump file overwriting local'
     echo '    LOCAL DB <--- ???'
   fi
 
   echo
   echo '~ HELPER COMMANDS ~'
-  echo 'loft_deploy help'
+  echo 'help'
   echo '    Show this help screen'
-  echo 'loft_deploy info'
+  echo 'info'
   echo '    Show info'
-  echo 'loft_deploy configtest'
+  echo 'configtest'
   echo '    Test configuration'
-  echo 'loft_deploy ls (db|files) (ls flags)'
+  echo 'ls (db|files) (ls flags)'
   echo '    List contents of db or files directories.  Flags for ls may be added.'
 
   access=false
   _access_check import_db
   if [ "$access" == true ]
   then
-    echo 'loft_deploy pass (prod|staging)'
+    echo 'pass (prod|staging)'
     echo '    Display the production or staging server password'
   fi
 }
@@ -624,7 +650,7 @@ function configtest() {
   # @todo test for ssh connection to staging
 
   # @todo test local and remote paths match
-  if [ $configtest_return ]
+  if [ "$configtest_return" == true ]
   then
     echo 'All tests passed.'
   else
@@ -752,7 +778,7 @@ function _access_check() {
  #
 
 # init has to come before configuration loading
-if [ $1 == 'init' ]
+if [ "$1" == 'init' ]
 then
   access=false
   _access_check $op
@@ -767,7 +793,7 @@ fi
 
 load_config
 
-# We'll place this here before config and access check to help the user
+# Help MUST COME AFTER CONFIG FOR ACCESS CHECKING!!!! DON'T MOVE
 if [ ! "$op" ] || [ "$op" == 'help' ]
 then
   show_help
@@ -828,6 +854,32 @@ case $op in
     complete
     end
     ;;
+  'pull')
+    fetch_db
+    reset_db
+    fetch_files
+    reset_files
+    complete 'Database & Files fetched and reset'
+    end
+    ;;
+  'pull_files')
+    fetch_files
+    reset_files
+    complete 'Files fetched and reset'
+    end
+    ;;
+  'pull_db')
+    fetch_db
+    reset_db
+    complete 'Database fetched and reset'
+    end
+    ;;
+  'push')
+    push_db
+    push_files
+    complete 'Database & Files pushed to Staging'
+    end
+    ;;
   'push_files')
     push_files
     complete
@@ -845,7 +897,7 @@ case $op in
     ;;
   'reset_files')
     reset_files
-    complete
+    complete 'Local files have been reset with production.'
     end
     ;;
   'fetch_db')
@@ -855,7 +907,7 @@ case $op in
     ;;
   'reset_db')
     reset_db
-    complete
+    complete 'Local database has been reset with production.'
     end
     ;;
   'fetch')
