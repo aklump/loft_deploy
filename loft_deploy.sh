@@ -127,6 +127,7 @@ function load_config() {
   local_db_host='localhost'
   production_script='~/bin/loft_deploy'
   production_pass=''
+  production_root=''
   staging_pass=''
   source $dir/config
   cd $start_dir
@@ -659,6 +660,13 @@ function configtest() {
   then
     configtest_return=false;
     warning "local_files: $local_files does not exist."
+  fi
+
+  # Test for a production root in dev environments
+  if [ "$local_role" == 'dev' ] && [ ! "$production_root" ]
+  then
+    configtest_return=false;
+    warning "production_root: Please define the production environment's root directory "
   fi
 
   # Test for db access
