@@ -72,13 +72,16 @@ CONFIGURATION:
 * The init process creates an empty config file in .loft_deply/config; this file
   must be edited with all correct params for each environment.
 * The location where you run the init process determines the scope of usage. The
-  most common location is the directory above web root. You may runrun
+  best/most common location is the directory above web root. You may run
   loft_deploy operations in any child directory and including the directory
   where it's initialized.
 * An exception to this rule is a Drupal multisite, in which case you must
-  descend into sites/[sitename] and run 'loft_deploy init' there. You will then
-  be restricted to running loft deploy oeprations to /sites/[sitename] and any
-  child directories.
+  descend into sites/[sitename] and install it there run 'loft_deploy init'
+  there. You will then be restricted to running loft deploy oeprations to
+  /sites/[sitename] and any child directories.
+* There is a .htaccess file provided which denies access to all traffic, make
+  sure that does not get removed; especially if you're installing this in a
+  publicly accessible folder, such as in the case above.
 * For each website project that you want to use this for, you must create a
   configuration file for that website in all environments: local, production and
   staging if applicable.
