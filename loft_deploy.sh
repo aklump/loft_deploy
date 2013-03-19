@@ -99,6 +99,8 @@ function init() {
     loft_deploy_source=$(which loft_deploy)_files
     mkdir .loft_deploy
     cd .loft_deploy
+    echo 'deny from all' > .htaccess
+    chmod 0644 .htaccess
     cp $loft_deploy_source/example_configs/example_$1 ./config
     mkdir db
     touch cached_db
