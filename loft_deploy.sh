@@ -77,6 +77,17 @@ mysql_check_result=false
 # holds a timestamp for backups, etc.
 now=$(date +"%Y%m%d_%H%M")
 
+# theme color definitions
+color_red=1
+color_green=2
+color_yellow=3
+color_blue=4
+color_magenta=5
+color_cyan=6
+color_white=7
+color_staging=$color_green
+color_local=$color_yellow
+color_prod=$color_red
 
 ##
  # Initialize a new project
@@ -445,19 +456,19 @@ function theme_help_topic() {
     right=">>>"
     case $2 in
         'l')
-          color=3
-          icon="`tput setaf 4`local`tput op`"
+          color=$color_local
+          icon="`tput setaf $color_local`local`tput op`"
           icon='';;
 
         'pl')
-          color=6
-          icon="`tput setaf 6`local $left`tput op` prod";;
+          color=$color_prod
+          icon="`tput setaf $color_prod`local $left`tput op` prod";;
         'pld')
-          color=6
-          icon="`tput setaf 6`local db $left`tput op` prod db";;
+          color=$color_prod
+          icon="`tput setaf $color_prod`local db $left`tput op` prod db";;
         'plf')
-          color=6
-          icon="`tput setaf 6`local files $left`tput op` prod files";;
+          color=$color_prod
+          icon="`tput setaf $color_prod`local files $left`tput op` prod files";;
 
         #'lp')
         #  color=3
@@ -475,14 +486,14 @@ function theme_help_topic() {
           icon="`tput setaf 3`local files$left `tput op` staging files";;
 
         'lst')
-          color=2
-          icon="local `tput setaf 2`$right staging`tput op`";;
+          color=$color_staging
+          icon="local `tput setaf $color_staging`$right staging`tput op`";;
         'lsd')
-          color=2
-          icon="local db `tput setaf 2`$right staging db`tput op`";;
+          color=$color_staging
+          icon="local db `tput setaf $color_staging`$right staging db`tput op`";;
         'lsf')
-          color=2
-          icon="local files `tput setaf 2`$right staging files`tput op`";;
+          color=$color_staging
+          icon="local files `tput setaf $color_staging`$right staging files`tput op`";;
     esac
 
     echo "`tput setaf $color`$1`tput op`"
@@ -535,7 +546,20 @@ function show_help() {
   title=$(echo "Commands for a $local_role Environment" | tr "[:lower:]" "[:upper:]")
   theme_header "$title"
 
-  theme_header 'from prod' 6
+  theme_header 'local' $color_local
+  theme_help_topic dump_db 'l' 'Dump the local db with an optional suffix' 'dump_db [suffix]'
+  theme_help_topic import_db 'l' 'Import a db dump file overwriting local' 'import_db [suffix]'
+  theme_help_topic help 'l' 'Show this help screen'
+  theme_help_topic info 'l' 'Show info'
+  theme_help_topic configtest 'l' 'Test configuration'
+  theme_help_topic ls 'l' 'List contents of db or files directories.  Flags for ls may be added.' 'ls (db|files) (ls flags)'
+  theme_help_topic pass 'l' 'Display the production or staging server password' 'pass (prod|staging)'
+
+  if [ "$local_role" != 'prod' ]
+  then
+    theme_header 'from prod' $color_prod
+  fi
+
   theme_help_topic fetch 'pl' 'A fetch all shortcut'
   theme_help_topic fetch_db 'pld' 'Pull production db but do not import to local'
   theme_help_topic fetch_files 'plf' 'Fetch production files to local, but do not overwrite local'
@@ -546,19 +570,15 @@ function show_help() {
   theme_help_topic pull_db 'pld' 'A fetch and reset database shortcut'
   theme_help_topic pull_files 'plf' 'Fetch and reset files shortcut'
 
-  theme_header 'to staging' 2
+  if [ "$local_role" != 'staging' ]
+  then
+    theme_header 'to staging' $color_staging
+  fi
+
   theme_help_topic push 'lst' 'A push all shortcut'
   theme_help_topic push_db 'lsd' 'Dump local db and push it to staging for manual import'
   theme_help_topic push_files 'lsf' 'Push local files to staging, overwriting staging files'
 
-  theme_header 'local' 3
-  theme_help_topic dump_db 'l' 'Dump the local db with an optional suffix' 'dump_db [suffix]'
-  theme_help_topic import_db 'l' 'Import a db dump file overwriting local' 'import_db [suffix]'
-  theme_help_topic help 'l' 'Show this help screen'
-  theme_help_topic info 'l' 'Show info'
-  theme_help_topic configtest 'l' 'Test configuration'
-  theme_help_topic ls 'l' 'List contents of db or files directories.  Flags for ls may be added.' 'ls (db|files) (ls flags)'
-  theme_help_topic pass 'l' 'Display the production or staging server password' 'pass (prod|staging)'
 }
 
 ##
@@ -685,6 +705,34 @@ function configtest() {
     warning "production_root: Please define the production environment's root directory "
   fi
 
+  # Connection test for prod
+  if [ "$production_server" ] && ! ssh -q $production_server exit
+  then
+    configtest_return=false
+    warning "Can't connect to production server."
+  fi
+
+  # Connection test for staging
+  if [ "$staging_server" ] && ! ssh -q $staging_server exit
+  then
+    configtest_return=false
+    warning "Can't connect to staging server."
+  fi
+
+  # Connection test to production/config test for production
+  if [ "$production_root" ] && ! ssh $production_server "[ -f '${production_root}/.loft_deploy/config' ]"
+  then
+    configtest_return=false
+    warning "production_root: ${production_root}/.loft_deploy/config does not exist"
+  fi
+
+  # Connection test to staging/config test for staging
+  if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_root}/.loft_deploy/config' ]"
+  then
+    configtest_return=false
+    warning "staging_root: ${staging_root}/.loft_deploy/config does not exist"
+  fi
+
   # Test for db access
   mysql_check_result=false
   mysql_check $local_db_user $local_db_pass $local_db_name $local_db_host
@@ -700,9 +748,9 @@ function configtest() {
   # @todo test local and remote paths match
   if [ "$configtest_return" == true ]
   then
-    echo 'All tests passed.'
+    echo "`tput setaf $color_green`All tests passed.`tput op`"
   else
-    echo 'Some tests failed; see earlier warnings!'
+    echo "`tput setaf $color_red`Some tests failed.`tput op`"
   fi
 
 }
@@ -716,7 +764,7 @@ function show_info() {
   print_header
 
   #echo "Configuration..."
-  echo '~ LOCAL ~'
+  theme_header 'LOCAL' $color_local
   echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config        : $config_dir"
   echo "DB            : $local_db_name"
@@ -739,13 +787,13 @@ function show_info() {
 
   if [ "$local_role" == 'dev' ]
   then
-    echo '~ PRODUCTION ~'
+    theme_header 'PRODUCTION' $color_prod
     echo "Server        : $production_server"
     echo "DB            : $production_db_name"
     echo "Dumps         : $production_db_dir"
     echo "Files         : $production_files"
     echo
-    echo "~ STAGING ~"
+    theme_header 'STAGING' $color_staging
     echo "Server        : $staging_server"
     echo "DB            : $staging_db_name"
     echo "Dumps         : $staging_db_dir"
@@ -755,7 +803,7 @@ function show_info() {
 
   version_result='?'
   version
-  echo '~ LOFT_DEPLOY ~'
+  theme_header 'LOFT_DEPLOY'
   echo "Version       : $version_result"
 }
 
