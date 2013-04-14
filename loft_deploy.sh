@@ -77,6 +77,17 @@ mysql_check_result=false
 # holds a timestamp for backups, etc.
 now=$(date +"%Y%m%d_%H%M")
 
+# theme color definitions
+color_red=1
+color_green=2
+color_yellow=3
+color_blue=4
+color_magenta=5
+color_cyan=6
+color_white=7
+color_staging=$color_green
+color_local=$color_yellow
+color_prod=$color_red
 
 ##
  # Initialize a new project
@@ -139,7 +150,7 @@ function load_config() {
  # Recursive search for file in parent dirs
  #
 function _upsearch () {
-  test / == "$PWD" && echo && echo "NO CONFIG FILE FOUND!" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
+  test / == "$PWD" && echo && echo "`tput setaf 1`NO CONFIG FILE FOUND!`tput op`" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
 }
 
 ##
@@ -179,7 +190,7 @@ function reset_files() {
   then
     end "Please fetch_files first"
   fi
-  confirm 'Are you sure you want to OVERWRITE LOCAL files'
+  confirm "Are you sure you want to `tput setaf 3`OVERWRITE LOCAL FILES`tput op`"
   echo 'Previewing...'
   rsync -av $source/ $local_files/ --delete --dry-run
   confirm 'That was a preview... do it for real?'
@@ -227,7 +238,7 @@ function reset_db() {
   echo
   echo "End result: Your local files directory will match the fetched prod db."
 
-  confirm 'Are you sure you want to OVERWRITE YOUR LOCAL DB with the production db'
+  confirm "Are you sure you want to `tput setaf 3`OVERWRITE YOUR LOCAL DB`tput op` with the production db"
 
   file=$config_dir/db/fetched.sql
   if [ ! -f $file ]
@@ -249,11 +260,11 @@ function reset_db() {
 function push_files() {
   if [ ! "$staging_files" ]
   then
-    end "You cannot push your files unless you define a staging environment."
+    end "`tput setaf 1`You cannot push your files unless you define a staging environment.`tput op`"
   fi
   if [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]
   then
-    end "BAD CONFIG"
+    end "`tput setaf 1`BAD CONFIG`tput op`"
   fi
 
   echo "This process will push your local files to your staging server, removing any"
@@ -354,7 +365,7 @@ function import_db() {
   then
     end "$file not found."
   fi
-  confirm "You are about to OVERWRITE YOUR LOCAL DATABASE, are you sure"
+  confirm "You are about to `tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tput op`, are you sure"
   echo "It's advisable to empty the database first."
   _drop_tables
   echo "Importing $current_db_dir$1 to $local_db_host $local_db_name database..."
@@ -366,7 +377,7 @@ function import_db() {
  #
 function _drop_tables() {
   confirm_result=false;
-  confirm "Should we DUMP ALL TABLES (empty database) from $local_db_host $local_db_name, first" noend
+  confirm "Should we `tput setaf 3`DUMP ALL TABLES (empty database)`tput op` from $local_db_host $local_db_name, first" noend
   if [ $confirm_result == false ]
   then
     return
@@ -424,142 +435,150 @@ function confirm() {
 }
 
 ##
+ # Theme a help topic output
+ #
+ # @param string $1
+ #   Access check arg
+ # @param string $2
+#    The destination; expecting local or remote
+ # @param string $3
+ #   The help description
+ #
+ # @return NULL
+ #
+function theme_help_topic() {
+  indent='    ';
+  access=false
+  _access_check $1
+  if [ "$access" == true ]
+  then
+    left="<<<"
+    right=">>>"
+    case $2 in
+        'l')
+          color=$color_local
+          icon="`tput setaf $color_local`local`tput op`"
+          icon='';;
+
+        'pl')
+          color=$color_prod
+          icon="`tput setaf $color_prod`local $left`tput op` prod";;
+        'pld')
+          color=$color_prod
+          icon="`tput setaf $color_prod`local db $left`tput op` prod db";;
+        'plf')
+          color=$color_prod
+          icon="`tput setaf $color_prod`local files $left`tput op` prod files";;
+
+        #'lp')
+        #  color=3
+        #  icon="`tput setaf 3`local $right`tput op` prod";;
+        #'lpd')
+        #  icon="`tput setaf 3`local db $right`tput op` prod db";;
+        #'lpf')
+        #  icon="`tput setaf 3`local files $right`tput op` prod files";;
+
+        'sl')
+          icon="`tput setaf 3`local $left`tput op` staging";;
+        'sld')
+          icon="`tput setaf 3`local db$left `tput op` staging db";;
+        'slf')
+          icon="`tput setaf 3`local files$left `tput op` staging files";;
+
+        'lst')
+          color=$color_staging
+          icon="local `tput setaf $color_staging`$right staging`tput op`";;
+        'lsd')
+          color=$color_staging
+          icon="local db `tput setaf $color_staging`$right staging db`tput op`";;
+        'lsf')
+          color=$color_staging
+          icon="local files `tput setaf $color_staging`$right staging files`tput op`";;
+    esac
+
+    echo "`tput setaf $color`$1`tput op`"
+    i=0
+    for line in "$@"
+    do
+      if [ $i -gt 1 ]
+      then
+        echo "$indent$line"
+        #if [ "$icon" ]
+        #then
+        #  echo "$indent[ $icon ]"
+        #fi
+      fi
+      i+=1
+    done
+  fi
+}
+
+##
+ # Theme a header
+ #
+ # @param string $1
+ #   Header text
+ # @param int $2
+ #   Color
+ #
+ # @return NULL
+ #   Sets the value of global $theme_header_return
+ #
+function theme_header() {
+
+  if [ $# -eq 1 ]
+  then
+    color=7
+  else
+    color=$2
+  fi
+  echo
+  echo "`tput setaf $color`~~$1~~`tput op`"
+}
+
+
+##
  # Display help for this script
  #
 function show_help() {
   clear
-  echo "~ $local_role COMMANDS ~" | tr "[:lower:]" "[:upper:]"
-  access=false
-  _access_check fetch
-  if [ "$access" == true ]
+
+  title=$(echo "Commands for a $local_role Environment" | tr "[:lower:]" "[:upper:]")
+  theme_header "$title"
+
+  theme_header 'local' $color_local
+  theme_help_topic dump_db 'l' 'Dump the local db with an optional suffix' 'dump_db [suffix]'
+  theme_help_topic import_db 'l' 'Import a db dump file overwriting local' 'import_db [suffix]'
+  theme_help_topic help 'l' 'Show this help screen'
+  theme_help_topic info 'l' 'Show info'
+  theme_help_topic configtest 'l' 'Test configuration'
+  theme_help_topic ls 'l' 'List contents of db or files directories.  Flags for ls may be added.' 'ls (db|files) (ls flags)'
+  theme_help_topic pass 'l' 'Display the production or staging server password' 'pass (prod|staging)'
+
+  if [ "$local_role" != 'prod' ]
   then
-    echo 'fetch'
-    echo '    A fetch all shortcut'
-    echo '    LOCAL <--- PRODUCTION'
-  fi
-  access=false
-  _access_check fetch_db
-  if [ "$access" == true ]
-  then
-    echo 'fetch_db'
-    echo '    Pull production db but do not import to local'
-    echo '    LOCAL DB <--- PRODUCTION DB'
-  fi
-  access=false
-  _access_check fetch_files
-  if [ "$access" == true ]
-  then
-    echo 'fetch_files'
-    echo '    Fetch production files to local, but do not overwrite local'
-    echo '    LOCAL FILES <--- PRODUCTION FILES'
-  fi
-  access=false
-  _access_check reset
-  if [ "$access" == true ]
-  then
-    echo 'reset'
-    echo '    A reset all shortcut (uses previously fetched data)'
-    echo '    LOCAL <--- PRODUCTION'
-  fi
-  access=false
-  _access_check reset_db
-  if [ "$access" == true ]
-  then
-    echo 'reset_db'
-    echo '    Overwrite local db with previously fetched production db'
-    echo '    LOCAL DB <--- PRODUCTION DB'
-  fi
-  access=false
-  _access_check reset_files
-  if [ "$access" == true ]
-  then
-    echo 'reset_files'
-    echo '    Replace local files with previously fetched production files'
-    echo '    LOCAL FILES <--- PRODUCTION FILES'
-  fi
-  access=false
-  _access_check pull
-  if [ "$access" == true ]
-  then
-    echo 'pull'
-    echo '    A fetch and reset all shortcut'
-    echo '    LOCAL <--- PRODUCTION'
-  fi
-  access=false
-  _access_check pull_db
-  if [ "$access" == true ]
-  then
-    echo 'pull_db'
-    echo '    A fetch and reset database shortcut'
-    echo '    LOCAL DB <--- PRODUCTION DB'
-  fi
-  access=false
-  _access_check pull_files
-  if [ "$access" == true ]
-  then
-    echo 'pull_files'
-    echo '    Fetch and reset files shortcut'
-    echo '    LOCAL FILES <--- PRODUCTION FILES'
-  fi
-  access=false
-  _access_check push
-  if [ "$access" == true ]
-  then
-    echo 'push'
-    echo '    A push all shortcut'
-    echo '    LOCAL ---> STAGING'
-  fi
-  access=false
-  _access_check push_db
-  if [ "$access" == true ]
-  then
-    echo 'push_db'
-    echo '    Dump local db and push it to staging for manual import'
-    echo '    LOCAL DB ---> STAGING DB'
-  fi
-  access=false
-  _access_check push_files
-  if [ "$access" == true ]
-  then
-    echo 'push_files'
-    echo '    Push local files to staging, overwriting staging files'
-    echo '    LOCAL FILES ---> STAGING FILES'
-  fi
-  access=false
-  _access_check dump_db
-  if [ "$access" == true ]
-  then
-    echo 'dump_db [suffix]'
-    echo '    Dump the local db with an optional suffix'
-    echo '    LOCAL DB ---> ???'
-  fi
-  access=false
-  _access_check import_db
-  if [ "$access" == true ]
-  then
-    echo 'import_db [suffix]'
-    echo '    Import a db dump file overwriting local'
-    echo '    LOCAL DB <--- ???'
+    theme_header 'from prod' $color_prod
   fi
 
-  echo
-  echo '~ HELPER COMMANDS ~'
-  echo 'help'
-  echo '    Show this help screen'
-  echo 'info'
-  echo '    Show info'
-  echo 'configtest'
-  echo '    Test configuration'
-  echo 'ls (db|files) (ls flags)'
-  echo '    List contents of db or files directories.  Flags for ls may be added.'
+  theme_help_topic fetch 'pl' 'A fetch all shortcut'
+  theme_help_topic fetch_db 'pld' 'Pull production db but do not import to local'
+  theme_help_topic fetch_files 'plf' 'Fetch production files to local, but do not overwrite local'
+  theme_help_topic reset 'pl' 'A reset all shortcut (uses previously fetched data)'
+  theme_help_topic reset_db 'pld' 'Overwrite local db with previously fetched production db'
+  theme_help_topic reset_files 'plf' 'Replace local files with previously fetched production files'
+  theme_help_topic pull 'pl' 'A fetch and reset all shortcut'
+  theme_help_topic pull_db 'pld' 'A fetch and reset database shortcut'
+  theme_help_topic pull_files 'plf' 'Fetch and reset files shortcut'
 
-  access=false
-  _access_check import_db
-  if [ "$access" == true ]
+  if [ "$local_role" != 'staging' ]
   then
-    echo 'pass (prod|staging)'
-    echo '    Display the production or staging server password'
+    theme_header 'to staging' $color_staging
   fi
+
+  theme_help_topic push 'lst' 'A push all shortcut'
+  theme_help_topic push_db 'lsd' 'Dump local db and push it to staging for manual import'
+  theme_help_topic push_files 'lsf' 'Push local files to staging, overwriting staging files'
+
 }
 
 ##
@@ -637,6 +656,21 @@ function configtest() {
     warning 'Your local files directory and production files directory should not be the same'
   fi
 
+  # Test for the presence of the .htaccess file in the .loft_config dir
+  if [ ! -f  "$config_dir/.htaccess" ]
+  then
+    configtest_return=false
+    warning "Missing .htaccess in $config_dir; if web accessible, your data is at risk!" "echo 'deny from all' > $config_dir/.htaccess"
+  fi
+
+  #Test to make sure the .htaccess contains deny from all
+  contents=$(grep 'deny from all' $config_dir/.htaccess)
+  if [ ! "$contents" ]
+  then
+    configtest_return=false
+    warning "$config_dir/.htaccess should contain the 'deny from all' directive; your data may be at risk!"
+  fi
+
   # Test for prod server password in prod environments
   if ([ "$local_role" == 'prod' ] && [ "$production_pass" ]) || ([ "$local_role" == 'staging' ] && [ "$staging_pass" ])
   then
@@ -671,6 +705,34 @@ function configtest() {
     warning "production_root: Please define the production environment's root directory "
   fi
 
+  # Connection test for prod
+  if [ "$production_server" ] && ! ssh -q $production_server exit
+  then
+    configtest_return=false
+    warning "Can't connect to production server."
+  fi
+
+  # Connection test for staging
+  if [ "$staging_server" ] && ! ssh -q $staging_server exit
+  then
+    configtest_return=false
+    warning "Can't connect to staging server."
+  fi
+
+  # Connection test to production/config test for production
+  if [ "$production_root" ] && ! ssh $production_server "[ -f '${production_root}/.loft_deploy/config' ]"
+  then
+    configtest_return=false
+    warning "production_root: ${production_root}/.loft_deploy/config does not exist"
+  fi
+
+  # Connection test to staging/config test for staging
+  if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_root}/.loft_deploy/config' ]"
+  then
+    configtest_return=false
+    warning "staging_root: ${staging_root}/.loft_deploy/config does not exist"
+  fi
+
   # Test for db access
   mysql_check_result=false
   mysql_check $local_db_user $local_db_pass $local_db_name $local_db_host
@@ -686,9 +748,9 @@ function configtest() {
   # @todo test local and remote paths match
   if [ "$configtest_return" == true ]
   then
-    echo 'All tests passed.'
+    echo "`tput setaf $color_green`All tests passed.`tput op`"
   else
-    echo 'Some tests failed; see earlier warnings!'
+    echo "`tput setaf $color_red`Some tests failed.`tput op`"
   fi
 
 }
@@ -702,7 +764,7 @@ function show_info() {
   print_header
 
   #echo "Configuration..."
-  echo '~ LOCAL ~'
+  theme_header 'LOCAL' $color_local
   echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config        : $config_dir"
   echo "DB            : $local_db_name"
@@ -725,13 +787,13 @@ function show_info() {
 
   if [ "$local_role" == 'dev' ]
   then
-    echo '~ PRODUCTION ~'
+    theme_header 'PRODUCTION' $color_prod
     echo "Server        : $production_server"
     echo "DB            : $production_db_name"
     echo "Dumps         : $production_db_dir"
     echo "Files         : $production_files"
     echo
-    echo "~ STAGING ~"
+    theme_header 'STAGING' $color_staging
     echo "Server        : $staging_server"
     echo "DB            : $staging_db_name"
     echo "Dumps         : $staging_db_dir"
@@ -741,16 +803,37 @@ function show_info() {
 
   version_result='?'
   version
-  echo '~ LOFT_DEPLOY ~'
+  theme_header 'LOFT_DEPLOY'
   echo "Version       : $version_result"
 }
 
 function warning() {
   echo
-  echo "!!!!!!WARNING!!!!!!"
-  echo $1
+  #echo "!!!!!!WARNING!!!!!!"
+  echo "`tput setaf 3`$1`tput op`"
+  if [ "$2" ]
+  then
+    echo_fix "$2"
+  fi
   confirm 'Disregard warning'
 }
+
+##
+ # Output the suggested fix
+ #
+ # @param string $1
+ #   The string of text to output
+ #
+ # @return NULL
+ #   Sets the value of global $echo_fix_return
+ #
+function echo_fix() {
+  echo 'To fix this try:'
+  echo "`tput setaf 2`$1`tput op`"
+  echo
+}
+
+
 ##
  # End execution with a message
  #
@@ -818,7 +901,7 @@ then
   _access_check $op
   if [ "$access" == false ]
   then
-    echo 'ACCESS DENIED!'
+    echo "`tput setaf 1`ACCESS DENIED!`tput op`"
     end "$local_role sites may not invoke: loft_deploy $op"
   else
     init $2
@@ -846,7 +929,7 @@ access=false
 _access_check $op
 if [ "$access" == false ]
 then
-  echo 'ACCESS DENIED!'
+  echo "`tput setaf 1`ACCESS DENIED!`tput op`"
   end "$local_role sites may not invoke: loft_deploy $op"
 fi
 
@@ -976,10 +1059,10 @@ case $op in
   'pass')
     if [ "$2" == 'prod' ]
     then
-      complete "Production Password: $production_pass"
+      complete "Production Password: `tput setaf 2`$production_pass`tput op`"
     elif [ "$2" == 'staging' ]
     then
-      complete "Staging Password: $staging_pass"
+      complete "Staging Password: `tput setaf 2`$staging_pass`tput op`"
     fi
     end
     ;;
