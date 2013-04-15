@@ -56,8 +56,31 @@
 # @{
 #
 
+##
+ # Bootstrap
+ #
+declare -a args=()
+declare -a flags=()
+declare -a params=()
+for arg in "$@"
+do
+  if [[ "$arg" =~ ^--(.*) ]]
+  then
+    params=("${params[@]}" "${BASH_REMATCH[1]}")
+  elif [[ "$arg" =~ ^-(.*) ]]
+  then
+    flags=("${flags[@]}" "${BASH_REMATCH[1]}")
+  else
+    args=("${args[@]}" "$arg")
+  fi
+done
+##
+ # End Bootstrap
+ #
+
+
 # The user's operation
-op=$1
+op=${args[0]}
 
 # Holds the starting directory
 start_dir=${PWD}
@@ -88,6 +111,84 @@ color_white=7
 color_staging=$color_green
 color_local=$color_yellow
 color_prod=$color_red
+
+##
+ # Function Declarations
+ #
+
+##
+ # Test for a flag
+ #
+ # @code
+ # if has_flag s; then
+ # @endcode
+ #
+ # @param string $1
+ #   The flag name to test for, omit the -
+ #
+ # @return int
+ #   0: it has the flag
+ #   1: it does not have the flag
+ #
+function has_flag() {
+  for var in "${flags[@]}"
+  do
+    if [[ "$var" =~ $1 ]]
+    then
+      return 0
+    fi
+  done
+  return 1
+}
+
+##
+ # Test for a parameter
+ #
+ # @code
+ # if has_param code; then
+ # @endcode
+ #
+ # @param string $1
+ #   The param name to test for, omit the -
+ #
+ # @return int
+ #   0: it has the param
+ #   1: it does not have the param
+ #
+function has_param() {
+  for var in "${params[@]}"
+  do
+    if [[ "$var" =~ $1 ]]
+    then
+      return 0
+    fi
+  done
+  return 1
+}
+
+##
+ # Extract the value of a script param e.g. (--param=value)
+ #
+ # @code
+ # value=$(get_param try)
+ # @endcode
+ #
+ # @param string $1
+ #   The name of the param
+ #
+ # @return NULL
+ #   Sets the value of global $get_param_return
+ #
+function get_param() {
+  for var in "${params[@]}"
+  do
+    if [[ "$var" =~ ^(.*)\=(.*) ]] && [ ${BASH_REMATCH[1]} == $1 ]
+    then
+      echo ${BASH_REMATCH[2]}
+      return
+    fi
+  done
+}
 
 ##
  # Initialize a new project
@@ -209,7 +310,7 @@ function fetch_db() {
 
   echo "Exporting production db..."
   prod_suffix='fetch_db'
-  ssh $production_server "cd $production_root && . $production_script dump_db $prod_suffix"
+  ssh $production_server "cd $production_root && . $production_script export $prod_suffix"
   wait
 
   echo "Downloading from production..."
@@ -247,10 +348,10 @@ function reset_db() {
   fi
 
   #backup local
-  dump_db reset_backup_$now
+  export reset_backup_$now
 
   echo "Importing $local_file"
-  import_db $file
+  import $file
 }
 
 
@@ -293,7 +394,7 @@ function push_db() {
 
   # @todo make this push it and import into staging
   suffix='push_db'
-  dump_db $suffix
+  export $suffix
   echo 'Pushing db to staging...'
   scp $current_db_dir$current_db_filename $staging_server://$staging_db_dir/$current_db_filename
 
@@ -326,7 +427,7 @@ function _current_db_paths() {
  # @param string $1
  #   Anything to add as a suffix
  #
-function dump_db() {
+function export() {
   _current_db_paths $1
 
   if [ -f "$current_db_dir$current_db_filename" ]
@@ -359,7 +460,7 @@ function dump_db() {
  #   If this is not a path to a file, it will be assumed a filename in
  #   $local_db_dir
  #
-function import_db() {
+function import() {
   _current_db_paths $1
   if file=$1 && [ ! -f $1 ] && file=$current_db_dir$current_db_filename && [ ! -f $file ]
   then
@@ -525,14 +626,12 @@ function theme_help_topic() {
  #   Sets the value of global $theme_header_return
  #
 function theme_header() {
-
   if [ $# -eq 1 ]
   then
     color=7
   else
     color=$2
   fi
-  echo
   echo "`tput setaf $color`~~$1~~`tput op`"
 }
 
@@ -547,37 +646,29 @@ function show_help() {
   theme_header "$title"
 
   theme_header 'local' $color_local
-  theme_help_topic dump_db 'l' 'Dump the local db with an optional suffix' 'dump_db [suffix]'
-  theme_help_topic import_db 'l' 'Import a db dump file overwriting local' 'import_db [suffix]'
+  theme_help_topic export 'l' 'Dump the local db with an optional suffix' 'export [suffix]'
+  theme_help_topic import 'l' 'Import a db dump file overwriting local' 'import [suffix]'
   theme_help_topic help 'l' 'Show this help screen'
   theme_help_topic info 'l' 'Show info'
   theme_help_topic configtest 'l' 'Test configuration'
-  theme_help_topic ls 'l' 'List contents of db or files directories.  Flags for ls may be added.' 'ls (db|files) (ls flags)'
-  theme_help_topic pass 'l' 'Display the production or staging server password' 'pass (prod|staging)'
+  theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. ld -f ls -la'
+  theme_help_topic pass 'l' 'Display password(s)' '--prod Production' '--staging Staging' '--all All'
 
   if [ "$local_role" != 'prod' ]
   then
     theme_header 'from prod' $color_prod
   fi
 
-  theme_help_topic fetch 'pl' 'A fetch all shortcut'
-  theme_help_topic fetch_db 'pld' 'Pull production db but do not import to local'
-  theme_help_topic fetch_files 'plf' 'Fetch production files to local, but do not overwrite local'
-  theme_help_topic reset 'pl' 'A reset all shortcut (uses previously fetched data)'
-  theme_help_topic reset_db 'pld' 'Overwrite local db with previously fetched production db'
-  theme_help_topic reset_files 'plf' 'Replace local files with previously fetched production files'
-  theme_help_topic pull 'pl' 'A fetch and reset all shortcut'
-  theme_help_topic pull_db 'pld' 'A fetch and reset database shortcut'
-  theme_help_topic pull_files 'plf' 'Fetch and reset files shortcut'
+  theme_help_topic fetch 'pl' 'Fetch production assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f' '-d to only fetch database'
+  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database'
+  theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database'
 
   if [ "$local_role" != 'staging' ]
   then
     theme_header 'to staging' $color_staging
   fi
 
-  theme_help_topic push 'lst' 'A push all shortcut'
-  theme_help_topic push_db 'lsd' 'Dump local db and push it to staging for manual import'
-  theme_help_topic push_files 'lsf' 'Push local files to staging, overwriting staging files'
+  theme_help_topic push 'lst' 'A push all shortcut' '-f files only' '-d database only'
 
 }
 
@@ -755,6 +846,24 @@ function configtest() {
 
 }
 
+##
+ # Show the password information
+ #
+ # @param string $1
+ #   description of param
+ #
+ # @return NULL
+ #   Sets the value of global $func_name_return
+ #
+function show_pass() {
+  if has_param all || has_param prod || [ ${#params[@]} -eq 0 ]; then
+    complete "Production Password: `tput setaf 2`$production_pass`tput op`"
+  fi
+  if has_param all || has_param staging; then
+    complete "Staging Password: `tput setaf 2`$staging_pass`tput op`"
+  fi
+}
+
 
 ##
  # Display configuation info
@@ -866,14 +975,14 @@ function _access_check() {
   if [ "$local_role" == 'prod' ]
   then
     case $1 in
-      'dump_db')
+      'export')
         access=true
         ;;
     esac
   elif [ "$local_role" == 'staging' ]
   then
     case $1 in
-      'import_db')
+      'import')
         access=true
         ;;
       'pass')
@@ -884,6 +993,23 @@ function _access_check() {
   then
     access=true
   fi
+}
+
+##
+ # Do the directory listing
+ #
+function do_ls() {
+  complete "`tput setaf $color_green`$1`tput op`"
+  declare -a ls_flags=()
+  for flag in "${flags[@]}"
+  do
+    if [ $flag != 'd' ] && [ $flag != 'f' ]
+    then
+      ls_flags=("${ls_flags[@]}" "$flag")
+    fi
+  done
+  ls -$ls_flags $1
+  complete
 }
 
 ##
@@ -937,6 +1063,7 @@ fi
  # Call the correct handler
  #
 print_header
+
 case $op in
   'init')
     init $2
@@ -944,21 +1071,12 @@ case $op in
     end
     ;;
   'ls')
-    case $2 in
-      'db')
-        dir="$local_db_dir"
-        ;;
-      'files')
-        dir="$local_files"
-        ;;
-    esac
-    echo $dir
-    if [ "$3" ]
-    then
-      flags=$3
+    if has_flag d; then
+      do_ls "$local_db_dir"
     fi
-    ls $dir
-    complete
+    if has_flag f; then
+      do_ls "$local_files"
+    fi
     end
     ;;
   'configtest')
@@ -966,83 +1084,59 @@ case $op in
     complete
     end
     ;;
-  'dump_db')
-    dump_db $2
+  'export')
+    export $2
     complete
     end
     ;;
   'pull')
-    fetch_db
-    reset_db
-    fetch_files
-    reset_files
-    complete 'Database & Files fetched and reset'
-    end
-    ;;
-  'pull_files')
-    fetch_files
-    reset_files
-    complete 'Files fetched and reset'
-    end
-    ;;
-  'pull_db')
-    fetch_db
-    reset_db
-    complete 'Database fetched and reset'
+    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+      fetch_db
+      reset_db
+      echo 'Database fetched and reset'
+    fi
+    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+      fetch_files
+      reset_files
+      echo 'Files fetched and reset'
+    fi
     end
     ;;
   'push')
-    push_db
-    push_files
-    complete 'Database & Files pushed to Staging'
-    end
-    ;;
-  'push_files')
-    push_files
-    complete
-    end
-    ;;
-  'push_db')
-    push_db
-    complete
-    end
-    ;;
-  'fetch_files')
-    fetch_files
-    complete "Production files have been fetched; use reset_files when ready."
-    end
-    ;;
-  'reset_files')
-    reset_files
-    complete 'Local files have been reset with production.'
-    end
-    ;;
-  'fetch_db')
-    fetch_db
-    complete 'Production database has been fetched; use reset_db when ready.'
-    end
-    ;;
-  'reset_db')
-    reset_db
-    complete 'Local database has been reset with production.'
+    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+      push_db
+      complete 'Database pushed to staging'
+    fi
+    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+      push_files
+      complete 'Files pushed to staging'
+    fi
     end
     ;;
   'fetch')
-    fetch_db
-    complete
-    fetch_files
-    complete
+    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+      fetch_db
+      complete "Production files have been fetched; use reset_files when ready."
+    fi
+    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+      fetch_files
+      complete 'Production database has been fetched; use reset_db when ready.'
+    fi
     end
     ;;
   'reset')
-    reset_db
-    complete
-    reset_files
-    complete
+    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+      reset_db
+      complete 'Local database has been reset with production.'
+    fi
+    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+      reset_files
+      complete 'Local files have been reset with production.'
+    fi
     end
     ;;
-  'import_db')
-    import_db $2
+  'import')
+    import $2
     complete
     end
     ;;
@@ -1057,13 +1151,7 @@ case $op in
     end
     ;;
   'pass')
-    if [ "$2" == 'prod' ]
-    then
-      complete "Production Password: `tput setaf 2`$production_pass`tput op`"
-    elif [ "$2" == 'staging' ]
-    then
-      complete "Staging Password: `tput setaf 2`$staging_pass`tput op`"
-    fi
+    show_pass
     end
     ;;
 esac
