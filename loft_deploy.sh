@@ -396,7 +396,7 @@ function push_db() {
   suffix='push_db'
   export_db $suffix
   echo 'Pushing db to staging...'
-  scp $current_db_dir$current_db_filename $staging_server://$staging_db_dir/$current_db_filename
+  scp "$current_db_dir$current_db_filename" "$staging_server://$staging_db_dir/$current_db_filename"
 
   complete "Push db complete; please test your staging site."
 }
@@ -411,14 +411,14 @@ function _current_db_paths() {
   current_db_dir=''
   if [ "$local_db_dir" ]
   then
-    current_db_dir=$local_db_dir/
+    current_db_dir="$local_db_dir/"
   fi
   local _suffix=''
   if [ "$1" ]
   then
     _suffix="-$1"
   fi
-  current_db_filename=$local_db_name$_suffix.sql
+  current_db_filename="$local_db_name$_suffix.sql"
 }
 
 ##
