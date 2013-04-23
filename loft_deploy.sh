@@ -309,21 +309,21 @@ function fetch_db() {
   fi
 
   echo "Exporting production db..."
-  prod_suffix='fetch_db'
-  ssh $production_server "cd $production_root && . $production_script export $prod_suffix"
+  local _prod_suffix='fetch_db'
+  ssh $production_server "cd $production_root && . $production_script export $_prod_suffix"
   wait
 
   echo "Downloading from production..."
-  remote_file="$production_db_dir/${production_db_name}-$prod_suffix.sql"
-  local_file=$config_dir/db/fetched.sql
-  scp $production_server://$remote_file $local_file
+  local _remote_file="$production_db_dir/${production_db_name}-$_prod_suffix.sql"
+  local _local_file=$config_dir/db/fetched.sql
+  scp "$production_server://$_remote_file" "$_local_file"
 
   # record the fetch date
   echo $now > $config_dir/cached_db
 
   # delete it from remote
   echo "Deleting the production copy..."
-  ssh $production_server "rm $remote_file"
+  ssh $production_server "rm $_remote_file"
 }
 
 ##
@@ -341,17 +341,17 @@ function reset_db() {
 
   confirm "Are you sure you want to `tput setaf 3`OVERWRITE YOUR LOCAL DB`tput op` with the production db"
 
-  file=$config_dir/db/fetched.sql
-  if [ ! -f $file ]
+  local _file="$config_dir/db/fetched.sql"
+  if [ ! -f "$_file" ]
   then
     end "Please fetch_db first"
   fi
 
   #backup local
-  export reset_backup_$now
+  export "reset_backup_$now"
 
-  echo "Importing $local_file"
-  import $file
+  echo "Importing $_file"
+  import "$_file"
 }
 
 
@@ -413,12 +413,12 @@ function _current_db_paths() {
   then
     current_db_dir=$local_db_dir/
   fi
-  suffix=''
+  local _suffix=''
   if [ "$1" ]
   then
-    suffix="-$1"
+    _suffix="-$1"
   fi
-  current_db_filename=$local_db_name$suffix.sql
+  current_db_filename=$local_db_name$_suffix.sql
 }
 
 ##
