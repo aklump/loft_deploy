@@ -310,7 +310,7 @@ function fetch_db() {
 
   echo "Exporting production db..."
   local _prod_suffix='fetch_db'
-  ssh $production_server "cd $production_root && . $production_script export_db $_prod_suffix"
+  ssh $production_server "cd $production_root && . $production_script export $_prod_suffix"
   wait
 
   echo "Downloading from production..."
