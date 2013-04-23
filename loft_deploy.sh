@@ -310,7 +310,7 @@ function fetch_db() {
 
   echo "Exporting production db..."
   local _prod_suffix='fetch_db'
-  ssh $production_server "cd $production_root && . $production_script export $_prod_suffix"
+  ssh $production_server "cd $production_root && . $production_script dump $_prod_suffix"
   wait
 
   echo "Downloading from production..."
@@ -348,7 +348,7 @@ function reset_db() {
   fi
 
   #backup local
-  export "reset_backup_$now"
+  dump "reset_backup_$now"
 
   echo "Importing $_file"
   import "$_file"
@@ -394,7 +394,7 @@ function push_db() {
 
   # @todo make this push it and import into staging
   suffix='push_db'
-  export $suffix
+  dump $suffix
   echo 'Pushing db to staging...'
   scp $current_db_dir$current_db_filename $staging_server://$staging_db_dir/$current_db_filename
 
@@ -427,7 +427,7 @@ function _current_db_paths() {
  # @param string $1
  #   Anything to add as a suffix
  #
-function export() {
+function dump() {
   _current_db_paths $1
 
   if [ -f "$current_db_dir$current_db_filename" ]
@@ -646,12 +646,12 @@ function show_help() {
   theme_header "$title"
 
   theme_header 'local' $color_local
-  theme_help_topic export 'l' 'Dump the local db with an optional suffix' 'export [suffix]'
+  theme_help_topic dump 'l' 'Dump the local db with an optional suffix' 'dump [suffix]'
   theme_help_topic import 'l' 'Import a db dump file overwriting local' 'import [suffix]'
   theme_help_topic help 'l' 'Show this help screen'
   theme_help_topic info 'l' 'Show info'
   theme_help_topic configtest 'l' 'Test configuration'
-  theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. ld -f ls -la'
+  theme_help_topic ls 'l' 'List the contents of various directories' '-d Database dumps' '-f Files directory' 'ls can take flags too, e.g. ld -f ls -la'
   theme_help_topic pass 'l' 'Display password(s)' '--prod Production' '--staging Staging' '--all All'
 
   if [ "$local_role" != 'prod' ]
@@ -975,7 +975,7 @@ function _access_check() {
   if [ "$local_role" == 'prod' ]
   then
     case $1 in
-      'export')
+      'dump')
         access=true
         ;;
     esac
@@ -1084,8 +1084,8 @@ case $op in
     complete
     end
     ;;
-  'export')
-    export $2
+  'dump')
+    dump $2
     complete
     end
     ;;
