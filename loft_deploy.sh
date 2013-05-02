@@ -790,7 +790,7 @@ function configtest() {
   fi
 
   # Test for a production root in dev environments
-  if [ "$local_role" == 'dev' ] && [ ! "$production_root" ]
+  if [ "$production_server" ] && [ "$local_role" == 'dev' ] && [ ! "$production_root" ]
   then
     configtest_return=false;
     warning "production_root: Please define the production environment's root directory "
@@ -1115,12 +1115,12 @@ case $op in
     ;;
   'fetch')
     if has_flag d || [ ${#flags[@]} -eq 0 ]; then
-      fetch_db
-      complete "Production files have been fetched; use reset_files when ready."
+      fetch_files
+      complete 'Production database has been fetched; use reset -d when ready.'
     fi
     if has_flag f || [ ${#flags[@]} -eq 0 ]; then
-      fetch_files
-      complete 'Production database has been fetched; use reset_db when ready.'
+      fetch_db
+      complete "Production files have been fetched; use reset -f when ready."
     fi
     end
     ;;
