@@ -1115,11 +1115,11 @@ case $op in
     ;;
   'fetch')
     if has_flag d || [ ${#flags[@]} -eq 0 ]; then
-      fetch_files
+      fetch_db
       complete 'Production database has been fetched; use reset -d when ready.'
     fi
     if has_flag f || [ ${#flags[@]} -eq 0 ]; then
-      fetch_db
+      fetch_files
       complete "Production files have been fetched; use reset -f when ready."
     fi
     end
