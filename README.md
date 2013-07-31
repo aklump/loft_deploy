@@ -47,23 +47,22 @@ files, which are NOT in source control. If these assumptions are not true then t
 
 * How to install the package on each of your servers...
 
-      cd ~
-      mkdir bin
-      cd bin
-      git clone git://github.com/aklump/loft_deploy.git loft_deploy_files
-      ln -s loft_deploy_files/loft_deploy.sh loft_deploy
-      chmod u+x loft_deploy_files/loft_deploy.sh
-
+          cd ~;
+          mkdir bin;
+          cd bin;
+          git clone git://github.com/aklump/loft_deploy.git loft_deploy_files;
+          ln -s loft_deploy_files/loft_deploy.sh loft_deploy;
+          chmod u+x loft_deploy_files/loft_deploy.sh;
 
 * Open up and modify ~/.bash_profile
 
-      alias ld="loft_deploy"
-      export PATH=$PATH:~/bin
+          alias ld="loft_deploy"
+          export PATH=$PATH:~/bin
 
 * Reload your profile and test, you should see the loft_deploy help screen
 
-      $ . ~/.bash_profile
-      $ ld
+          $ . ~/.bash_profile
+          $ ld
 
 ##Configuration
 * You must configure each environment for a given project. That is to say you must run 'loft_deploy init dev' and 'loft_deploy init prod' and maybe `loft_deploy init staging` on each of the appropriate servers.
@@ -82,7 +81,7 @@ files, which are NOT in source control. If these assumptions are not true then t
 * Once the configuration files are in place and correct, REMOVE ALL WRITE PERMISSIONS to all copies of .loft_deploy/config files.
 * Finally, test each environment before first use. You may run 'configtest' at any time in the future as well.
 
-      $ loft_deploy configtest
+          $ loft_deploy configtest
 
 
 ##Files:
