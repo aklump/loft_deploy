@@ -236,6 +236,11 @@ function load_config() {
     _upsearch $dir
   fi
 
+  motd=''
+  if [[ -f "$dir/motd" ]]; then
+    motd=$(cat "$dir/motd");
+  fi
+
   # these are defaults
   local_role="prod"
   local_db_host='localhost'
@@ -725,6 +730,10 @@ function version() {
  #
 function print_header() {
   echo "~ $local_title ~ $local_role ~" | tr "[:lower:]" "[:upper:]"
+  if [[ "$motd" ]]; then
+    echo
+    theme_header "$motd" 5
+  fi
   echo
 }
 

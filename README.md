@@ -27,7 +27,7 @@ Neither database, nor user files are ever pushed to production, whether from dev
 or from staging.
 
 ##Warning!!!
-**USE AT YOUR OWN RISK AS IMPROPER CONFIGURATION CAN RESULT IN DESTRUCTION OF DATABASE CONTENT AND FILES.**
+**USE AT YOUR OWN RISK AS IMPROPER CONFIGURATION CAN RESULT IN DESTRUCTION OF DATABASE CONTENT AND FILES.**/etc/motd
 
 
 ##Requirements
@@ -83,6 +83,8 @@ files, which are NOT in source control. If these assumptions are not true then t
 
           $ loft_deploy configtest
 
+##Message of the Day MOTD
+Create a file in your project, `.loft_deploy/motd`, the contents of which is echoed when you run any loft_deploy command.  This is a way to store reminders per project.
 
 ##Files:
 * You may use this when you do not have a files directory, just omit any config variables referencing `files`.
