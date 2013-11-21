@@ -732,7 +732,7 @@ function print_header() {
   echo "~ $local_title ~ $local_role ~" | tr "[:lower:]" "[:upper:]"
   if [[ "$motd" ]]; then
     echo
-    theme_header "$motd" 5
+    echo "`tput setaf 5`$motd`tput op`"
   fi
   echo
 }
