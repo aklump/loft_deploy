@@ -456,6 +456,9 @@ function export_db() {
 
   echo "Exporting database as $current_db_dir$current_db_filename..."
   mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r $current_db_dir$current_db_filename
+  if [[ -f $current_db_filename ]]; then
+    gzip $current_db_dir$current_db_filename
+  fi
 }
 
 ##
@@ -467,14 +470,19 @@ function export_db() {
  #
 function import_db() {
   _current_db_paths $1
-  if file=$1 && [ ! -f $1 ] && file=$current_db_dir$current_db_filename && [ ! -f $file ]
-  then
+  if file=$1 && [ ! -f $1 ] && file=$current_db_dir$current_db_filename && [ ! -f $file ] && file=$file.gz && [ ! -f $file ]; then
     end "$file not found."
   fi
+
   confirm "You are about to `tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tput op`, are you sure"
   echo "It's advisable to empty the database first."
   _drop_tables
-  echo "Importing $current_db_dir$1 to $local_db_host $local_db_name database..."
+  echo "Importing $file to $local_db_host $local_db_name database..."
+
+  if [[ ${file##*.} == 'gz' ]]; then
+    gunzip $file
+    file=${file%.*}
+  fi
   mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name < $file
 }
 
