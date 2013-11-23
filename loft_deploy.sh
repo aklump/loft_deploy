@@ -319,8 +319,8 @@ function fetch_db() {
   wait
 
   echo "Downloading from production..."
-  local _remote_file="$production_db_dir/${production_db_name}-$_prod_suffix.sql"
-  local _local_file=$config_dir/db/fetched.sql
+  local _remote_file="$production_db_dir/${production_db_name}-$_prod_suffix.sql.gz"
+  local _local_file="$config_dir/db/fetched.sql.gz"
   scp "$production_server://$_remote_file" "$_local_file"
 
   # record the fetch date
@@ -435,10 +435,10 @@ function _current_db_paths() {
 function export_db() {
   _current_db_paths $1
 
-  if [ -f "$current_db_dir$current_db_filename" ]
+  if file="$current_db_dir$current_db_filename" && [ -f "$current_db_dir$current_db_filename" ]
   then
     confirm_result=false
-    confirm "File $current_db_dir$current_db_filename exists, replace" noend
+    confirm "File $file exists, replace" noend
     if [ $confirm_result == false ]
     then
       return
@@ -454,11 +454,9 @@ function export_db() {
     local_db_host="localhost"
   fi
 
-  echo "Exporting database as $current_db_dir$current_db_filename..."
-  mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r $current_db_dir$current_db_filename
-  if [[ -f $current_db_filename ]]; then
-    gzip $current_db_dir$current_db_filename
-  fi
+  echo "Exporting database as $file.gz..."
+  mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r $file
+  gzip $file
 }
 
 ##
