@@ -346,7 +346,7 @@ function reset_db() {
 
   confirm "Are you sure you want to `tput setaf 3`OVERWRITE YOUR LOCAL DB`tput op` with the production db"
 
-  local _file="$config_dir/db/fetched.sql"
+  local _file="$config_dir/db/fetched.sql.gz"
   if [ ! -f "$_file" ]
   then
     end "Please fetch_db first"
@@ -401,7 +401,7 @@ function push_db() {
   suffix='push_db'
   export_db $suffix
   echo 'Pushing db to staging...'
-  scp "$current_db_dir$current_db_filename" "$staging_server://$staging_db_dir/$current_db_filename"
+  scp "$current_db_dir$current_db_filename.gz" "$staging_server://$staging_db_dir/$current_db_filename.gz"
 
   complete "Push db complete; please test your staging site."
 }
