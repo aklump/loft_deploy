@@ -560,10 +560,7 @@ function confirm() {
  #
 function theme_help_topic() {
   indent='    ';
-  access=false
-  _access_check $1
-  if [ "$access" == true ]
-  then
+  if _access_check $1; then
     left="<<<"
     right=">>>"
     case $2 in
@@ -659,6 +656,7 @@ function show_help() {
   theme_header 'local' $color_local
   theme_help_topic export 'l' 'Dump the local db with an optional suffix' 'export [suffix]'
   theme_help_topic import 'l' 'Import a db export file overwriting local' 'import [suffix]'
+  theme_help_topic 'mysql' 'l' 'Start mysql shell using local credentials'
   theme_help_topic help 'l' 'Show this help screen'
   theme_help_topic info 'l' 'Show info'
   theme_help_topic configtest 'l' 'Test configuration'
@@ -895,16 +893,10 @@ function show_info() {
   echo "DB User       : $local_db_user"
   echo "Dumps         : $local_db_dir"
   echo "Files         : $local_files"
-  access=false
-  _access_check 'fetch_db'
-  if [ "$access" == true ]
-  then
+  if _access_check 'fetch_db'; then
     echo "DB Fetched    : " $(cat $config_dir/cached_db)
   fi
-  access=false
-  _access_check 'fetch_files'
-  if [ "$access" == true ]
-  then
+  if _access_check 'fetch_files'; then
     echo "Files Fetched : " $(cat $config_dir/cached_files)
   fi
   echo
@@ -972,42 +964,41 @@ function end() {
 }
 
 ##
- # Sets the value of $access based on $1 op
+ # Checks access (optionally for $1)
  #
  # @param string $1
  #   An op to test for against current config
  #
- # @return bool (sets value of global $access)
+ # @return 0|-1
  #
 function _access_check() {
+
   # List out helper commands, with universal access regardless of local_role
-  if [ "$1" == '' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'configtest' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ]
-  then
-    access=true
-    return
+  if [ "$1" == '' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'configtest' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ] || [ "$1" == 'mysql' ]; then
+    return 0
   fi
+
   # For each role, list the ops they MAY execute
-  if [ "$local_role" == 'prod' ]
-  then
+  if [ "$local_role" == 'prod' ]; then
     case $1 in
       'export')
-        access=true
+        return 0
         ;;
     esac
-  elif [ "$local_role" == 'staging' ]
-  then
+  elif [ "$local_role" == 'staging' ]; then
     case $1 in
       'import')
-        access=true
+        return 0
         ;;
       'pass')
-        access=true
+        return 0
         ;;
     esac
-  elif [ "$local_role" == 'dev' ]
-  then
-    access=true
+  elif [ "$local_role" == 'dev' ]; then
+    return 0
   fi
+
+  return -1
 }
 
 ##
@@ -1038,14 +1029,11 @@ function do_ls() {
 # init has to come before configuration loading
 if [ "$1" == 'init' ]
 then
-  access=false
-  _access_check $op
-  if [ "$access" == false ]
-  then
+  if _access_check $op; then
+    init $2
+  else
     echo "`tput setaf 1`ACCESS DENIED!`tput op`"
     end "$local_role sites may not invoke: loft_deploy $op"
-  else
-    init $2
   fi
 fi
 
@@ -1066,10 +1054,7 @@ fi
 ##
  # Access Check
  #
-access=false
-_access_check $op
-if [ "$access" == false ]
-then
+if ! _access_check $op; then
   echo "`tput setaf 1`ACCESS DENIED!`tput op`"
   end "$local_role sites may not invoke: loft_deploy $op"
 fi
@@ -1083,6 +1068,11 @@ case $op in
   'init')
     init $2
     complete
+    end
+    ;;
+  'mysql')
+    mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name
+    complete 'Your mysql session has ended.'
     end
     ;;
   'ls')
