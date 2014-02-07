@@ -969,8 +969,6 @@ function end() {
  # @param string $1
  #   An op to test for against current config
  #
- # @return 0|-1
- #
 function _access_check() {
 
   # List out helper commands, with universal access regardless of local_role
@@ -998,8 +996,10 @@ function _access_check() {
     return 0
   fi
 
-  return -1
+  return 1
 }
+
+
 
 ##
  # Do the directory listing
