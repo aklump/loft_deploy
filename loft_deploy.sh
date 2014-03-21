@@ -313,6 +313,9 @@ function fetch_db() {
     end "Bad db config"
   fi
 
+  # Cleanup local
+  rm -r $config_dir/db/fetched.sql*
+
   echo "Exporting production db..."
   local _prod_suffix='fetch_db'
   ssh $production_server "cd $production_root && . $production_script export $_prod_suffix"
@@ -346,9 +349,10 @@ function reset_db() {
 
   confirm "Are you sure you want to `tput setaf 3`OVERWRITE YOUR LOCAL DB`tput op` with the production db"
 
-  local _file="$config_dir/db/fetched.sql.gz"
-  if [ ! -f "$_file" ]
-  then
+  local _file=($(find $config_dir/db -name fetched.sql*))
+  if [[ ${#_file[@]} -gt 1 ]]; then
+    end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/db"
+  elif [[ ${#_file[@]} -eq 0 ]]; then
     end "Please fetch_db first"
   fi
 
