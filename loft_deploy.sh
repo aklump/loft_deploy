@@ -78,11 +78,6 @@ done
  # End Bootstrap
  #
 
-ld_mysql=$(which mysql)
-ld_mysqldump=$(which mysqldump)
-ld_gzip=$(which gzip)
-ld_gunzip=$(which gunzip)
-
 # The user's operation
 op=${args[0]}
 
@@ -252,6 +247,12 @@ function load_config() {
   production_pass=''
   production_root=''
   staging_pass=''
+
+  ld_mysql=$(which mysql)
+  ld_mysqldump=$(which mysqldump)
+  ld_gzip=$(which gzip)
+  ld_gunzip=$(which gunzip)
+
   source $dir/config
   cd $start_dir
 }
@@ -441,7 +442,7 @@ function _current_db_paths() {
  #   Anything to add as a suffix
  #
 function export_db() {
-  _current_db_paths $1
+  _current_db_paths ${args[1]}
 
   file="$current_db_dir$current_db_filename"
   file_gz="$file.gz"

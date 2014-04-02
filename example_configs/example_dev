@@ -3,6 +3,10 @@
 # @file
 # Configuration file for loft_deploy for a local development environment
 #
+ld_mysql='/Applications/MAMP/Library/bin/mysql'
+ld_mysqldump='/Applications/MAMP/Library/bin/mysqldump'
+ld_gzip='/usr/bin/gzip'
+ld_gunzip='/usr/bin/gunzip'
 
 ##
  # LOCAL CONFIGURATION (For Development)
