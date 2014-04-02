@@ -78,6 +78,10 @@ done
  # End Bootstrap
  #
 
+ld_mysql=$(which mysql)
+ld_mysqldump=$(which mysqldump)
+ld_gzip=$(which gzip)
+ld_gunzip=$(which gunzip)
 
 # The user's operation
 op=${args[0]}
@@ -439,16 +443,34 @@ function _current_db_paths() {
 function export_db() {
   _current_db_paths $1
 
-  if file="$current_db_dir$current_db_filename" && [ -f "$current_db_dir$current_db_filename" ]
-  then
-    confirm_result=false
-    confirm "File $file exists, replace" noend
-    if [ $confirm_result == false ]
-    then
-      return
+  file="$current_db_dir$current_db_filename"
+  file_gz="$file.gz"
+
+  if [ -f "$file" ]; then
+    if ! has_flag f; then
+      confirm_result=false
+      confirm "File $file exists, replace" noend
+      if [ $confirm_result == false ]
+      then
+        echo "`tput setaf 1`Cancelled.`tput op`"
+        return
+      fi
     fi
-    rm $current_db_dir$current_db_filename
+    rm $file
   fi
+  if [ -f "$file_gz" ]; then
+    if ! has_flag f; then
+      confirm_result=false
+      confirm "File $file_gz exists, replace" noend
+      if [ $confirm_result == false ]
+      then
+        echo "`tput setaf 1`Cancelled.`tput op`"
+        return
+      fi
+    fi
+    rm $file_gz
+  fi
+
   if [ ! "$local_db_user" ] || [ ! "$local_db_pass" ] || [ ! "$local_db_name" ]
   then
     end "Bad config"
@@ -458,9 +480,9 @@ function export_db() {
     local_db_host="localhost"
   fi
 
-  echo "Exporting database as $file.gz..."
-  mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r $file
-  gzip $file
+  echo "Exporting database as $file_gz..."
+  $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r "$file"
+  $ld_gzip "$file"
 }
 
 ##
@@ -482,10 +504,10 @@ function import_db() {
   echo "Importing $file to $local_db_host $local_db_name database..."
 
   if [[ ${file##*.} == 'gz' ]]; then
-    gunzip $file
+    $ld_gunzip "$file"
     file=${file%.*}
   fi
-  mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name < $file
+  $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name < $file
 }
 
 ##
@@ -498,12 +520,12 @@ function _drop_tables() {
   then
     return
   fi
-  tables=$(mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
+  tables=$($ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
   echo "Dropping all tables from the $local_db_name database..."
   for t	in $tables
   do
     echo $t
-    mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e "drop table $t"
+    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e "drop table $t"
   done
   echo
 }
@@ -658,7 +680,7 @@ function show_help() {
   theme_header "$title"
 
   theme_header 'local' $color_local
-  theme_help_topic export 'l' 'Dump the local db with an optional suffix' 'export [suffix]'
+  theme_help_topic export 'l' 'Dump the local db with an optional suffix' 'export [suffix]' '-f to overwrite if exists'
   theme_help_topic import 'l' 'Import a db export file overwriting local' 'import [suffix]'
   theme_help_topic 'mysql' 'l' 'Start mysql shell using local credentials'
   theme_help_topic help 'l' 'Show this help screen'
@@ -705,7 +727,7 @@ function mysql_check() {
   db_pass=$2
   db_name=$3
   db_host=$4
-  mysql -u "${db_user}" -p"${db_pass}" -h "${db_host}" "${db_name}" -e exit 2>/dev/null
+  $ld_mysql -u "${db_user}" -p"${db_pass}" -h "${db_host}" "${db_name}" -e exit 2>/dev/null
   db_status=`echo $?`
   if [ $db_status -ne 0 ]
   then
@@ -1075,7 +1097,7 @@ case $op in
     end
     ;;
   'mysql')
-    mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name
+    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name
     complete 'Your mysql session has ended.'
     end
     ;;
