@@ -79,13 +79,13 @@ _If these assumptions are not true then this package may be less useful to you._
 
 1. Open up and modify _~/.bash_profile_ or _~/.profile_ (whichever you use).
 
-        alias ld="loft_deploy"
+        alias ldp="loft_deploy"
         export PATH=$PATH:~/bin
 
 1. Reload your profile and test, you should see the Loft Deploy help screen if installation was successful.
 
         $ . ~/.bash_profile
-        $ ld
+        $ ldp
 
 ## Configuration (of projects)
 
@@ -107,14 +107,16 @@ _If these assumptions are not true then this package may be less useful to you._
 
           $ loft_deploy configtest
 
-##Message of the Day MOTD
+## The user files component
 
-MOTD will print a reminder each time a Loft Deploy action is executed; use it to
-keep track of reminders about your project.  Here's how:
+### Excluding certain files using _files_exclude.txt_
+You may set Loft Deploy to ignore certain user files by creating a file _.loft_deploy/files_exclude.txt_.  This will be used by the rsync program as an `--exclude-from` argument.
 
-Create a file in your project, `.loft_deploy/motd`, the contents of which is
-echoed when you run any loft_deploy command.  This is a way to store reminders
-per project.
+## Message of the Day MOTD
+
+MOTD will print a reminder each time a Loft Deploy action is executed; use it to keep track of reminders about your project.  Here's how:
+
+Create a file in your project, `.loft_deploy/motd`, the contents of which is echoed when you run any loft_deploy command.  This is a way to store reminders per project.
 
 ##Usage:
 After installed and configured type: `loft_deploy help` for available commands; you may also access the help by simply typing `loft_develop`

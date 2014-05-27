@@ -229,21 +229,23 @@ function init() {
  # Load the configuration file
  #
 function load_config() {
-  dir=.loft_deploy
-  if [ ! -d "$dir" ]
-  then
-    _upsearch $dir
-  fi
+  _upsearch $(basename $config_dir)
 
   motd=''
-  if [[ -f "$dir/motd" ]]; then
-    motd=$(cat "$dir/motd");
+  if [[ -f "$config_dir/motd" ]]; then
+    motd=$(cat "$config_dir/motd");
+  fi
+
+  # Do we have a files exclude for rsync
+  if [[ -f "$config_dir/files_exclude.txt" ]]; then
+    ld_rsync_ex="--exclude-from=$config_dir/files_exclude.txt"
   fi
 
   # these are defaults
   local_role="prod"
   local_db_host='localhost'
-  production_script='~/bin/loft_deploy'
+  # production_script='~/bin/loft_deploy'
+  # staging_script='~/bin/loft_deploy'
   production_pass=''
   production_root=''
   staging_pass=''
@@ -253,7 +255,7 @@ function load_config() {
   ld_gzip=$(which gzip)
   ld_gunzip=$(which gunzip)
 
-  source $dir/config
+  source $config_dir/config
   cd $start_dir
 }
 
@@ -261,7 +263,7 @@ function load_config() {
  # Recursive search for file in parent dirs
  #
 function _upsearch () {
-  test / == "$PWD" && echo && echo "`tput setaf 1`NO CONFIG FILE FOUND!`tput op`" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
+  test / == "$PWD" && echo && echo "`tty -s && tput setaf 1`NO CONFIG FILE FOUND!`tty -s && tput op`" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
 }
 
 ##
@@ -272,8 +274,12 @@ function fetch_files() {
   then
     end "Bad config"
   fi
+
   echo "Copying files from production server..."
-  rsync -av $production_server://$production_files/ $config_dir/files/ --delete
+  if [[ "$ld_rsync_ex" ]]; then
+    echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
+  fi  
+  rsync -av $production_server://$production_files/ $config_dir/files/ --delete $ld_rsync_ex
 
   # record the fetch date
   echo $now > $config_dir/cached_files
@@ -294,18 +300,21 @@ function reset_files() {
   echo "set. You will be given a preview of what will happen first. To absolutely"
   echo "match production, consider running fetch_files first, however it is slower."
   echo
-  echo "End result: Your local files directory will match fetched production files."
+  echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched production files.`tty -s && tput op`"
 
   source=$config_dir/files
   if [ ! -d $source ]
   then
     end "Please fetch_files first"
   fi
-  confirm "Are you sure you want to `tput setaf 3`OVERWRITE LOCAL FILES`tput op`"
+  confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE LOCAL FILES`tty -s && tput op`"
   echo 'Previewing...'
-  rsync -av $source/ $local_files/ --delete --dry-run
+  if [[ "$ld_rsync_ex" ]]; then
+    echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
+  fi  
+  rsync -av $source/ $local_files/ --delete --dry-run $ld_rsync_ex
   confirm 'That was a preview... do it for real?'
-  rsync -av $source/ $local_files/ --delete
+  rsync -av $source/ $local_files/ --delete $ld_rsync_ex
 }
 
 
@@ -323,6 +332,7 @@ function fetch_db() {
 
   echo "Exporting production db..."
   local _prod_suffix='fetch_db'
+  show_switch
   ssh $production_server "cd $production_root && . $production_script export $_prod_suffix"
   wait
 
@@ -337,6 +347,7 @@ function fetch_db() {
   # delete it from remote
   echo "Deleting the production copy..."
   ssh $production_server "rm $_remote_file"
+  show_switch
 }
 
 ##
@@ -350,9 +361,9 @@ function reset_db() {
   echo "production db, first backing up your local db. To absolutely match production,"
   echo "consider running fetch_db first, however it is slower.."
   echo
-  echo "End result: Your local files directory will match the fetched prod db."
+  echo "`tty -s && tput setaf 3`End result: Your local files directory will match the fetched prod db.`tty -s && tput op`"
 
-  confirm "Are you sure you want to `tput setaf 3`OVERWRITE YOUR LOCAL DB`tput op` with the production db"
+  confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the production db"
 
   local _file=($(find $config_dir/db -name fetched.sql*))
   if [[ ${#_file[@]} -gt 1 ]]; then
@@ -375,23 +386,26 @@ function reset_db() {
 function push_files() {
   if [ ! "$staging_files" ]
   then
-    end "`tput setaf 1`You cannot push your files unless you define a staging environment.`tput op`"
+    end "`tty -s && tput setaf 1`You cannot push your files unless you define a staging environment.`tty -s && tput op`"
   fi
   if [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]
   then
-    end "`tput setaf 1`BAD CONFIG`tput op`"
+    end "`tty -s && tput setaf 1`BAD CONFIG`tty -s && tput op`"
   fi
 
   echo "This process will push your local files to your staging server, removing any"
   echo "files on staging that are not present on local. You will be given"
   echo "a preview of what will happen first."
   echo
-  echo "End result: Your staging files directory will match your local."
+  echo "`tty -s && tput setaf 3`End result: Your staging files directory will match your local.`tty -s && tput op`"
   confirm 'Are you sure you want to push local files OVERWRITING STAGING files'
   echo 'Previewing...'
-  rsync -av $local_files/ $staging_server://$staging_files/ --delete --dry-run
+  if [[ "$ld_rsync_ex" ]]; then
+    echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
+  fi  
+  rsync -av $local_files/ $staging_server://$staging_files/ --delete --dry-run $ld_rsync_ex
   confirm 'That was a preview... do it for real?'
-  rsync -av $local_files/ $staging_server://$staging_files/ --delete
+  rsync -av $local_files/ $staging_server://$staging_files/ --delete $ld_rsync_ex
 
   complete "Push files complete; please test your staging site."
 }
@@ -404,13 +418,34 @@ function push_db() {
   then
     end "You cannot push your database unless you define a staging environment."
   fi
+
+  echo "This process will push your local database to your staging server, "
+  echo "ERASING the staging database and REPLACING it with a copy from local."
+  echo
+  echo "`tty -s && tput setaf 3`End result: Your staging database will match your local.`tty -s && tput op`"
   confirm "Are you sure you want to push your local db to staging"
 
-  # @todo make this push it and import into staging
   suffix='push_db'
-  export_db $suffix
+  export_db $suffix -f
   echo 'Pushing db to staging...'
-  scp "$current_db_dir$current_db_filename.gz" "$staging_server://$staging_db_dir/$current_db_filename.gz"
+  filename="$current_db_filename.gz"
+  _remote_file="$staging_db_dir/$filename"
+  scp "$current_db_dir/$filename" "$staging_server://$_remote_file"
+
+  # Log into staging and import the database.
+  show_switch
+  ssh $staging_server "cd $staging_root && . $staging_script import $staging_db_dir/$filename"
+
+  # delete it from remote
+  echo "Deleting the db copy from production..."
+  
+  # Strip off the gz suffix
+  _remote_file=${_remote_file%.*}
+  ssh $staging_server "rm $_remote_file"
+  show_switch
+
+  # Delete our local copy
+  rm "$current_db_dir/$filename"  
 
   complete "Push db complete; please test your staging site."
 }
@@ -440,6 +475,8 @@ function _current_db_paths() {
  #
  # @param string $1
  #   Anything to add as a suffix
+ # @param string $2
+ #   If this is -f then we will just do it.
  #
 function export_db() {
   _current_db_paths ${args[1]}
@@ -447,25 +484,25 @@ function export_db() {
   file="$current_db_dir$current_db_filename"
   file_gz="$file.gz"
 
-  if [ -f "$file" ]; then
+  if [ -f "$file" ] && [ "$2" != '-f' ]; then
     if ! has_flag f; then
       confirm_result=false
       confirm "File $file exists, replace" noend
       if [ $confirm_result == false ]
       then
-        echo "`tput setaf 1`Cancelled.`tput op`"
+        echo "`tty -s && tput setaf 1`Cancelled.`tty -s && tput op`"
         return
       fi
     fi
     rm $file
   fi
-  if [ -f "$file_gz" ]; then
+  if [ -f "$file_gz" ] && [ "$2" != '-f' ]; then
     if ! has_flag f; then
       confirm_result=false
       confirm "File $file_gz exists, replace" noend
       if [ $confirm_result == false ]
       then
-        echo "`tput setaf 1`Cancelled.`tput op`"
+        echo "`tty -s && tput setaf 1`Cancelled.`tty -s && tput op`"
         return
       fi
     fi
@@ -483,7 +520,12 @@ function export_db() {
 
   echo "Exporting database as $file_gz..."
   $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r "$file"
-  $ld_gzip "$file"
+  
+  if [ "$2" == '-f' ]; then
+    $ld_gzip -f "$file"
+  else
+    $ld_gzip "$file"
+  fi
 }
 
 ##
@@ -495,11 +537,17 @@ function export_db() {
  #
 function import_db() {
   _current_db_paths $1
+
+  if [[ ! "$1" ]]; then
+    echo "`tty -s && tput setaf 1`Filename of db dump required.`tty -s && tput op`"
+    end 
+  fi
+
   if file=$1 && [ ! -f $1 ] && file=$current_db_dir$current_db_filename && [ ! -f $file ] && file=$file.gz && [ ! -f $file ]; then
     end "$file not found."
   fi
 
-  confirm "You are about to `tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tput op`, are you sure"
+  confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure"
   echo "It's advisable to empty the database first."
   _drop_tables
   echo "Importing $file to $local_db_host $local_db_name database..."
@@ -516,15 +564,13 @@ function import_db() {
  #
 function _drop_tables() {
   confirm_result=false;
-  confirm "Should we `tput setaf 3`DUMP ALL TABLES (empty database)`tput op` from $local_db_host $local_db_name, first" noend
-  if [ $confirm_result == false ]
-  then
+  confirm "Should we `tty -s && tput setaf 3`DUMP ALL TABLES (empty database)`tty -s && tput op` from $local_db_host $local_db_name, first" noend
+  if [ $confirm_result == false ]; then
     return
   fi
   tables=$($ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
   echo "Dropping all tables from the $local_db_name database..."
-  for t	in $tables
-  do
+  for t	in $tables; do
     echo $t
     $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e "drop table $t"
   done
@@ -593,46 +639,46 @@ function theme_help_topic() {
     case $2 in
         'l')
           color=$color_local
-          icon="`tput setaf $color_local`local`tput op`"
+          icon="`tty -s && tput setaf $color_local`local`tty -s && tput op`"
           icon='';;
 
         'pl')
           color=$color_prod
-          icon="`tput setaf $color_prod`local $left`tput op` prod";;
+          icon="`tty -s && tput setaf $color_prod`local $left`tty -s && tput op` prod";;
         'pld')
           color=$color_prod
-          icon="`tput setaf $color_prod`local db $left`tput op` prod db";;
+          icon="`tty -s && tput setaf $color_prod`local db $left`tty -s && tput op` prod db";;
         'plf')
           color=$color_prod
-          icon="`tput setaf $color_prod`local files $left`tput op` prod files";;
+          icon="`tty -s && tput setaf $color_prod`local files $left`tty -s && tput op` prod files";;
 
         #'lp')
         #  color=3
-        #  icon="`tput setaf 3`local $right`tput op` prod";;
+        #  icon="`tty -s && tput setaf 3`local $right`tty -s && tput op` prod";;
         #'lpd')
-        #  icon="`tput setaf 3`local db $right`tput op` prod db";;
+        #  icon="`tty -s && tput setaf 3`local db $right`tty -s && tput op` prod db";;
         #'lpf')
-        #  icon="`tput setaf 3`local files $right`tput op` prod files";;
+        #  icon="`tty -s && tput setaf 3`local files $right`tty -s && tput op` prod files";;
 
         'sl')
-          icon="`tput setaf 3`local $left`tput op` staging";;
+          icon="`tty -s && tput setaf 3`local $left`tty -s && tput op` staging";;
         'sld')
-          icon="`tput setaf 3`local db$left `tput op` staging db";;
+          icon="`tty -s && tput setaf 3`local db$left `tty -s && tput op` staging db";;
         'slf')
-          icon="`tput setaf 3`local files$left `tput op` staging files";;
+          icon="`tty -s && tput setaf 3`local files$left `tty -s && tput op` staging files";;
 
         'lst')
           color=$color_staging
-          icon="local `tput setaf $color_staging`$right staging`tput op`";;
+          icon="local `tty -s && tput setaf $color_staging`$right staging`tty -s && tput op`";;
         'lsd')
           color=$color_staging
-          icon="local db `tput setaf $color_staging`$right staging db`tput op`";;
+          icon="local db `tty -s && tput setaf $color_staging`$right staging db`tty -s && tput op`";;
         'lsf')
           color=$color_staging
-          icon="local files `tput setaf $color_staging`$right staging files`tput op`";;
+          icon="local files `tty -s && tput setaf $color_staging`$right staging files`tty -s && tput op`";;
     esac
 
-    echo "`tput setaf $color`$1`tput op`"
+    echo "`tty -s && tput setaf $color`$1`tty -s && tput op`"
     i=0
     for line in "$@"
     do
@@ -667,7 +713,13 @@ function theme_header() {
   else
     color=$2
   fi
-  echo "`tput setaf $color`~~$1~~`tput op`"
+  echo "`tty -s && tput setaf $color`~~$1~~`tty -s && tput op`"
+}
+
+function show_switch() {
+  echo "`tty -s && tput setaf 6`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`tty -s && tput op`"
+  echo "`tty -s && tput setaf 6`!!              CHANGING SERVERS                !!!`tty -s && tput op`"
+  echo "`tty -s && tput setaf 6`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`tty -s && tput op`"
 }
 
 
@@ -687,7 +739,7 @@ function show_help() {
   theme_help_topic help 'l' 'Show this help screen'
   theme_help_topic info 'l' 'Show info'
   theme_help_topic configtest 'l' 'Test configuration'
-  theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. ld -f ls -la'
+  theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. loft_deploy -f ls -la'
   theme_help_topic pass 'l' 'Display password(s)' '--prod Production' '--staging Staging' '--all All'
 
   if [ "$local_role" != 'prod' ]
@@ -763,7 +815,7 @@ function print_header() {
   echo "~ $local_title ~ $local_role ~" | tr "[:lower:]" "[:upper:]"
   if [[ "$motd" ]]; then
     echo
-    echo "`tput setaf 5`$motd`tput op`"
+    echo "`tty -s && tput setaf 5`$motd`tty -s && tput op`"
   fi
   echo
 }
@@ -850,11 +902,25 @@ function configtest() {
     warning "Can't connect to staging server."
   fi
 
+  # Test for a staging root in dev environments
+  if [ "$staging_server" ] && [ "$local_role" == 'dev' ] && [ ! "$staging_root" ]
+  then
+    configtest_return=false;
+    warning "staging_root: Please define the staging environment's root directory"
+  fi  
+
   # Connection test to production/config test for production
   if [ "$production_root" ] && ! ssh $production_server "[ -f '${production_root}/.loft_deploy/config' ]"
   then
     configtest_return=false
     warning "production_root: ${production_root}/.loft_deploy/config does not exist"
+  fi
+
+  # Connection test to production script test for production
+  if [ "$production_root" ] && ! ssh $production_server "[ -f '${production_script}' ]"
+  then
+    configtest_return=false
+    warning "production_script: ${production_script} not found. Make sure you're not using ~ in the path."
   fi
 
   # Connection test to staging/config test for staging
@@ -863,6 +929,13 @@ function configtest() {
     configtest_return=false
     warning "staging_root: ${staging_root}/.loft_deploy/config does not exist"
   fi
+
+  # Connection test to staging script test for staging
+  if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_script}' ]"
+  then
+    configtest_return=false
+    warning "staging_script: ${staging_script} not found. Make sure you're not using ~ in the path."
+  fi  
 
   # Test for db access
   mysql_check_result=false
@@ -879,9 +952,9 @@ function configtest() {
   # @todo test local and remote paths match
   if [ "$configtest_return" == true ]
   then
-    echo "`tput setaf $color_green`All tests passed.`tput op`"
+    echo "`tty -s && tput setaf $color_green`All tests passed.`tty -s && tput op`"
   else
-    echo "`tput setaf $color_red`Some tests failed.`tput op`"
+    echo "`tty -s && tput setaf $color_red`Some tests failed.`tty -s && tput op`"
   fi
 
 }
@@ -897,10 +970,10 @@ function configtest() {
  #
 function show_pass() {
   if has_param all || has_param prod || [ ${#params[@]} -eq 0 ]; then
-    complete "Production Password: `tput setaf 2`$production_pass`tput op`"
+    complete "Production Password: `tty -s && tput setaf 2`$production_pass`tty -s && tput op`"
   fi
   if has_param all || has_param staging; then
-    complete "Staging Password: `tput setaf 2`$staging_pass`tput op`"
+    complete "Staging Password: `tty -s && tput setaf 2`$staging_pass`tty -s && tput op`"
   fi
 }
 
@@ -924,6 +997,9 @@ function show_info() {
     echo "DB Fetched    : " $(cat $config_dir/cached_db)
   fi
   if _access_check 'fetch_files'; then
+    if [[ "$ld_rsync_ex" ]]; then
+      echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
+    fi    
     echo "Files Fetched : " $(cat $config_dir/cached_files)
   fi
   echo
@@ -953,7 +1029,7 @@ function show_info() {
 function warning() {
   echo
   #echo "!!!!!!WARNING!!!!!!"
-  echo "`tput setaf 3`$1`tput op`"
+  echo "`tty -s && tput setaf 3`$1`tty -s && tput op`"
   if [ "$2" ]
   then
     echo_fix "$2"
@@ -972,7 +1048,7 @@ function warning() {
  #
 function echo_fix() {
   echo 'To fix this try:'
-  echo "`tput setaf 2`$1`tput op`"
+  echo "`tty -s && tput setaf 2`$1`tty -s && tput op`"
   echo
 }
 
@@ -1032,7 +1108,7 @@ function _access_check() {
  # Do the directory listing
  #
 function do_ls() {
-  complete "`tput setaf $color_green`$1`tput op`"
+  complete "`tty -s && tput setaf $color_green`$1`tty -s && tput op`"
   declare -a ls_flags=()
   for flag in "${flags[@]}"
   do
@@ -1059,7 +1135,7 @@ then
   if _access_check $op; then
     init $2
   else
-    echo "`tput setaf 1`ACCESS DENIED!`tput op`"
+    echo "`tty -s && tput setaf 1`ACCESS DENIED!`tty -s && tput op`"
     end "$local_role sites may not invoke: loft_deploy $op"
   fi
 fi
@@ -1082,7 +1158,7 @@ fi
  # Access Check
  #
 if ! _access_check $op; then
-  echo "`tput setaf 1`ACCESS DENIED!`tput op`"
+  echo "`tty -s && tput setaf 1`ACCESS DENIED!`tty -s && tput op`"
   end "$local_role sites may not invoke: loft_deploy $op"
 fi
 
