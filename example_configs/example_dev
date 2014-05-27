@@ -37,7 +37,7 @@ local_db_pass='dev_db_pass'
 ##
  # PRODUCTION CONFIGURATION
  #
-#production_script='~/bin/loft_deploy'
+production_script='/path/to/loft_deploy'
 production_server='prod_user@prod_host'
 production_pass='prod_pass'
 # production_root is parent directory of .loft_deploy
@@ -54,7 +54,7 @@ production_files='path/to/prod_branch/public_html/sites/default/files'
 ##
  # STAGING SERVER
  #
-staging_script='~/bin/loft_deploy'
+staging_script='/path/to/loft_deploy'
 staging_server='staging_user@staging_host'
 staging_pass='staging_pass'
 #staging_root is parent directory of .loft_deploy
