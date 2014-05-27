@@ -1,71 +1,95 @@
-##Summary
-A handy script to assist in the workflow across servers involved with websites such as Drupal that have three distince elements to manage: 
+# Loft Deploy (for BASH)
 
-1. codebase
-2. database
-3. dynamic (or user-managed) files
+## Summary
 
-While it is not limited to Drupal, it does assume this type of tri-component scenario. If you have neither a database nor user files, you would be wise not to use this tool as it adds complexity without utility.
+Deployment management for Drupal websites (and others with similar structures)
+that makes database and user file migration between production, development and
+staging extremly fast and simple.
 
-In this scenario, the database lives and originates on the production server.
-Changes to the database should only be made there. Yet those changes need to be
-propogated to dev and staging environments; loft_deploy will do this.
+The premise of this utililty assumes that you will manage the codebase of the
+project with source control such as Git.  Loft deploy adds the ability to
+fetch/pull the database and/or the user files from _production_ to _local_ and
+push the database and user files from _local_ to _staging_.
 
-User files, which are too dynamic to include in version management, also
-originate and must be changed on the production server. Just like the database,
-the dev and staging environments need to be brought to match production at
-times. loft_deploy will do this.
+While it is not limited to Drupal, it does assume this type of tri-component
+scenario. If you have neither a database nor user files, you would be wise not
+to use this tool as it adds complexity without utility.  With only a codebase to
+manage, simply use Git.
 
-loft_deploy is also used to push database and user files to a staging
-environment for preview by the client or end user.
-
-loft_deploy does not intend to replace codebase management with version control
-systems such as git. Such systems should continue to be used in tandem with
-loft_deploy.
-
-Neither database, nor user files are ever pushed to production, whether from dev
-or from staging.
-
-##Warning!!!
-**USE AT YOUR OWN RISK AS IMPROPER CONFIGURATION CAN RESULT IN DESTRUCTION OF DATABASE CONTENT AND FILES.**/etc/motd
+Loft Deploy does not intend to replace codebase management with version control
+systems such as Git. Such systems should continue to be used in tandem with
+Loft Deploy.
 
 
-##Requirements
+## The database component
+
+    [ PRODUCTION DB ] ---> [ LOCAL DB ] --> [ STAGING DB ]
+
+The production database is always considered the "origin"--that is to say it is
+the master of the database component of any group of production/local/staging
+servers.  When developing locally you should be making your database changes
+directly on the production database and then pulling (or in an update script of
+a module), but never will you push a local or staging database to production.
+Before local development you will need to refresh your local database and you do
+that with Loft Deploy `ld pull -d`.
+
+After you have completed local development you may want to push to a staging
+server for client review.  You will use Loft Deploy `ld push -d` to push your
+local database to the staging server.
+
+## The user files component
+
+User files (i.e. _sites/default/files_), which are too dynamic to include in
+version control, also originate and must be changed on the production server.
+Just like the database, the dev and staging environments need to be brought to
+match production at times. Loft Deploy will do this using `ld pull -f`.
+
+You may still use Loft Deploy this when you do not have a user files directory,
+just omit any config variables referencing `files`.
+
+
+## Warning!!!
+
+**USE AT YOUR OWN RISK AS IMPROPER CONFIGURATION CAN RESULT IN
+DESTRUCTION OF DATABASE CONTENT AND FILES.**
+
+
+## Requirements
 The following assumptions are made about your project:
 
-1. your project uses a database
-2. your project's codebase is maintained using source control (git, svn, etc)
-3. your project might have a files directory that contains dynamic
-files, which are NOT in source control. If these assumptions are not true then this package may be less useful to you.
+1. Your project's codebase is maintained using source control (git, svn, etc).
+1. Your project uses a mysql database.
+1. Your project might have a files directory that contains dynamic files, which are NOT in source control.
+
+_If these assumptions are not true then this package may be less useful to you._
 
 
-##Installation
-* Create a symlink called loft_deploy to the loft_deploy.sh in a directory found
-  in the $PATH so that you may execute this script
-* Make sure that loft_deploy.sh is user executable, e.g. chmod u+x
-  loft_deploy.sh
+## (Recommended) Installation
 
-* How to install the package on each of your servers...
+1. Loft Deploy needs to be installed in each environment: _Production, Local_ and (if used) _Staging_.
+1. Connect using a terminal program to the home directory of the server.  If the _bin_ folder does not exist, create it now.
 
-          cd ~;
-          mkdir bin;
-          cd bin;
-          git clone git://github.com/aklump/loft_deploy.git loft_deploy_files;
-          ln -s loft_deploy_files/loft_deploy.sh loft_deploy;
-          chmod u+x loft_deploy_files/loft_deploy.sh;
+        cd ~/bin
 
-* Open up and modify ~/.bash_profile
+1. Clone Loft Deploy and create a symlink that is user executable.
 
-          alias ld="loft_deploy"
-          export PATH=$PATH:~/bin
+        git clone git@github.com:aklump/loft_deploy.git loft_deploy_files;
+        ln -s loft_deploy_files/loft_deploy.sh loft_deploy;
+        chmod u+x loft_deploy;
 
-* Reload your profile and test, you should see the loft_deploy help screen
+1. Open up and modify _~/.bash_profile_ or _~/.profile_ (whichever you use).
 
-          $ . ~/.bash_profile
-          $ ld
+        alias ld="loft_deploy"
+        export PATH=$PATH:~/bin
 
-##Configuration
-* You must configure each environment for a given project. That is to say you must run 'loft_deploy init dev' and 'loft_deploy init prod' and maybe `loft_deploy init staging` on each of the appropriate servers.
+1. Reload your profile and test, you should see the Loft Deploy help screen if installation was successful.
+
+        $ . ~/.bash_profile
+        $ ld
+
+## Configuration (of projects)
+
+* You must configure each environment for a given project. That is to say you must run `loft_deploy init dev` and `loft_deploy init prod` and maybe `loft_deploy init staging` on each of the appropriate servers.
 * The init process creates an empty config file in .loft_deply/config; this file must be edited with all correct params for each environment.
 * The location where you run the init process determines the scope of usage. The best/most common location is the directory above web root. You may run loft_deploy operations in any child directory and including the directory where it's initialized.
 * An exception to this rule is a Drupal multisite, in which case you must descend into `sites/[sitename]` and install it there run `loft_deploy init` there. You will then be restricted to running loft deploy oeprations to `/sites/[sitename]` and any child directories.
@@ -84,15 +108,16 @@ files, which are NOT in source control. If these assumptions are not true then t
           $ loft_deploy configtest
 
 ##Message of the Day MOTD
-Create a file in your project, `.loft_deploy/motd`, the contents of which is echoed when you run any loft_deploy command.  This is a way to store reminders per project.
 
-##Files:
-* You may use this when you do not have a files directory, just omit any config variables referencing `files`.
+MOTD will print a reminder each time a Loft Deploy action is executed; use it to
+keep track of reminders about your project.  Here's how:
 
+Create a file in your project, `.loft_deploy/motd`, the contents of which is
+echoed when you run any loft_deploy command.  This is a way to store reminders
+per project.
 
 ##Usage:
-* After installed and configured type: `loft_deploy help` for available
-  commands; you may also access the help by simply typing `loft_develop`
+After installed and configured type: `loft_deploy help` for available commands; you may also access the help by simply typing `loft_develop`
 
 ##Contact
 * **In the Loft Studios**
