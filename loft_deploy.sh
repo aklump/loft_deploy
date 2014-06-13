@@ -99,6 +99,9 @@ mysql_check_result=false
 # holds a timestamp for backups, etc.
 now=$(date +"%Y%m%d_%H%M")
 
+# Current version of this script (auto-updated during build).
+ld_version=0.6.6
+
 # theme color definitions
 color_red=1
 color_green=2
@@ -189,6 +192,51 @@ function get_param() {
   done
 }
 
+function update_needed() {
+  local need=0
+  # Test for _update_0_7_0
+  if [[ ! -d "$config_dir/production" ]]; then
+    need=1
+  fi
+
+  if [[ $need -eq 1 ]]; then
+    echo "`tty -s && tput setaf 3`An update is necessary; the script may not perform as expected; please execute 'loft_deploy update' when ready.`tty -s && tput op`"
+    echo ""
+  fi
+}
+
+##
+ # Perform any necessary update functions
+ #
+function update() {
+  _update_0_7_0
+  echo "`tty -s && tput setaf 2`All updates have been processed.`tty -s && tput op`"
+  end
+}
+
+##
+ # Moves db and files into a production folder to support the fetch from
+ # multiple environments and changes to the storage mechanisms.
+ #
+function _update_0_7_0() {
+  if [[ ! -d "$config_dir/production" ]]; then
+    mkdir "$config_dir/production"
+    if [[ -d "$config_dir/db" ]]; then
+      mv "$config_dir/db" "$config_dir/production/db"
+    fi
+    if [[ -d "$config_dir/files" ]]; then
+      mv "$config_dir/files" "$config_dir/production/files"
+    fi
+    if [[ -f "$config_dir/cached_db" ]]; then
+      mv "$config_dir/cached_db" "$config_dir/production/cached_db"
+    fi
+    if [[ -f "$config_dir/cached_files" ]]; then
+      mv "$config_dir/cached_files" "$config_dir/production/cached_files"
+    fi
+  fi
+  rm -rf "$config_dir/db" "$config_dir/files" "$config_dir/cached_db" "$config_dir/cached_files"  
+}
+
 ##
  # Initialize a new project
  #
@@ -213,10 +261,17 @@ function init() {
     echo 'deny from all' > .htaccess
     chmod 0644 .htaccess
     cp $loft_deploy_source/example_configs/example_$1 ./config
-    mkdir db
-    touch cached_db
-    mkdir files
-    touch cached_files
+    
+    mkdir -p production/db
+    mkdir -p production/files
+    touch cached_db_production
+    touch cached_files_production
+    
+    mkdir -p staging/db
+    mkdir -p staging/files
+    touch cached_db_staging
+    touch cached_files_staging
+
     cd $start_dir
     complete
     end "Please configure and save $config_dir/config"
@@ -238,7 +293,8 @@ function load_config() {
 
   # Do we have a files exclude for rsync
   if [[ -f "$config_dir/files_exclude.txt" ]]; then
-    ld_rsync_ex="--exclude-from=$config_dir/files_exclude.txt"
+    ld_rsync_exclude_file="$config_dir/files_exclude.txt";
+    ld_rsync_ex="--exclude-from=$ld_rsync_exclude_file"
   fi
 
   # these are defaults
@@ -267,22 +323,59 @@ function _upsearch () {
 }
 
 ##
- # Fetch production files to local
+ # Fetch files from the appropriate server
  #
 function fetch_files() {
+  case $source_server in
+    'production' )
+      _fetch_files_production
+      ;;
+    'staging' )
+      _fetch_files_staging
+      ;;
+  esac
+}
+
+##
+ # Fetch production files to local
+ # 
+function _fetch_files_production() {
   if [ ! "$production_files" ] || [ ! "$local_files" ] || [ "$production_files" == "$local_files" ]
   then
     end "Bad config"
   fi
 
   echo "Copying files from production server..."
-  if [[ "$ld_rsync_ex" ]]; then
-    echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
+  excludes=$(cat $ld_rsync_exclude_file);
+  if [[ "$excludes" ]] && [[ "$ld_rsync_ex" ]]; then
+    echo "`tty -s && tput setaf 3`These files listed in $ld_rsync_exclude_file are being ignored:`tty -s && tput op`"
+    echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
   fi  
-  rsync -av $production_server://$production_files/ $config_dir/files/ --delete $ld_rsync_ex
+  rsync -av $production_server://$production_files/ $config_dir/production/files/ --delete $ld_rsync_ex
 
   # record the fetch date
-  echo $now > $config_dir/cached_files
+  echo $now > $config_dir/production/cached_files  
+}
+
+##
+ # Fetch staging files to local
+ # 
+function _fetch_files_staging() {
+  if [ ! "$staging_files" ] || [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]
+  then
+    end "Bad config"
+  fi
+
+  echo "Copying files from staging server..."
+  excludes=$(cat $ld_rsync_exclude_file);
+  if [[ "$excludes" ]] && [[ "$ld_rsync_ex" ]]; then
+    echo "`tty -s && tput setaf 3`These files listed in $ld_rsync_exclude_file are being ignored:`tty -s && tput op`"
+    echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
+  fi  
+  rsync -av $staging_server://$staging_files/ $config_dir/staging/files/ --delete $ld_rsync_ex
+
+  # record the fetch date
+  echo $now > $config_dir/staging/cached_files  
 }
 
 ##
@@ -296,18 +389,18 @@ function fetch_files() {
  #
 function reset_files() {
   echo "This process will reset your local files to match the most recently fetched"
-  echo "production files, removing any local files that are not present in the fetched"
+  echo "$source_server files, removing any local files that are not present in the fetched"
   echo "set. You will be given a preview of what will happen first. To absolutely"
-  echo "match production, consider running fetch_files first, however it is slower."
+  echo "match $source_server as of this moment in time, consider fetching first, however it is slower."
   echo
-  echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched production files.`tty -s && tput op`"
+  echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
 
-  source=$config_dir/files
+  source=$config_dir/$source_server/files
   if [ ! -d $source ]
   then
-    end "Please fetch_files first"
+    end "Please fetch files first"
   fi
-  confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE LOCAL FILES`tty -s && tput op`"
+  confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE LOCAL FILES with $source_server files?`tty -s && tput op`"
   echo 'Previewing...'
   if [[ "$ld_rsync_ex" ]]; then
     echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
@@ -315,38 +408,91 @@ function reset_files() {
   rsync -av $source/ $local_files/ --delete --dry-run $ld_rsync_ex
   confirm 'That was a preview... do it for real?'
   rsync -av $source/ $local_files/ --delete $ld_rsync_ex
-}
-
+}  
 
 ##
  # Fetch the remote db and import it to local
  #
 function fetch_db() {
+  case $source_server in
+    'production' )
+      _fetch_db_production
+      ;;
+    'staging' )
+      _fetch_db_staging
+      ;;
+  esac
+}
+
+##
+ # Fetch the remote db and import it to local
+ #
+function _fetch_db_production() {  
   if [ ! "$production_script" ] || [ ! "$production_db_dir" ] || [ ! "$production_server" ] || [ ! "$production_db_name" ]
   then
-    end "Bad db config"
+    end "Bad production db config"
+  fi
+
+  if [[ ! -d "$config_dir/production/db" ]]; then
+    mkdir "$config_dir/production/db"
   fi
 
   # Cleanup local
-  rm -r $config_dir/db/fetched.sql*
+  rm -rq $config_dir/production/db/fetched.sql* 2> /dev/null
 
   echo "Exporting production db..."
-  local _prod_suffix='fetch_db'
+  local _export_suffix='fetch_db'
   show_switch
-  ssh $production_server "cd $production_root && . $production_script export $_prod_suffix"
+  ssh $production_server "cd $production_root && . $production_script export $_export_suffix"
   wait
 
   echo "Downloading from production..."
-  local _remote_file="$production_db_dir/${production_db_name}-$_prod_suffix.sql.gz"
-  local _local_file="$config_dir/db/fetched.sql.gz"
+  local _remote_file="$production_db_dir/${production_db_name}-$_export_suffix.sql.gz"
+  local _local_file="$config_dir/production/db/fetched.sql.gz"
   scp "$production_server://$_remote_file" "$_local_file"
 
   # record the fetch date
-  echo $now > $config_dir/cached_db
+  echo $now > $config_dir/production/cached_db
 
   # delete it from remote
   echo "Deleting the production copy..."
   ssh $production_server "rm $_remote_file"
+  show_switch
+}
+
+##
+ # Fetch the staging db and import it to local
+ #
+function _fetch_db_staging() {  
+  if [ ! "$staging_script" ] || [ ! "$staging_db_dir" ] || [ ! "$staging_server" ] || [ ! "$staging_db_name" ]
+  then
+    end "Bad staging db config"
+  fi
+
+  if [[ ! -d "$config_dir/staging/db" ]]; then
+    mkdir "$config_dir/staging/db"
+  fi
+
+  # Cleanup local
+  rm -r $config_dir/staging/db/fetched.sql* 2> /dev/null
+
+  echo "Exporting staging db..."
+  local _export_suffix='fetch_db'
+  show_switch
+  ssh $staging_server "cd $staging_root && . $staging_script export $_export_suffix"
+  wait
+
+  echo "Downloading from staging..."
+  local _remote_file="$staging_db_dir/${staging_db_name}-$_export_suffix.sql.gz"
+  local _local_file="$config_dir/staging/db/fetched.sql.gz"
+  scp "$staging_server://$_remote_file" "$_local_file"
+
+  # record the fetch date
+  echo $now > $config_dir/staging/cached_db
+
+  # delete it from remote
+  echo "Deleting the staging copy..."
+  ssh $staging_server "rm $_remote_file"
   show_switch
 }
 
@@ -358,16 +504,16 @@ function fetch_db() {
  #
 function reset_db() {
   echo "This process will reset your local db to match the most recently fetched"
-  echo "production db, first backing up your local db. To absolutely match production,"
-  echo "consider running fetch_db first, however it is slower.."
+  echo "$source_server db, first backing up your local db. To absolutely match $source_server,"
+  echo "consider fetching the database first, however it is slower."
   echo
-  echo "`tty -s && tput setaf 3`End result: Your local files directory will match the fetched prod db.`tty -s && tput op`"
+  echo "`tty -s && tput setaf 3`End result: Your local database will match the $source_server database.`tty -s && tput op`"
 
-  confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the production db"
+  confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source_server db"
 
-  local _file=($(find $config_dir/db -name fetched.sql*))
+  local _file=($(find $config_dir/$source_server/db -name fetched.sql*))
   if [[ ${#_file[@]} -gt 1 ]]; then
-    end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/db"
+    end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/$source_server/db"
   elif [[ ${#_file[@]} -eq 0 ]]; then
     end "Please fetch_db first"
   fi
@@ -479,7 +625,7 @@ function _current_db_paths() {
  #   If this is -f then we will just do it.
  #
 function export_db() {
-  _current_db_paths ${args[1]}
+  _current_db_paths $1
 
   file="$current_db_dir$current_db_filename"
   file_gz="$file.gz"
@@ -548,7 +694,7 @@ function import_db() {
   fi
 
   confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure"
-  echo "It's advisable to empty the database first."
+  # echo "It's advisable to empty the database first."
   _drop_tables
   echo "Importing $file to $local_db_host $local_db_name database..."
 
@@ -563,11 +709,11 @@ function import_db() {
  # Drop all local db tables
  #
 function _drop_tables() {
-  confirm_result=false;
-  confirm "Should we `tty -s && tput setaf 3`DUMP ALL TABLES (empty database)`tty -s && tput op` from $local_db_host $local_db_name, first" noend
-  if [ $confirm_result == false ]; then
-    return
-  fi
+  # confirm_result=false;
+  # confirm "Should we `tty -s && tput setaf 3`DUMP ALL TABLES (empty database)`tty -s && tput op` from $local_db_host $local_db_name, first" noend
+  # if [ $confirm_result == false ]; then
+  #   return
+  # fi
   tables=$($ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
   echo "Dropping all tables from the $local_db_name database..."
   for t	in $tables; do
@@ -753,10 +899,14 @@ function show_help() {
 
   if [ "$local_role" != 'staging' ]
   then
-    theme_header 'to staging' $color_staging
+    theme_header 'to/from staging' $color_staging
   fi
 
   theme_help_topic push 'lst' 'A push all shortcut' '-f files only' '-d database only'
+
+  theme_help_topic fetch 'pl' 'Use `--staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f --staging' '-d to only fetch database'
+  theme_help_topic reset 'pl' 'Use `--staging` to reset local with fetched assets' '-f only reset files' '-d only reset database'
+  theme_help_topic pull 'pl' 'Use `--staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database'
 
 }
 
@@ -788,23 +938,6 @@ function mysql_check() {
   else
     mysql_check_result=true;
   fi
-}
-
-##
- # Get the current version of the package
- #
- # @return string
- #   Sets the value of version_result
- #
- # @todo Make this work for non-standard installation locations?
- #
-function version() {
-  path="${HOME}/bin/loft_deploy_files/web_package.info"
-  if [ -f "$path" ]
-  then
-    version_result=$(grep "version" $path | cut -f2 -d "=");
-  fi
-
 }
 
 ##
@@ -880,6 +1013,17 @@ function configtest() {
     configtest_return=false;
     warning "local_files: $local_files does not exist."
   fi
+
+  if ! ssh $production_server "test -e $production_db_dir"; then
+    configtest_return=false
+    warning "Staging db dir doesn't exist: $production_db_dir"
+  fi
+
+  if ! ssh $staging_server "test -e $staging_db_dir"; then
+    configtest_return=false
+    warning "Staging db dir doesn't exist: $staging_db_dir"
+  fi
+
 
   # Test for a production root in dev environments
   if [ "$production_server" ] && [ "$local_role" == 'dev' ] && [ ! "$production_root" ]
@@ -994,13 +1138,21 @@ function show_info() {
   echo "Dumps         : $local_db_dir"
   echo "Files         : $local_files"
   if _access_check 'fetch_db'; then
-    echo "DB Fetched    : " $(cat $config_dir/cached_db)
+    if [[ -f "$config_dir/cached_db" ]]; then
+      echo "DB Fetched    : " $(cat $config_dir/cached_db)
+    fi
   fi
   if _access_check 'fetch_files'; then
     if [[ "$ld_rsync_ex" ]]; then
       echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
-    fi    
-    echo "Files Fetched : " $(cat $config_dir/cached_files)
+    fi
+    if [[ -f "$config_dir/production/cached_files" ]]; then
+      echo "Files Prod    : " $(cat $config_dir/production/cached_files)
+    fi
+    if [[ -f "$config_dir/staging/cached_files" ]]; then
+      echo "Files Staging : " $(cat $config_dir/staging/cached_files)
+    fi
+      
   fi
   echo
 
@@ -1020,10 +1172,10 @@ function show_info() {
     echo
   fi
 
-  version_result='?'
-  version
+  # version_result='?'
+  # version
   theme_header 'LOFT_DEPLOY'
-  echo "Version       : $version_result"
+  echo "Version       : $ld_version"
 }
 
 function warning() {
@@ -1075,7 +1227,7 @@ function end() {
 function _access_check() {
 
   # List out helper commands, with universal access regardless of local_role
-  if [ "$1" == '' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'configtest' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ] || [ "$1" == 'mysql' ]; then
+  if [ "$1" == '' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'configtest' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ] || [ "$1" == 'update' ] || [ "$1" == 'mysql' ]; then
     return 0
   fi
 
@@ -1088,6 +1240,9 @@ function _access_check() {
     esac
   elif [ "$local_role" == 'staging' ]; then
     case $1 in
+      'export')
+        return 0
+        ;;
       'import')
         return 0
         ;;
@@ -1130,7 +1285,7 @@ function do_ls() {
  #
 
 # init has to come before configuration loading
-if [ "$1" == 'init' ]
+if [ "$op" == 'init' ]
 then
   if _access_check $op; then
     init $2
@@ -1141,6 +1296,16 @@ then
 fi
 
 load_config
+
+if [ "$op" == 'update' ]
+then
+  if _access_check $op; then
+    update $2
+  else
+    echo "`tty -s && tput setaf 1`ACCESS DENIED!`tty -s && tput op`"
+    end "$local_role sites may not invoke: loft_deploy $op"
+  fi
+fi
 
 # Help MUST COME AFTER CONFIG FOR ACCESS CHECKING!!!! DON'T MOVE
 if [ ! "$op" ] || [ "$op" == 'help' ]
@@ -1166,6 +1331,13 @@ fi
  # Call the correct handler
  #
 print_header
+update_needed
+
+# Determine the server being operated on
+source_server='production'
+if has_param 'staging'; then
+  source_server='staging'
+fi
 
 case $op in
   'init')
@@ -1222,13 +1394,17 @@ case $op in
     end
     ;;
   'fetch')
+    suffix=''
+    if [[ "$source_server" != 'production' ]]; then
+      suffix=" --$source_server"
+    fi
     if has_flag d || [ ${#flags[@]} -eq 0 ]; then
       fetch_db
-      complete 'Production database has been fetched; use reset -d when ready.'
+      complete "The database has been fetched; use 'loft_deploy reset -d$suffix' when ready."
     fi
     if has_flag f || [ ${#flags[@]} -eq 0 ]; then
       fetch_files
-      complete "Production files have been fetched; use reset -f when ready."
+      complete "Files have been fetched; use 'loft_deploy reset -f$suffix' when ready."
     fi
     end
     ;;

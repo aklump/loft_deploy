@@ -2,56 +2,62 @@
 
 ## Summary
 
-Deployment management for Drupal websites (and others with similar structures)
-that makes database and user file migration between production, development and
-staging extremly fast and simple.
+Deployment management for Drupal websites (and others with similar structures) that makes database and user file migration between production, development and staging extremly fast and simple.
 
-The premise of this utililty assumes that you will manage the codebase of the
-project with source control such as Git.  Loft deploy adds the ability to
-fetch/pull the database and/or the user files from _production_ to _local_ and
-push the database and user files from _local_ to _staging_.
+The premise of this utililty assumes that you will manage the codebase of the project with source control such as Git.  Loft deploy adds the ability to pull the database and/or the user files (files not in your version control) from _production_ to _local_, and push or pull the database and user files between _local_ and _staging_. 
 
-While it is not limited to Drupal, it does assume this type of tri-component
-scenario. If you have neither a database nor user files, you would be wise not
-to use this tool as it adds complexity without utility.  With only a codebase to
-manage, simply use Git.
+While it is not limited to Drupal, it does assume this type of tri-component scenario (codebase, database, user files). If you have neither a database nor user files, you would be wise not to use this tool as it adds complexity without utility.  With only a codebase to manage, simply use Git. 
 
-Loft Deploy does not intend to replace codebase management with version control
-systems such as Git. Such systems should continue to be used in tandem with
-Loft Deploy.
+Loft Deploy does not intend to replace codebase management with version control systems such as Git. Such systems should continue to be used in tandem with Loft Deploy.
 
+## Key Concepts
+### Fetch
+Fetching grabs the remote assets and caches them locally, but does not alter your local environment.  You have to reset to do that.  Cached assets can be found in the _.loft_deploy_ folder.
+
+### Reset
+Uses the cached remote assets from the last fetch to alter your local environment.  Saves you download time if you are doing frequent resets to test update scripts or something, where you need to continusously reset to match the production database, for example.
+
+### Pull
+A combination that will do a fetch and reset in one command.
+
+
+### Workflow
+
+    [ PRODUCTION ]
+           |
+          \|/
+           '
+      [ LOCAL ] <--> [ STAGING ]
+
+* Assets can flow FROM production to local.
+* Assets cannot flow TO production.
+* Assets can flow between local and staging.
 
 ## The database component
 
-    [ PRODUCTION DB ] ---> [ LOCAL DB ] --> [ STAGING DB ]
+The production database is always considered the "origin"--that is to say it is the master of the database component of any group of production/local/staging servers.  When developing locally you should be making your database changes directly on the production database (or in an update script of a module) and then pulling using loft_deploy, but never will you push a local or staging database to production. Before local development you will need to refresh your local database and you do that with Loft Deploy `loft_deploy pull -d`.
 
-The production database is always considered the "origin"--that is to say it is
-the master of the database component of any group of production/local/staging
-servers.  When developing locally you should be making your database changes
-directly on the production database and then pulling (or in an update script of
-a module), but never will you push a local or staging database to production.
-Before local development you will need to refresh your local database and you do
-that with Loft Deploy `ld pull -d`.
-
-After you have completed local development you may want to push to a staging
-server for client review.  You will use Loft Deploy `ld push -d` to push your
-local database to the staging server.
+After you have completed local development you may want to push to a staging server for client review.  You will use Loft Deploy `loft_deploy push -d` to push your local database to the staging server.
 
 ## The user files component
 
-User files (i.e. _sites/default/files_), which are too dynamic to include in
-version control, also originate and must be changed on the production server.
-Just like the database, the dev and staging environments need to be brought to
-match production at times. Loft Deploy will do this using `ld pull -f`.
+User files (i.e. _sites/default/files_), which are too dynamic to include in version control, also originate and must be changed on the production server. Just like the database, the dev and staging environments need to be brought to match production at times. Loft Deploy will do this using `loft_deploy pull -f`. You may still use Loft Deploy this when you do not have a user files directory, just omit any config variables referencing `files`.
 
-You may still use Loft Deploy this when you do not have a user files directory,
-just omit any config variables referencing `files`.
+### Excluding certain files using _files_exclude.txt_
+You may set Loft Deploy to ignore certain user files by creating a file _.loft_deploy/files_exclude.txt_.  This will be used by the rsync program as an `--exclude-from` argument.
 
+## Fetch/reset/pull from staging
+By default `fetch`, `reset` and `pull` will grab from _production_. In order to perform these functions using staging as the source you will need to **pass the `--staging` flag** like this:
+
+    loft_deploy pull --staging
+    loft_deploy fetch --staging
+    loft_deploy reset --staging
+
+The command `push` is always directed at the staging server.
 
 ## Warning!!!
 
-**USE AT YOUR OWN RISK AS IMPROPER CONFIGURATION CAN RESULT IN
-DESTRUCTION OF DATABASE CONTENT AND FILES.**
+**USE AT YOUR OWN RISK AS IMPROPER CONFIGURATION CAN RESULT IN DESTRUCTION OF DATABASE CONTENT AND FILES.**
 
 
 ## Requirements
@@ -106,11 +112,6 @@ _If these assumptions are not true then this package may be less useful to you._
 * Finally, test each environment before first use. You may run 'configtest' at any time in the future as well.
 
           $ loft_deploy configtest
-
-## The user files component
-
-### Excluding certain files using _files_exclude.txt_
-You may set Loft Deploy to ignore certain user files by creating a file _.loft_deploy/files_exclude.txt_.  This will be used by the rsync program as an `--exclude-from` argument.
 
 ## Message of the Day MOTD
 
