@@ -100,7 +100,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.7.1
+ld_version=0.7.2
 
 # theme color definitions
 color_red=1
@@ -352,12 +352,15 @@ function _fetch_files_production() {
     end "Bad config"
   fi
 
+  ld_rsync_ex=''
   echo "Copying files from production server..."
-  excludes=$(cat $ld_rsync_exclude_file);
-  if [[ "$excludes" ]] && [[ "$ld_rsync_ex" ]]; then
-    echo "`tty -s && tput setaf 3`These files listed in $ld_rsync_exclude_file are being ignored:`tty -s && tput op`"
-    echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
-  fi  
+  if [[ "$ld_rsync_exclude_file" ]] && [[ -f "$ld_rsync_exclude_file" ]]; then
+    excludes=$(cat $ld_rsync_exclude_file);
+    if [[ "$excludes" ]] && [[ "$ld_rsync_ex" ]]; then
+      echo "`tty -s && tput setaf 3`These files listed in $ld_rsync_exclude_file are being ignored:`tty -s && tput op`"
+      echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
+    fi  
+  fi
   rsync -av $production_server://$production_files/ $config_dir/production/files/ --delete $ld_rsync_ex
 
   # record the fetch date
@@ -373,12 +376,15 @@ function _fetch_files_staging() {
     end "Bad config"
   fi
 
+  ld_rsync_ex=''
   echo "Copying files from staging server..."
-  excludes=$(cat $ld_rsync_exclude_file);
-  if [[ "$excludes" ]] && [[ "$ld_rsync_ex" ]]; then
-    echo "`tty -s && tput setaf 3`These files listed in $ld_rsync_exclude_file are being ignored:`tty -s && tput op`"
-    echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
-  fi  
+  if [[ "$ld_rsync_exclude_file" ]] && [[ -f "$ld_rsync_exclude_file" ]]; then
+    excludes=$(cat $ld_rsync_exclude_file);
+    if [[ "$excludes" ]] && [[ "$ld_rsync_ex" ]]; then
+      echo "`tty -s && tput setaf 3`These files listed in $ld_rsync_exclude_file are being ignored:`tty -s && tput op`"
+      echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
+    fi  
+  fi
   rsync -av $staging_server://$staging_files/ $config_dir/staging/files/ --delete $ld_rsync_ex
 
   # record the fetch date
