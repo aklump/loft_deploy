@@ -100,7 +100,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.7
+ld_version=0.7.1
 
 # theme color definitions
 color_red=1
@@ -220,7 +220,9 @@ function update() {
  #
 function _update_0_7_0() {
   if [[ ! -d "$config_dir/production" ]]; then
-    mkdir "$config_dir/production"
+    mkdir -p "$config_dir/production/db"
+    mkdir -p "$config_dir/production/files"
+
     if [[ -d "$config_dir/db" ]]; then
       mv "$config_dir/db" "$config_dir/production/db"
     fi
@@ -234,6 +236,11 @@ function _update_0_7_0() {
       mv "$config_dir/cached_files" "$config_dir/production/cached_files"
     fi
   fi
+  if [[ ! -d "$config_dir/staging" ]]; then
+    mkdir -p "$config_dir/staging/db"
+    mkdir -p "$config_dir/staging/files"    
+  fi
+  
   rm -rf "$config_dir/db" "$config_dir/files" "$config_dir/cached_db" "$config_dir/cached_files"  
 }
 
