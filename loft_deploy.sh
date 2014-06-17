@@ -81,6 +81,9 @@ done
 # The user's operation
 op=${args[0]}
 
+# The target of the operation
+target=${args[1]}
+
 # Holds the starting directory
 start_dir=${PWD}
 
@@ -334,7 +337,7 @@ function _upsearch () {
  #
 function fetch_files() {
   case $source_server in
-    'production' )
+    'prod' )
       _fetch_files_production
       ;;
     'staging' )
@@ -428,7 +431,7 @@ function reset_files() {
  #
 function fetch_db() {
   case $source_server in
-    'production' )
+    'prod' )
       _fetch_db_production
       ;;
     'staging' )
@@ -899,7 +902,7 @@ function show_help() {
   theme_help_topic info 'l' 'Show info'
   theme_help_topic configtest 'l' 'Test configuration'
   theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. loft_deploy -f ls -la'
-  theme_help_topic pass 'l' 'Display password(s)' '--prod Production' '--staging Staging' '--all All'
+  theme_help_topic pass 'l' 'Display password(s)' '--prod Production' 'staging Staging' '--all All'
 
   if [ "$local_role" != 'prod' ]
   then
@@ -917,9 +920,9 @@ function show_help() {
 
   theme_help_topic push 'lst' 'A push all shortcut' '-f files only' '-d database only'
 
-  theme_help_topic fetch 'pl' 'Use `--staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f --staging' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Use `--staging` to reset local with fetched assets' '-f only reset files' '-d only reset database'
-  theme_help_topic pull 'pl' 'Use `--staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database'
+  theme_help_topic fetch 'pl' 'Use `staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f staging' '-d to only fetch database'
+  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database'
+  theme_help_topic pull 'pl' 'Use `staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database'
 
 }
 
@@ -1347,8 +1350,8 @@ print_header
 update_needed
 
 # Determine the server being operated on
-source_server='production'
-if has_param 'staging'; then
+source_server='prod'
+if [[ "$target" == 'staging' ]]; then
   source_server='staging'
 fi
 
@@ -1408,7 +1411,7 @@ case $op in
     ;;
   'fetch')
     suffix=''
-    if [[ "$source_server" != 'production' ]]; then
+    if [[ "$source_server" != 'prod' ]]; then
       suffix=" --$source_server"
     fi
     if has_flag d || [ ${#flags[@]} -eq 0 ]; then
