@@ -1030,12 +1030,12 @@ function configtest() {
     warning "local_files: $local_files does not exist."
   fi
 
-  if ! ssh $production_server "test -e $production_db_dir"; then
+  if [ "$production_server" ] && ! ssh $production_server "test -e $production_db_dir"; then
     configtest_return=false
-    warning "Staging db dir doesn't exist: $production_db_dir"
+    warning "Production db dir doesn't exist: $production_db_dir"
   fi
 
-  if ! ssh $staging_server "test -e $staging_db_dir"; then
+  if [ "$staging_server" ] && ! ssh $staging_server "test -e $staging_db_dir"; then
     configtest_return=false
     warning "Staging db dir doesn't exist: $staging_db_dir"
   fi
