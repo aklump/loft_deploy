@@ -103,7 +103,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.7.4
+ld_version=0.7.5
 
 # theme color definitions
 color_red=1
@@ -198,7 +198,7 @@ function get_param() {
 function update_needed() {
   local need=0
   # Test for _update_0_7_0
-  if [[ ! -d "$config_dir/production" ]]; then
+  if [[ ! -d "$config_dir/prod" ]]; then
     need=1
   fi
 
@@ -222,21 +222,21 @@ function update() {
  # multiple environments and changes to the storage mechanisms.
  #
 function _update_0_7_0() {
-  if [[ ! -d "$config_dir/production" ]]; then
-    mkdir -p "$config_dir/production/db"
-    mkdir -p "$config_dir/production/files"
+  if [[ ! -d "$config_dir/prod" ]]; then
+    mkdir -p "$config_dir/prod/db"
+    mkdir -p "$config_dir/prod/files"
 
     if [[ -d "$config_dir/db" ]]; then
-      mv "$config_dir/db" "$config_dir/production/db"
+      mv "$config_dir/db" "$config_dir/prod/db"
     fi
     if [[ -d "$config_dir/files" ]]; then
-      mv "$config_dir/files" "$config_dir/production/files"
+      mv "$config_dir/files" "$config_dir/prod/files"
     fi
     if [[ -f "$config_dir/cached_db" ]]; then
-      mv "$config_dir/cached_db" "$config_dir/production/cached_db"
+      mv "$config_dir/cached_db" "$config_dir/prod/cached_db"
     fi
     if [[ -f "$config_dir/cached_files" ]]; then
-      mv "$config_dir/cached_files" "$config_dir/production/cached_files"
+      mv "$config_dir/cached_files" "$config_dir/prod/cached_files"
     fi
   fi
   if [[ ! -d "$config_dir/staging" ]]; then
@@ -251,7 +251,7 @@ function _update_0_7_0() {
  # Initialize a new project
  #
  # @param string $1
- #   One of dev, staging or production
+ #   One of dev, staging or prod
  #
  # @return NULL
  #
@@ -272,10 +272,10 @@ function init() {
     chmod 0644 .htaccess
     cp $loft_deploy_source/example_configs/example_$1 ./config
     
-    mkdir -p production/db
-    mkdir -p production/files
-    touch cached_db_production
-    touch cached_files_production
+    mkdir -p prod/db
+    mkdir -p prod/files
+    touch cached_db_prod
+    touch cached_files_prod
     
     mkdir -p staging/db
     mkdir -p staging/files
@@ -310,8 +310,6 @@ function load_config() {
   # these are defaults
   local_role="prod"
   local_db_host='localhost'
-  # production_script='~/bin/loft_deploy'
-  # staging_script='~/bin/loft_deploy'
   production_pass=''
   production_root=''
   staging_pass=''
@@ -347,7 +345,7 @@ function fetch_files() {
 }
 
 ##
- # Fetch production files to local
+ # Fetch prod files to local
  # 
 function _fetch_files_production() {
   if [ ! "$production_files" ] || [ ! "$local_files" ] || [ "$production_files" == "$local_files" ]
@@ -364,10 +362,10 @@ function _fetch_files_production() {
       echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
     fi  
   fi
-  rsync -av $production_server://$production_files/ $config_dir/production/files/ --delete $ld_rsync_ex
+  rsync -av $production_server://$production_files/ $config_dir/prod/files/ --delete $ld_rsync_ex
 
   # record the fetch date
-  echo $now > $config_dir/production/cached_files  
+  echo $now > $config_dir/prod/cached_files  
 }
 
 ##
@@ -395,7 +393,7 @@ function _fetch_files_staging() {
 }
 
 ##
- # Reset the local files with fetched production files
+ # Reset the local files with fetched prod files
  #
  # @param string $1
  #   description of param
@@ -449,12 +447,12 @@ function _fetch_db_production() {
     end "Bad production db config"
   fi
 
-  if [[ ! -d "$config_dir/production/db" ]]; then
-    mkdir "$config_dir/production/db"
+  if [[ ! -d "$config_dir/prod/db" ]]; then
+    mkdir "$config_dir/prod/db"
   fi
 
   # Cleanup local
-  rm -rq $config_dir/production/db/fetched.sql* 2> /dev/null
+  rm -rq $config_dir/prod/db/fetched.sql* 2> /dev/null
 
   echo "Exporting production db..."
   local _export_suffix='fetch_db'
@@ -464,11 +462,11 @@ function _fetch_db_production() {
 
   echo "Downloading from production..."
   local _remote_file="$production_db_dir/${production_db_name}-$_export_suffix.sql.gz"
-  local _local_file="$config_dir/production/db/fetched.sql.gz"
+  local _local_file="$config_dir/prod/db/fetched.sql.gz"
   scp "$production_server://$_remote_file" "$_local_file"
 
   # record the fetch date
-  echo $now > $config_dir/production/cached_db
+  echo $now > $config_dir/prod/cached_db
 
   # delete it from remote
   echo "Deleting the production copy..."
@@ -1011,7 +1009,7 @@ function configtest() {
   fi
 
   # Test for other environments than prod, in prod environment
-  if [ "$local_role" == 'prod' ] && ( [ "$prod_server" ] || [ "$staging_server" ] )
+  if [ "$local_role" == 'prod' ] && ( [ "$production_server" ] || [ "$staging_server" ] )
   then
     configtest_return=false;
     warning "In a $local_role environment, no other environments should be defined.  Remove extra settings from config."
@@ -1162,8 +1160,8 @@ function show_info() {
     if [[ "$ld_rsync_ex" ]]; then
       echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
     fi
-    if [[ -f "$config_dir/production/cached_files" ]]; then
-      echo "Files Prod    : " $(cat $config_dir/production/cached_files)
+    if [[ -f "$config_dir/prod/cached_files" ]]; then
+      echo "Files Prod    : " $(cat $config_dir/prod/cached_files)
     fi
     if [[ -f "$config_dir/staging/cached_files" ]]; then
       echo "Files Staging : " $(cat $config_dir/staging/cached_files)
