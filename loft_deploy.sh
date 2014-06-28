@@ -103,7 +103,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.7.5
+ld_version=0.7.6
 
 # theme color definitions
 color_red=1
@@ -202,6 +202,11 @@ function update_needed() {
     need=1
   fi
 
+  # Test for _update_0_7_6
+  if [[ -d "$config_dir/production" ]]; then
+    need=1
+  fi
+
   if [[ $need -eq 1 ]]; then
     echo "`tty -s && tput setaf 3`An update is necessary; the script may not perform as expected; please execute 'loft_deploy update' when ready.`tty -s && tput op`"
     echo ""
@@ -212,6 +217,7 @@ function update_needed() {
  # Perform any necessary update functions
  #
 function update() {
+  _update_0_7_6
   _update_0_7_0
   echo "`tty -s && tput setaf 2`All updates have been processed.`tty -s && tput op`"
   end
@@ -245,6 +251,19 @@ function _update_0_7_0() {
   fi
   
   rm -rf "$config_dir/db" "$config_dir/files" "$config_dir/cached_db" "$config_dir/cached_files"  
+}
+
+##
+ # Assures removal of the config/production folder.
+ #
+function _update_0_7_6() {
+  if [[ -d "$config_dir/production" ]]; then
+    if [[ -d "$config_dir/prod" ]]; then
+      rm -rf "$config_dir/production";
+    else
+      mv "$config_dir/production" "$config_dir/prod"
+    fi
+  fi
 }
 
 ##
