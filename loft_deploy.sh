@@ -229,22 +229,29 @@ function update() {
  #
 function _update_0_7_0() {
   if [[ ! -d "$config_dir/prod" ]]; then
-    mkdir -p "$config_dir/prod/db"
-    mkdir -p "$config_dir/prod/files"
+    mkdir "$config_dir/prod"
 
     if [[ -d "$config_dir/db" ]]; then
       mv "$config_dir/db" "$config_dir/prod/db"
+    else
+      mkdir "$config_dir/prod/db"
     fi
+
     if [[ -d "$config_dir/files" ]]; then
       mv "$config_dir/files" "$config_dir/prod/files"
+    else
+      mkdir "$config_dir/prod/files"
     fi
+
     if [[ -f "$config_dir/cached_db" ]]; then
       mv "$config_dir/cached_db" "$config_dir/prod/cached_db"
     fi
+
     if [[ -f "$config_dir/cached_files" ]]; then
       mv "$config_dir/cached_files" "$config_dir/prod/cached_files"
     fi
   fi
+
   if [[ ! -d "$config_dir/staging" ]]; then
     mkdir -p "$config_dir/staging/db"
     mkdir -p "$config_dir/staging/files"    
