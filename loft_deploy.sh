@@ -103,7 +103,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.7.7
+ld_version=0.7.8
 
 # theme color definitions
 color_red=1
@@ -478,7 +478,7 @@ function _fetch_db_production() {
   fi
 
   # Cleanup local
-  rm -rq $config_dir/prod/db/fetched.sql* 2> /dev/null
+  rm $config_dir/prod/db/fetched.sql* 2> /dev/null
 
   echo "Exporting production db..."
   local _export_suffix='fetch_db'
@@ -514,7 +514,7 @@ function _fetch_db_staging() {
   fi
 
   # Cleanup local
-  rm -r $config_dir/staging/db/fetched.sql* 2> /dev/null
+  rm $config_dir/prod/db/fetched.sql* 2> /dev/null
 
   echo "Exporting staging db..."
   local _export_suffix='fetch_db'
