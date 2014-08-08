@@ -478,7 +478,7 @@ function _fetch_db_production() {
   fi
 
   # Cleanup local
-  rm -rq $config_dir/prod/db/fetched.sql* 2> /dev/null
+  rm $config_dir/prod/db/fetched.sql* 2> /dev/null
 
   echo "Exporting production db..."
   local _export_suffix='fetch_db'
@@ -514,7 +514,7 @@ function _fetch_db_staging() {
   fi
 
   # Cleanup local
-  rm -r $config_dir/staging/db/fetched.sql* 2> /dev/null
+  rm $config_dir/prod/db/fetched.sql* 2> /dev/null
 
   echo "Exporting staging db..."
   local _export_suffix='fetch_db'
