@@ -346,6 +346,12 @@ function load_config() {
   ld_gunzip=$(which gunzip)
 
   source $config_dir/config
+
+  if [[ ! $production_scp ]]; then
+    production_scp=$production_root
+  fi
+
+
   cd $start_dir
 }
 
@@ -922,6 +928,7 @@ function show_help() {
   theme_help_topic export 'l' 'Dump the local db with an optional suffix' 'export [suffix]' '-f to overwrite if exists'
   theme_help_topic import 'l' 'Import a db export file overwriting local' 'import [suffix]'
   theme_help_topic 'mysql' 'l' 'Start mysql shell using local credentials'
+  theme_help_topic 'scp' 'l' 'Display a scp stub using server values' 'see $production_scp for configuration'
   theme_help_topic help 'l' 'Show this help screen'
   theme_help_topic info 'l' 'Show info'
   theme_help_topic configtest 'l' 'Test configuration'
@@ -1388,6 +1395,10 @@ case $op in
   'mysql')
     $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name
     complete 'Your mysql session has ended.'
+    end
+    ;;
+  'scp')
+    complete "scp $production_server://$production_scp"
     end
     ;;
   'ls')
