@@ -42,6 +42,7 @@ production_server='prod_user@prod_host'
 production_pass='prod_pass'
 # production_root is parent directory of .loft_deploy
 production_root='path/to/prod_branch/'
+production_scp='path/to/prod_branch/public_html'
 production_db_name='prod_db_name'
 production_db_dir='path/to/prod_branch/releases/current/db/tags'
 # production_files is optional
