@@ -1013,10 +1013,15 @@ function configtest() {
   configtest_return=true;
   echo 'Testing...'
   # Test if the staging and production files are the same, but only if we have production files
-  if [ "$production_files" ] && [ "$local_files" == "$production_files" ]
-  then
+  if [ "$production_files" ] && [ "$local_files" == "$production_files" ]; then
     configtest_return=false;
     warning 'Your local files directory and production files directory should not be the same'
+  fi
+
+  # Assert that the production file directory exists
+  if [ "$production_server" ] && [ "$production_files" ] && ! ssh $production_server "test -e $production_files"; then
+    configtest_return=false;
+    warning "Your production files directory doesn't exist: $production_files"
   fi
 
   # Test for the presence of the .htaccess file in the .loft_config dir
