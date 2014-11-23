@@ -103,7 +103,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.8.1
+ld_version=0.8.2
 
 # theme color definitions
 color_red=1
@@ -1012,11 +1012,20 @@ function print_header() {
 function configtest() {
   configtest_return=true;
   echo 'Testing...'
+
+  # Test for the production_script variable.
+  if [[ ! "$production_script" ]]; then
+    configtest_return=false
+    warning "production_script variable is missing or empty in local coniguration."
+  fi
+
   # Test if the staging and production files are the same, but only if we have production files
   if [ "$production_files" ] && [ "$local_files" == "$production_files" ]; then
     configtest_return=false;
     warning 'Your local files directory and production files directory should not be the same'
   fi
+
+  # Assert the production script is found.
 
   # Assert that the production file directory exists
   if [ "$production_server" ] && [ "$production_files" ] && ! ssh $production_server "test -e $production_files"; then
