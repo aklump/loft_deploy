@@ -103,7 +103,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.8.2
+ld_version=0.8.3
 
 # theme color definitions
 color_red=1
@@ -1014,7 +1014,7 @@ function configtest() {
   echo 'Testing...'
 
   # Test for the production_script variable.
-  if [[ ! "$production_script" ]]; then
+  if [ "$production_server" ] && [ ! "$production_script" ]; then
     configtest_return=false
     warning "production_script variable is missing or empty in local coniguration."
   fi
