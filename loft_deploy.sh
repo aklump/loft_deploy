@@ -1014,7 +1014,7 @@ function configtest() {
   echo 'Testing...'
 
   # Test for the production_script variable.
-  if [[ ! "$production_script" ]]; then
+  if [ "$production_server" ] && [ ! "$production_script" ]; then
     configtest_return=false
     warning "production_script variable is missing or empty in local coniguration."
   fi
