@@ -103,7 +103,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.9
+ld_version=0.9.1
 
 # theme color definitions
 color_red=1
@@ -298,6 +298,8 @@ function init() {
     chmod 0644 .htaccess
     cp $loft_deploy_source/example_configs/example_$1 ./config
     
+    touch files_exclude.txt
+
     mkdir -p prod/db
     mkdir -p prod/files
     touch cached_db_prod
