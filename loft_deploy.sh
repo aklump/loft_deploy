@@ -1013,6 +1013,27 @@ function configtest() {
   configtest_return=true;
   echo 'Testing...'
 
+  #
+  #
+  # Logs in to production and grabs the prodution db name to compare against
+  # our local configuration variable.
+  #
+  if [ "$production_server" ]; then
+    remote_name=$(ssh $production_server "cd $production_root && . $production_script info local_db_name")
+    if [ "$remote_name" != "$production_db_name" ]; then
+      configtest_return=false
+      warning "Production DB name mismatch between local config and production config"      
+    fi
+  fi
+
+  if [ "$staging_server" ]; then
+    remote_name=$(ssh $staging_server "cd $staging_root && . $staging_script info local_db_name")
+    if [ "$remote_name" != "$staging_db_name" ]; then
+      configtest_return=false
+      warning "Staging DB name mismatch between local config and staging config"      
+    fi
+  fi
+
   # Test for the production_script variable.
   if [ "$production_server" ] && [ ! "$production_script" ]; then
     configtest_return=false
@@ -1182,6 +1203,17 @@ function show_pass() {
   fi
 }
 
+#
+# Return a specific variable value
+#
+# @param string $name
+#
+function get_var() {
+  eval "answer=\$${!1}"
+  echo $answer
+}
+
+result=$(get_var)
 
 ##
  # Display configuation info
@@ -1495,9 +1527,13 @@ case $op in
     end
     ;;
   'info')
-    show_info
+    if [[ $2 ]]; then
+      echo $(get_var arg)
+    else
+      show_info
+    fi
     complete
-    end
+    end    
     ;;
   'pass')
     show_pass
