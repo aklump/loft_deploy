@@ -351,8 +351,26 @@ function load_config() {
     production_scp=$production_root
   fi
 
-
   cd $start_dir
+}
+
+##
+ # Logs in to production server for dynamic variables
+ #
+function load_production_config() {
+  # @todo Log in once to speed this up.
+  production_db_name=$(ssh $production_server "cd $production_root && . $production_script get local_db_name")
+  production_db_dir=$(ssh $production_server "cd $production_root && . $production_script get local_db_dir")
+  production_files=$(ssh $production_server "cd $production_root && . $production_script get local_files")
+}
+
+##
+ # Logs in to staging for dynamic variables
+ #
+function load_staging_config() {
+  staging_db_name=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_name")
+  staging_db_dir=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_dir")
+  staging_files=$(ssh $staging_server "cd $staging_root && . $staging_script get local_files")  
 }
 
 ##
@@ -380,6 +398,7 @@ function fetch_files() {
  # Fetch prod files to local
  # 
 function _fetch_files_production() {
+  load_production_config
   if [ ! "$production_files" ] || [ ! "$local_files" ] || [ "$production_files" == "$local_files" ]
   then
     end "Bad config"
@@ -404,6 +423,7 @@ function _fetch_files_production() {
  # Fetch staging files to local
  # 
 function _fetch_files_staging() {
+  load_staging_config
   if [ ! "$staging_files" ] || [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]
   then
     end "Bad config"
@@ -474,8 +494,8 @@ function fetch_db() {
  # Fetch the remote db and import it to local
  #
 function _fetch_db_production() {  
-  if [ ! "$production_script" ] || [ ! "$production_db_dir" ] || [ ! "$production_server" ] || [ ! "$production_db_name" ]
-  then
+  load_production_config
+  if [ ! "$production_script" ] || [ ! "$production_db_dir" ] || [ ! "$production_server" ] || [ ! "$production_db_name" ]; then
     end "Bad production db config"
   fi
 
@@ -489,6 +509,7 @@ function _fetch_db_production() {
   echo "Exporting production db..."
   local _export_suffix='fetch_db'
   show_switch
+
   ssh $production_server "cd $production_root && . $production_script export $_export_suffix"
   wait
 
@@ -509,9 +530,9 @@ function _fetch_db_production() {
 ##
  # Fetch the staging db and import it to local
  #
-function _fetch_db_staging() {  
-  if [ ! "$staging_script" ] || [ ! "$staging_db_dir" ] || [ ! "$staging_server" ] || [ ! "$staging_db_name" ]
-  then
+function _fetch_db_staging() {
+  load_staging_config
+  if [ ! "$staging_script" ] || [ ! "$staging_db_dir" ] || [ ! "$staging_server" ] || [ ! "$staging_db_name" ]; then
     end "Bad staging db config"
   fi
 
@@ -1257,8 +1278,10 @@ function show_info() {
   fi
   echo
 
-  if [ "$local_role" == 'dev' ]
-  then
+  if [ "$local_role" == 'dev' ]; then
+    echo "Loading remote configurations..."
+    load_staging_config
+    load_production_config
     theme_header 'PRODUCTION' $color_prod
     echo "Server        : $production_server"
     echo "DB            : $production_db_name"
