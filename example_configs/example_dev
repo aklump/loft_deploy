@@ -43,10 +43,6 @@ production_pass='prod_pass'
 # production_root is parent directory of .loft_deploy
 production_root='path/to/prod_branch/'
 production_scp='path/to/prod_branch/public_html'
-production_db_name='prod_db_name'
-production_db_dir='path/to/prod_branch/releases/current/db/tags'
-# production_files is optional
-production_files='path/to/prod_branch/public_html/sites/default/files'
 
 ##
  # END PRODUCTION CONFIGURATION
@@ -60,8 +56,6 @@ staging_server='staging_user@staging_host'
 staging_pass='staging_pass'
 #staging_root is parent directory of .loft_deploy
 staging_root='path/to/staging_branch/'
-staging_files='path/to/staging_branch/public_html/sites/default/files'
-staging_db_dir='path/to/staging_branch/releases/current/db/tags'
 
 ##
  # END STAGING CONFIGURATION

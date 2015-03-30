@@ -103,7 +103,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.8.7
+ld_version=0.9
 
 # theme color definitions
 color_red=1
@@ -358,19 +358,23 @@ function load_config() {
  # Logs in to production server for dynamic variables
  #
 function load_production_config() {
-  # @todo Log in once to speed this up.
-  production_db_name=$(ssh $production_server "cd $production_root && . $production_script get local_db_name")
-  production_db_dir=$(ssh $production_server "cd $production_root && . $production_script get local_db_dir")
-  production_files=$(ssh $production_server "cd $production_root && . $production_script get local_files")
+  if [ $production_server ]; then
+    # @todo Log in once to speed this up.
+    production_db_name=$(ssh $production_server "cd $production_root && . $production_script get local_db_name")
+    production_db_dir=$(ssh $production_server "cd $production_root && . $production_script get local_db_dir")
+    production_files=$(ssh $production_server "cd $production_root && . $production_script get local_files")
+  fi
 }
 
 ##
  # Logs in to staging for dynamic variables
  #
 function load_staging_config() {
-  staging_db_name=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_name")
-  staging_db_dir=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_dir")
-  staging_files=$(ssh $staging_server "cd $staging_root && . $staging_script get local_files")  
+  if [ $staging_server ]; then
+    staging_db_name=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_name")
+    staging_db_dir=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_dir")
+    staging_files=$(ssh $staging_server "cd $staging_root && . $staging_script get local_files")
+  fi
 }
 
 ##
@@ -1033,27 +1037,6 @@ function print_header() {
 function configtest() {
   configtest_return=true;
   echo 'Testing...'
-
-  #
-  #
-  # Logs in to production and grabs the prodution db name to compare against
-  # our local configuration variable.
-  #
-  if [ "$production_server" ]; then
-    remote_name=$(ssh $production_server "cd $production_root && . $production_script get local_db_name")
-    if [ "$remote_name" != "$production_db_name" ]; then
-      configtest_return=false
-      warning "Production DB name mismatch between local config and production config"      
-    fi
-  fi
-
-  if [ "$staging_server" ]; then
-    remote_name=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_name")
-    if [ "$remote_name" != "$staging_db_name" ]; then
-      configtest_return=false
-      warning "Staging DB name mismatch between local config and staging config"      
-    fi
-  fi
 
   # Test for the production_script variable.
   if [ "$production_server" ] && [ ! "$production_script" ]; then
