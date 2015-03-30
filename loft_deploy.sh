@@ -1335,12 +1335,18 @@ function _access_check() {
   # For each role, list the ops they MAY execute
   if [ "$local_role" == 'prod' ]; then
     case $1 in
+      'get')
+        return 0
+        ;;
       'export')
         return 0
         ;;
     esac
   elif [ "$local_role" == 'staging' ]; then
     case $1 in
+      'get')
+        return 0
+        ;;
       'export')
         return 0
         ;;
