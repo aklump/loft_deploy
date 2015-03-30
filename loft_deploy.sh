@@ -298,6 +298,8 @@ function init() {
     chmod 0644 .htaccess
     cp $loft_deploy_source/example_configs/example_$1 ./config
     
+    touch files_exclude.txt
+
     mkdir -p prod/db
     mkdir -p prod/files
     touch cached_db_prod
