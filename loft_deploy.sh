@@ -103,7 +103,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.8.4
+ld_version=0.8.5
 
 # theme color definitions
 color_red=1
@@ -1019,7 +1019,7 @@ function configtest() {
   # our local configuration variable.
   #
   if [ "$production_server" ]; then
-    remote_name=$(ssh $production_server "cd $production_root && . $production_script info local_db_name")
+    remote_name=$(ssh $production_server "cd $production_root && . $production_script get local_db_name")
     if [ "$remote_name" != "$production_db_name" ]; then
       configtest_return=false
       warning "Production DB name mismatch between local config and production config"      
@@ -1027,7 +1027,7 @@ function configtest() {
   fi
 
   if [ "$staging_server" ]; then
-    remote_name=$(ssh $staging_server "cd $staging_root && . $staging_script info local_db_name")
+    remote_name=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_name")
     if [ "$remote_name" != "$staging_db_name" ]; then
       configtest_return=false
       warning "Staging DB name mismatch between local config and staging config"      
@@ -1205,15 +1205,23 @@ function show_pass() {
 
 #
 # Return a specific variable value
+# 
+# Does not work on passwords
 #
 # @param string $name
 #
 function get_var() {
-  eval "answer=\$${!1}"
+  
+  # Do not allow passwords for security
+  case "$1" in
+    *pass )
+      return
+      ;;
+  esac
+  
+  eval "answer=${!1}"
   echo $answer
 }
-
-result=$(get_var)
 
 ##
  # Display configuation info
@@ -1423,14 +1431,20 @@ fi
 ##
  # Call the correct handler
  #
-print_header
-update_needed
 
 # Determine the server being operated on
 source_server='prod'
 if [[ "$target" == 'staging' ]]; then
   source_server='staging'
 fi
+
+if [ $op == "get" ]; then
+  get_var $2
+  exit
+fi
+
+print_header
+update_needed
 
 case $op in
   'init')
@@ -1527,11 +1541,7 @@ case $op in
     end
     ;;
   'info')
-    if [[ $2 ]]; then
-      echo $(get_var arg)
-    else
-      show_info
-    fi
+    show_info
     complete
     end    
     ;;
