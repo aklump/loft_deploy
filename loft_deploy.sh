@@ -603,6 +603,7 @@ function reset_db() {
  # Push local files to staging
  #
 function push_files() {
+  load_staging_config
   if [ ! "$staging_files" ]
   then
     end "`tty -s && tput setaf 1`You cannot push your files unless you define a staging environment.`tty -s && tput op`"
@@ -633,6 +634,7 @@ function push_files() {
  # Push local db (with optional export) to staging
  #
 function push_db() {
+  load_staging_config
   if [ ! "$staging_db_dir" ] || [ ! "$staging_server" ]
   then
     end "You cannot push your database unless you define a staging environment."
