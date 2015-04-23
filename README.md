@@ -46,6 +46,9 @@ User files (i.e. _sites/default/files_), which are too dynamic to include in ver
 ### Excluding certain files using _files_exclude.txt_
 You may set Loft Deploy to ignore certain user files by creating a file _.loft_deploy/files_exclude.txt_.  This will be used by the rsync program as an `--exclude-from` argument.
 
+### Filenames with special chars
+There appears to be a shortcoming with filenames that contain special chars.  The file sync may not work in this case.  Easiest fix is to insure filenames do not have special chars, like accents, etc.
+
 ## Fetch/reset/pull from staging
 By default `fetch`, `reset` and `pull` will grab from _production_. In order to perform these functions using staging as the source you will need to **pass the `--staging` flag** like this:
 
@@ -79,7 +82,7 @@ _If these assumptions are not true then this package may be less useful to you._
 
 1. Clone Loft Deploy and create a symlink that is user executable.
 
-        git clone git@github.com:aklump/loft_deploy.git loft_deploy_files;
+        git clone https://github.com/aklump/loft_deploy.git loft_deploy_files;
         ln -s loft_deploy_files/loft_deploy.sh loft_deploy;
         chmod u+x loft_deploy;
 
