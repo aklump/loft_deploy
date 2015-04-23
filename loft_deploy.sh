@@ -360,7 +360,7 @@ function load_config() {
  # Logs in to production server for dynamic variables
  #
 function load_production_config() {
-  if [ $production_server ]; then
+  if [ "$production_server" ]; then
     # @todo Log in once to speed this up.
     production_db_name=$(ssh $production_server "cd $production_root && . $production_script get local_db_name")
     production_db_dir=$(ssh $production_server "cd $production_root && . $production_script get local_db_dir")
@@ -372,7 +372,7 @@ function load_production_config() {
  # Logs in to staging for dynamic variables
  #
 function load_staging_config() {
-  if [ $staging_server ]; then
+  if [ "$staging_server" ]; then
     staging_db_name=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_name")
     staging_db_dir=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_dir")
     staging_files=$(ssh $staging_server "cd $staging_root && . $staging_script get local_files")

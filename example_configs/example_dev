@@ -39,6 +39,7 @@ local_db_pass='dev_db_pass'
  #
 production_script='/path/to/loft_deploy'
 production_server='prod_user@prod_host'
+#production_server='prod_user@prod_host -p 2222'
 production_pass='prod_pass'
 # production_root is parent directory of .loft_deploy
 production_root='path/to/prod_branch/'
