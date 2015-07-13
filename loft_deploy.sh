@@ -103,7 +103,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.9.3
+ld_version=0.9.4
 
 # theme color definitions
 color_red=1
@@ -353,6 +353,15 @@ function load_config() {
     production_scp=$production_root
   fi
 
+  # Setup the port by prefixing with -p
+  production_ssh_port=''
+  production_scp_port=''
+  production_rsync_port=''
+  if [ "$production_port" ]; then
+    production_ssh_port=" -p $production_port "
+    production_scp_port=" -P $production_port "
+  fi
+
   cd $start_dir
 }
 
@@ -362,9 +371,9 @@ function load_config() {
 function load_production_config() {
   if [ "$production_server" ]; then
     # @todo Log in once to speed this up.
-    production_db_name=$(ssh $production_server "cd $production_root && . $production_script get local_db_name")
-    production_db_dir=$(ssh $production_server "cd $production_root && . $production_script get local_db_dir")
-    production_files=$(ssh $production_server "cd $production_root && . $production_script get local_files")
+    production_db_name=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_db_name")
+    production_db_dir=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_db_dir")
+    production_files=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_files")
   fi
 }
 
@@ -410,16 +419,24 @@ function _fetch_files_production() {
     end "Bad config"
   fi
 
-  ld_rsync_ex=''
   echo "Copying files from production server..."
-  if [[ "$ld_rsync_exclude_file" ]] && [[ -f "$ld_rsync_exclude_file" ]]; then
-    excludes=$(cat $ld_rsync_exclude_file);
-    if [[ "$excludes" ]] && [[ "$ld_rsync_ex" ]]; then
-      echo "`tty -s && tput setaf 3`These files listed in $ld_rsync_exclude_file are being ignored:`tty -s && tput op`"
-      echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
-    fi  
+  
+  # Excludes message...
+  if test -e "$ld_rsync_exclude_file"; then
+    excludes="$(cat $ld_rsync_exclude_file)"
+    echo "`tty -s && tput setaf 3`Excluding per: $ld_rsync_exclude_file`tty -s && tput op`"
+    echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
   fi
-  rsync -av $production_server://$production_files/ $config_dir/prod/files/ --delete $ld_rsync_ex
+
+  if [[ "$production_port" ]]; then
+    cmd="rsync -av -e \"ssh -p $production_port\" \"$production_server:$production_files/\" \"$config_dir/prod/files/\" --delete $ld_rsync_ex"
+      echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+      eval $cmd;    
+  else
+    cmd="rsync -av \"$production_server:$production_files/\" \"$config_dir/prod/files/\" --delete $ld_rsync_ex"
+    echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+    eval $cmd;
+  fi
 
   # record the fetch date
   echo $now > $config_dir/prod/cached_files  
@@ -435,16 +452,19 @@ function _fetch_files_staging() {
     end "Bad config"
   fi
 
-  ld_rsync_ex=''
+  # ld_rsync_ex=''
   echo "Copying files from staging server..."
-  if [[ "$ld_rsync_exclude_file" ]] && [[ -f "$ld_rsync_exclude_file" ]]; then
-    excludes=$(cat $ld_rsync_exclude_file);
-    if [[ "$excludes" ]] && [[ "$ld_rsync_ex" ]]; then
-      echo "`tty -s && tput setaf 3`These files listed in $ld_rsync_exclude_file are being ignored:`tty -s && tput op`"
-      echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
-    fi  
+
+  # Excludes message...
+  if test -e "$ld_rsync_exclude_file"; then
+    excludes="$(cat $ld_rsync_exclude_file)"
+    echo "`tty -s && tput setaf 3`Excluding per: $ld_rsync_exclude_file`tty -s && tput op`"
+    echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
   fi
-  rsync -av $staging_server://$staging_files/ $config_dir/staging/files/ --delete $ld_rsync_ex
+
+  cmd="rsync -av \"$staging_server:$staging_files/\" \"$config_dir/staging/files/\" --delete $ld_rsync_ex"
+  echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+  eval $cmd;  
 
   # record the fetch date
   echo $now > $config_dir/staging/cached_files  
@@ -467,19 +487,17 @@ function reset_files() {
   echo
   echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
 
-  source=$config_dir/$source_server/files
-  if [ ! -d $source ]
-  then
+  source="$config_dir/$source_server/files"
+  if [ ! -d $source ]; then
     end "Please fetch files first"
   fi
   confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE LOCAL FILES with $source_server files?`tty -s && tput op`"
-  echo 'Previewing...'
-  if [[ "$ld_rsync_ex" ]]; then
-    echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
-  fi  
-  rsync -av $source/ $local_files/ --delete --dry-run $ld_rsync_ex
-  confirm 'That was a preview... do it for real?'
-  rsync -av $source/ $local_files/ --delete $ld_rsync_ex
+
+  # We should not worry about exclude files here, that will have been taken
+  # care of during the fetch command.
+  cmd="rsync -av $source/ $local_files/ --delete"
+  echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+  eval $cmd
 }  
 
 ##
@@ -516,20 +534,20 @@ function _fetch_db_production() {
   local _export_suffix='fetch_db'
   show_switch
 
-  ssh $production_server "cd $production_root && . $production_script export $_export_suffix"
+  ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix"
   wait
 
   echo "Downloading from production..."
   local _remote_file="$production_db_dir/${production_db_name}-$_export_suffix.sql.gz"
   local _local_file="$config_dir/prod/db/fetched.sql.gz"
-  scp "$production_server://$_remote_file" "$_local_file"
+  scp $production_scp_port"$production_server:$_remote_file" "$_local_file"
 
   # record the fetch date
   echo $now > $config_dir/prod/cached_db
 
   # delete it from remote
   echo "Deleting the production copy..."
-  ssh $production_server "rm $_remote_file"
+  ssh $production_server$production_ssh_port "rm $_remote_file"
   show_switch
 }
 
@@ -558,7 +576,7 @@ function _fetch_db_staging() {
   echo "Downloading from staging..."
   local _remote_file="$staging_db_dir/${staging_db_name}-$_export_suffix.sql.gz"
   local _local_file="$config_dir/staging/db/fetched.sql.gz"
-  scp "$staging_server://$_remote_file" "$_local_file"
+  scp "$staging_server:$_remote_file" "$_local_file"
 
   # record the fetch date
   echo $now > $config_dir/staging/cached_db
@@ -623,9 +641,9 @@ function push_files() {
   if [[ "$ld_rsync_ex" ]]; then
     echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
   fi  
-  rsync -av $local_files/ $staging_server://$staging_files/ --delete --dry-run $ld_rsync_ex
+  rsync -av $local_files/ $staging_server:$staging_files/ --delete --dry-run $ld_rsync_ex
   confirm 'That was a preview... do it for real?'
-  rsync -av $local_files/ $staging_server://$staging_files/ --delete $ld_rsync_ex
+  rsync -av $local_files/ $staging_server:$staging_files/ --delete $ld_rsync_ex
 
   complete "Push files complete; please test your staging site."
 }
@@ -651,7 +669,7 @@ function push_db() {
   echo 'Pushing db to staging...'
   filename="$current_db_filename.gz"
   _remote_file="$staging_db_dir/$filename"
-  scp "$current_db_dir/$filename" "$staging_server://$_remote_file"
+  scp "$current_db_dir/$filename" "$staging_server:$_remote_file"
 
   # Log into staging and import the database.
   show_switch
@@ -1057,7 +1075,7 @@ function configtest() {
   # Assert the production script is found.
 
   # Assert that the production file directory exists
-  if [ "$production_server" ] && [ "$production_files" ] && ! ssh $production_server "test -e $production_files"; then
+  if [ "$production_server" ] && [ "$production_files" ] && ! ssh $production_server$production_ssh_port "test -e $production_files"; then
     configtest_return=false;
     warning "Your production files directory doesn't exist: $production_files"
   fi
@@ -1104,7 +1122,20 @@ function configtest() {
     warning "local_files: $local_files does not exist."
   fi
 
-  if [ "$production_server" ] && ! ssh $production_server "test -e $production_db_dir"; then
+  # Test if files directory is inside of the parent of the config dir
+  parent=$(dirname "$config_dir")
+  if [[ "$local_files" != "$parent/"* ]]; then
+    configtest_return=false
+    warning 'Your local files directory is outside of your configuration root.'
+  fi
+  # Test if db directory is inside of the parent of the config dir
+  if [[ "$local_db_dir" != "$parent/"* ]]; then
+    configtest_return=false
+    warning 'Your local db directory is outside of your configuration root.'
+  fi
+
+
+  if [ "$production_server" ] && ! ssh $production_server$production_ssh_port "test -e $production_db_dir"; then
     configtest_return=false
     warning "Production db dir doesn't exist: $production_db_dir"
   fi
@@ -1123,7 +1154,7 @@ function configtest() {
   fi
 
   # Connection test for prod
-  if [ "$production_server" ] && ! ssh -q $production_server exit
+  if [ "$production_server" ] && ! ssh -q $production_server$production_ssh_port exit
   then
     configtest_return=false
     warning "Can't connect to production server."
@@ -1144,14 +1175,14 @@ function configtest() {
   fi  
 
   # Connection test to production/config test for production
-  if [ "$production_root" ] && ! ssh $production_server "[ -f '${production_root}/.loft_deploy/config' ]"
+  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_root}/.loft_deploy/config' ]"
   then
     configtest_return=false
     warning "production_root: ${production_root}/.loft_deploy/config does not exist"
   fi
 
   # Connection test to production script test for production
-  if [ "$production_root" ] && ! ssh $production_server "[ -f '${production_script}' ]"
+  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_script}' ]"
   then
     configtest_return=false
     warning "production_script: ${production_script} not found. Make sure you're not using ~ in the path."
@@ -1261,7 +1292,6 @@ function show_info() {
     if [[ -f "$config_dir/staging/cached_files" ]]; then
       echo "Files Staging : " $(cat $config_dir/staging/cached_files)
     fi
-      
   fi
   echo
 
@@ -1271,6 +1301,9 @@ function show_info() {
     load_production_config
     theme_header 'PRODUCTION' $color_prod
     echo "Server        : $production_server"
+    if [ $production_port ]; then
+      echo "Port          : $production_port"
+    fi
     echo "DB            : $production_db_name"
     echo "Dumps         : $production_db_dir"
     echo "Files         : $production_files"
@@ -1474,7 +1507,7 @@ case $op in
     end
     ;;
   'scp')
-    complete "scp $production_server://$production_scp"
+    complete "scp $production_scp_port$production_server:$production_scp"
     end
     ;;
   'ls')
