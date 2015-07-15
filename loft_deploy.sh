@@ -318,6 +318,88 @@ function init() {
   fi
 }
 
+
+function handle_sql_files() {
+
+  local sql_dir="$config_dir/sql"
+
+  # We have to clean this on out because it determins how the mysql
+  # is processed in the export function.
+  local file=$(get_filename_db_tables_data)
+  test -f "$file" && rm $file
+
+  test -e "$sql_dir" || return
+
+  local processed_dir="$config_dir/cache"
+  test -d "$processed_dir" || mkdir -p "$processed_dir"
+
+  # Copy over text files direct
+  for file in $(find $sql_dir  -type f -iname "*.txt"); do
+    local name=$(basename "$file")
+    cp "$file" "$processed_dir/$name"
+  done
+
+  # First compile sql files' dynamic variables
+  for file in $(find $sql_dir  -type f -iname "*.sql"); do
+    local sql=$(cat $file);
+    
+    sql=$(echo $sql | sed -e "s/\$local_db_name/$local_db_name/g")
+    # sql=$(echo $sql | sed -e "s/\$local_db_user/$local_db_user/g")
+    # sql=$(echo $sql | sed -e "s/\$local_db_pass/$local_db_pass/g")
+    # sql=$(echo $sql | sed -e "s/\$local_role/$local_role/g")
+
+    name=$(basename "$file")
+    echo $sql > "$processed_dir/$name"
+  done
+
+  # Now execute the sql files
+  for file in $(find $processed_dir  -type f -iname "*.sql"); do
+    local cmd=$(cat $file)
+    local outfile=${file%.*}.txt
+    $ld_mysql -u$local_db_user -p$local_db_pass -h$local_db_host $local_db_name -s -N -e "$cmd" > "$outfile"
+    rm $file
+  done
+
+  # Create the inversion of the no_data list as this is what we'll need
+  local no_data="$processed_dir/db_tables_no_data.txt"
+  if [[ -f "$no_data" ]]; then
+    local i=0
+    while read line; do
+      tables[i]=$line
+      i=$(($i + 1))
+    done < $no_data
+    local tables=$(printf ",\'%s\'" "${tables[@]}")
+    tables=${tables:1}
+    cmd="SELECT table_name FROM information_schema.tables WHERE table_schema = '$local_db_name' AND table_name NOT IN ($tables)"
+    outfile=$(get_filename_db_tables_data)
+    $ld_mysql -u$local_db_user -p$local_db_pass -h$local_db_host $local_db_name -s -N -e "$cmd" > "$outfile"
+    rm $no_data
+  fi
+}
+
+function get_filename_db_tables_data() {
+  echo "$config_dir/cache/db_tables_data.txt"
+}
+
+##
+ # Returns a csv snippet of all database tables to export data for
+ # 
+ # This is ready to use in the sql statement.
+ #
+function get_sql_ready_db_tables_data() {
+  no_data=$(get_filename_db_tables_data)
+  test -e $no_data || return
+
+  i=0
+  while read line; do
+    tables[i]=$line
+    i=$(($i + 1))
+  done < $no_data
+  # tables=$(printf " %s" "${tables[@]}")
+  # tables=${tables:1}
+  echo ${tables[@]}
+}
+
 ##
  # Load the configuration file
  #
@@ -610,7 +692,10 @@ function reset_db() {
   fi
 
   #backup local
-  export_db "reset_backup_$now"
+  confirm "Would you like a backup of the current db" "noend"
+  if [[ $confirm_result == 'true' ]]; then
+    export_db "reset_backup_$now"
+  fi
 
   echo "Importing $_file"
   import_db "$_file"
@@ -758,7 +843,20 @@ function export_db() {
   fi
 
   echo "Exporting database as $file_gz..."
-  $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r "$file"
+
+  # Do we need to process a db_tables_no_data file?
+  handle_sql_files    
+
+  # There are two ways of doing this, it will depend if we are to exclude data
+  # from some tables or not
+  data=$(get_sql_ready_db_tables_data)
+  if [[ "$data" ]]; then
+    echo "`tty -s && tput setaf 3`Omitting data from some tables.`tty -s && tput op`"
+    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name --no-data > "$file"
+    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name $data --no-create-info >> "$file"
+  else
+    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r "$file"  
+  fi
   
   if [ "$2" == '-f' ]; then
     $ld_gzip -f "$file"
@@ -847,11 +945,9 @@ function confirm() {
   echo "$1 (y/n)?"
   read -n 1 a
   confirm_result=true
-  if [ "$a" != 'y' ]
-  then
+  if [ "$a" != 'y' ]; then
     confirm_result=false
-    if [ "$2" != 'noend' ]
-    then
+    if [ "$2" != 'noend' ]; then
       end 'CANCELLED!'
     fi
   fi

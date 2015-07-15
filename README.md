@@ -122,6 +122,38 @@ MOTD will print a reminder each time a Loft Deploy action is executed; use it to
 
 Create a file in your project, `.loft_deploy/motd`, the contents of which is echoed when you run any loft_deploy command.  This is a way to store reminders per project.
 
+## SQL configuration
+**GOTCHA!!!** It is crucial to realize that the configuration for these needs to be created on the same environmnet as the database.  Meaning, if you are wanting to exclude files from the production database, when pulling from a local dev environment, the files described below MUST be created on the production server config files.
+
+### Exclude data from some tables: `sql/db_tables_no_data`
+**Scenario**: You are working on a Drupal site and you do not want to export the contents of the `cache` or `cache_bootstrap` tables.  Here's how to configure Loft Deploy to do this:
+
+1. Create a file as `.loft_deploy/sql/db_tables_no_data.txt`
+1. In that file add the following (one table per line):
+    
+        cache
+        cache_bootstrap
+
+1. Now only the table structure and not the data will be exported.
+
+#### But how about all `cache` tables?
+Yes this is supported and is done like this:
+
+1. Create a file as `.loft_deploy/sql/db_tables_no_data.sql`; notice the extension is now `.sql`.
+1. In that file add the sql command to select all cache tables, e.g.,
+    
+        SELECT table_name FROM information_schema.tables WHERE table_schema = '$local_db_name' AND table_name LIKE 'cache%';
+
+1. Notice the use of $local_db_name, which will be dynamically replaced with the configured values for the database table.
+1. Now only the table structure for all cache tables and not the data will be exported.  And you will not have to update a text file listing out cache table names if your db structure grows.
+
+Here are the dynamic component(s) available:
+
+| variable         |
+|------------------|
+| `$local_db_name` |
+
+
 ##Usage:
 After installed and configured type: `loft_deploy help` for available commands; you may also access the help by simply typing `loft_develop`
 
