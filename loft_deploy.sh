@@ -1444,6 +1444,19 @@ function echo_fix() {
   echo
 }
 
+function handle_pre_hook() {
+  hook="$config_dir/hooks/${1}_pre.sh"
+  name=$(basename $hook)
+  arg="`tty -s && tput setaf 2`Calling pre-hook: $name`tty -s && tput op`"
+  test -e "$hook" && source "$hook" "$arg"
+}
+
+function handle_post_hook() {
+  hook="$config_dir/hooks/${1}_post.sh"
+  name=$(basename $hook)
+  arg="`tty -s && tput setaf 2`Calling post-hook: $name`tty -s && tput op`"
+  test -e "$hook" && source "$hook" "$arg"
+}
 
 ##
  # End execution with a message
@@ -1591,19 +1604,25 @@ fi
 print_header
 update_needed
 
+handle_pre_hook $op
+
 case $op in
   'init')
     init $2
     complete
+    handle_post_hook $op
     end
     ;;
   'mysql')
     $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name
+    handle_post_hook $op
     complete 'Your mysql session has ended.'
+    handle_post_hook $op
     end
     ;;
   'scp')
     complete "scp $production_scp_port$production_server:$production_scp"
+    handle_post_hook $op
     end
     ;;
   'ls')
@@ -1613,16 +1632,19 @@ case $op in
     if has_flag f; then
       do_ls "$local_files"
     fi
+    handle_post_hook $op
     end
     ;;
   'configtest')
     configtest
     complete
+    handle_post_hook $op
     end
     ;;
   'export')
     export_db $2
     complete
+    handle_post_hook $op
     end
     ;;
   'pull')
@@ -1636,6 +1658,7 @@ case $op in
       reset_files
       echo 'Files fetched and reset'
     fi
+    handle_post_hook $op
     end
     ;;
   'push')
@@ -1647,6 +1670,7 @@ case $op in
       push_files
       complete 'Files pushed to staging'
     fi
+    handle_post_hook $op
     end
     ;;
   'fetch')
@@ -1662,6 +1686,7 @@ case $op in
       fetch_files
       complete "Files have been fetched; use 'loft_deploy reset -f$suffix' when ready."
     fi
+    handle_post_hook $op
     end
     ;;
   'reset')
@@ -1673,25 +1698,30 @@ case $op in
       reset_files
       complete 'Local files have been reset with production.'
     fi
+    handle_post_hook $op
     end
     ;;
   'import')
     import_db $2
     complete
+    handle_post_hook $op
     end
     ;;
   'help')
     show_help
     complete
+    handle_post_hook $op
     end
     ;;
   'info')
     show_info
     complete
+    handle_post_hook $op
     end    
     ;;
   'pass')
     show_pass
+    handle_post_hook $op
     end
     ;;
 esac
