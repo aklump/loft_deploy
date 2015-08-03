@@ -103,7 +103,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.11.1
+ld_version=0.11.2
 
 # theme color definitions
 color_red=1
@@ -453,6 +453,7 @@ function load_config() {
 function load_production_config() {
   if [ "$production_server" ]; then
     # @todo Log in once to speed this up.
+    production_db_host=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_db_host")
     production_db_name=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_db_name")
     production_db_dir=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_db_dir")
     production_files=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_files")
@@ -464,6 +465,7 @@ function load_production_config() {
  #
 function load_staging_config() {
   if [ "$staging_server" ]; then
+    staging_db_host=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_host")
     staging_db_name=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_name")
     staging_db_dir=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_dir")
     staging_files=$(ssh $staging_server "cd $staging_root && . $staging_script get local_files")
@@ -1369,7 +1371,8 @@ function show_info() {
   theme_header 'LOCAL' $color_local
   echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config        : $config_dir"
-  echo "DB            : $local_db_name"
+  echo "DB Host       : $local_db_host"
+  echo "DB Name       : $local_db_name"
   echo "DB User       : $local_db_user"
   echo "Dumps         : $local_db_dir"
   echo "Files         : $local_files"
@@ -1400,13 +1403,15 @@ function show_info() {
     if [ $production_port ]; then
       echo "Port          : $production_port"
     fi
-    echo "DB            : $production_db_name"
+    echo "DB Host       : $production_db_host"
+    echo "DB Name       : $production_db_name"
     echo "Dumps         : $production_db_dir"
     echo "Files         : $production_files"
     echo
     theme_header 'STAGING' $color_staging
     echo "Server        : $staging_server"
-    echo "DB            : $staging_db_name"
+    echo "DB Host       : $staging_db_host"
+    echo "DB Name       : $staging_db_name"
     echo "Dumps         : $staging_db_dir"
     echo "Files         : $staging_files"
     echo
