@@ -577,9 +577,15 @@ function reset_files() {
   fi
   confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE LOCAL FILES with $source_server files?`tty -s && tput op`"
 
-  # We should not worry about exclude files here, that will have been taken
-  # care of during the fetch command.
-  cmd="rsync -av $source/ $local_files/ --delete"
+  # Excludes message...
+  if test -e "$ld_rsync_exclude_file"; then
+    excludes="$(cat $ld_rsync_exclude_file)"
+    echo "`tty -s && tput setaf 3`Excluding per: $ld_rsync_exclude_file`tty -s && tput op`"
+    echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
+  fi
+  # Have to exclude here because there might be some lingering files in the cache
+  # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
+  cmd="rsync -av $source/ $local_files/ --delete $ld_rsync_ex"
   echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
   eval $cmd
 }  
@@ -694,10 +700,10 @@ function reset_db() {
   fi
 
   #backup local
-  confirm "Would you like a backup of the current db" "noend"
-  if [[ $confirm_result == 'true' ]]; then
+#  confirm "Would you like a backup of the current db" "noend"
+#  if [[ $confirm_result == 'true' ]]; then
     export_db "reset_backup_$now"
-  fi
+#  fi
 
   echo "Importing $_file"
   import_db "$_file"
@@ -882,8 +888,13 @@ function import_db() {
     end 
   fi
 
-  if file=$1 && [ ! -f $1 ] && file=$current_db_dir$current_db_filename && [ ! -f $file ] && file=$file.gz && [ ! -f $file ]; then
-    end "$file not found."
+  if file=$1 && check1=$file && [ ! -f $1 ] && file=$current_db_dir$current_db_filename && check2=$file && [ ! -f $file ] && file=$file.gz && check3=$file && [ ! -f $file ]; then
+    
+    echo "File not found as:"
+    echo $check1;
+    echo $check2;
+    echo $check3;
+    end
   fi
 
   confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure"
