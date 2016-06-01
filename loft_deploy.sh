@@ -55,6 +55,13 @@
 # @defgroup loft_deploy Loft Deploy
 # @{
 #
+source="${BASH_SOURCE[0]}"
+while [ -h "$source" ]; do # resolve $source until the file is no longer a symlink
+  dir="$( cd -P "$( dirname "$source" )" && pwd )"
+  source="$(readlink "$source")"
+  [[ $source != /* ]] && source="$dir/$source" # if $source was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+root="$( cd -P "$( dirname "$source" )" && pwd )"
 
 ##
  # Bootstrap
@@ -62,13 +69,10 @@
 declare -a args=()
 declare -a flags=()
 declare -a params=()
-for arg in "$@"
-do
-  if [[ "$arg" =~ ^--(.*) ]]
-  then
+for arg in "$@"; do
+  if [[ "$arg" =~ ^--(.*) ]]; then
     params=("${params[@]}" "${BASH_REMATCH[1]}")
-  elif [[ "$arg" =~ ^-(.*) ]]
-  then
+  elif [[ "$arg" =~ ^-(.*) ]]; then
     flags=("${flags[@]}" "${BASH_REMATCH[1]}")
   else
     args=("${args[@]}" "$arg")
@@ -103,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.11.3
+ld_version=0.11.4
 
 # theme color definitions
 color_red=1
@@ -282,42 +286,22 @@ function _update_0_7_6() {
  # @return NULL
  #
 function init() {
-  if [ -d .loft_deploy ]
-  then
+  if [ -d .loft_deploy ]; then
     end "$start_dir is already initialized."
   fi
-  if [ $# -ne 1 ]
-  then
+  if [ $# -ne 1 ]; then
     end "Please specific one of: dev, staging or prod.  e.g. loft_deploy init dev"
-  elif [ "$1" == 'dev' ] || [ "$1" == 'staging' ] || [ "$1" == 'prod' ]
-  then
-    loft_deploy_source=$(which loft_deploy)_files
-    mkdir .loft_deploy
-    cd .loft_deploy
-    echo 'deny from all' > .htaccess
-    chmod 0644 .htaccess
-    cp $loft_deploy_source/example_configs/example_$1 ./config
-    
-    touch files_exclude.txt
-
-    mkdir -p prod/db
-    mkdir -p prod/files
-    touch cached_db_prod
-    touch cached_files_prod
-    
-    mkdir -p staging/db
-    mkdir -p staging/files
-    touch cached_db_staging
-    touch cached_files_staging
-
-    cd $start_dir
+  elif [ "$1" == 'dev' ] || [ "$1" == 'staging' ] || [ "$1" == 'prod' ]; then
+    mkdir $config_dir && rsync -a "$root/install/base/" "$config_dir/"
+    chmod 0644 "$config_dir/.htaccess"
+    cp "$root/install/config/$1" "$config_dir/config"
+    cd "$start_dir"
     complete
     end "Please configure and save $config_dir/config"
   else
-    end "Invalid argument"
+    end "Invalid argument: $1"
   fi
 }
-
 
 function handle_sql_files() {
 
@@ -498,8 +482,7 @@ function fetch_files() {
  # 
 function _fetch_files_production() {
   load_production_config
-  if [ ! "$production_files" ] || [ ! "$local_files" ] || [ "$production_files" == "$local_files" ]
-  then
+  if [ ! "$production_files" ] || [ ! "$local_files" ] || [ "$production_files" == "$local_files" ]; then
     end "Bad config"
   fi
 
@@ -531,8 +514,7 @@ function _fetch_files_production() {
  # 
 function _fetch_files_staging() {
   load_staging_config
-  if [ ! "$staging_files" ] || [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]
-  then
+  if [ ! "$staging_files" ] || [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]; then
     end "Bad config"
   fi
 
@@ -715,12 +697,10 @@ function reset_db() {
  #
 function push_files() {
   load_staging_config
-  if [ ! "$staging_files" ]
-  then
+  if [ ! "$staging_files" ]; then
     end "`tty -s && tput setaf 1`You cannot push your files unless you define a staging environment.`tty -s && tput op`"
   fi
-  if [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]
-  then
+  if [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]; then
     end "`tty -s && tput setaf 1`BAD CONFIG`tty -s && tput op`"
   fi
 
@@ -746,8 +726,7 @@ function push_files() {
  #
 function push_db() {
   load_staging_config
-  if [ ! "$staging_db_dir" ] || [ ! "$staging_server" ]
-  then
+  if [ ! "$staging_db_dir" ] || [ ! "$staging_server" ]; then
     end "You cannot push your database unless you define a staging environment."
   fi
 
@@ -790,13 +769,11 @@ function push_db() {
  #
 function _current_db_paths() {
   current_db_dir=''
-  if [ "$local_db_dir" ]
-  then
+  if [ "$local_db_dir" ]; then
     current_db_dir="$local_db_dir/"
   fi
   local _suffix=''
-  if [ "$1" ]
-  then
+  if [ "$1" ]; then
     _suffix="-$1"
   fi
   current_db_filename="$local_db_name$_suffix.sql"
@@ -841,12 +818,10 @@ function export_db() {
     rm $file_gz
   fi
 
-  if [ ! "$local_db_user" ] || [ ! "$local_db_pass" ] || [ ! "$local_db_name" ]
-  then
+  if [ ! "$local_db_user" ] || [ ! "$local_db_pass" ] || [ ! "$local_db_name" ]; then
     end "Bad config"
   fi
-  if [ ! "$local_db_host" ]
-  then
+  if [ ! "$local_db_host" ]; then
     local_db_host="localhost"
   fi
 
@@ -935,8 +910,7 @@ function _drop_tables() {
  #
  ##
 function complete() {
-  if [ $# -ne 0 ]
-  then
+  if [ $# -ne 0 ]; then
     echo $1
   fi
   echo '----------------------------------------------------------'
@@ -1055,8 +1029,7 @@ function theme_help_topic() {
  #   Sets the value of global $theme_header_return
  #
 function theme_header() {
-  if [ $# -eq 1 ]
-  then
+  if [ $# -eq 1 ]; then
     color=7
   else
     color=$2
@@ -1091,8 +1064,7 @@ function show_help() {
   theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. loft_deploy -f ls -la'
   theme_help_topic pass 'l' 'Display password(s)' '--prod Production' 'staging Staging' '--all All'
 
-  if [ "$local_role" != 'prod' ]
-  then
+  if [ "$local_role" != 'prod' ]; then
     theme_header 'from prod' $color_prod
   fi
 
@@ -1100,8 +1072,7 @@ function show_help() {
   theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database'
   theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database'
 
-  if [ "$local_role" != 'staging' ]
-  then
+  if [ "$local_role" != 'staging' ]; then
     theme_header 'to/from staging' $color_staging
   fi
 
@@ -1135,8 +1106,7 @@ function mysql_check() {
   db_host=$4
   $ld_mysql -u "${db_user}" -p"${db_pass}" -h "${db_host}" "${db_name}" -e exit 2>/dev/null
   db_status=`echo $?`
-  if [ $db_status -ne 0 ]
-  then
+  if [ $db_status -ne 0 ]; then
     mysql_check_result=false;
   else
     mysql_check_result=true;
@@ -1190,43 +1160,37 @@ function configtest() {
   fi
 
   # Test for the presence of the .htaccess file in the .loft_config dir
-  if [ ! -f  "$config_dir/.htaccess" ]
-  then
+  if [ ! -f  "$config_dir/.htaccess" ]; then
     configtest_return=false
     warning "Missing .htaccess in $config_dir; if web accessible, your data is at risk!" "echo 'deny from all' > $config_dir/.htaccess"
   fi
 
   #Test to make sure the .htaccess contains deny from all
   contents=$(grep 'deny from all' $config_dir/.htaccess)
-  if [ ! "$contents" ]
-  then
+  if [ ! "$contents" ]; then
     configtest_return=false
     warning "$config_dir/.htaccess should contain the 'deny from all' directive; your data may be at risk!"
   fi
 
   # Test for prod server password in prod environments
-  if ([ "$local_role" == 'prod' ] && [ "$production_pass" ]) || ([ "$local_role" == 'staging' ] && [ "$staging_pass" ])
-  then
+  if ([ "$local_role" == 'prod' ] && [ "$production_pass" ]) || ([ "$local_role" == 'staging' ] && [ "$staging_pass" ]); then
     configtest_return=false;
     warning "For security purposes you should remove the $local_role server password from your config file in a $local_role environment."
   fi
 
   # Test for other environments than prod, in prod environment
-  if [ "$local_role" == 'prod' ] && ( [ "$production_server" ] || [ "$staging_server" ] )
-  then
+  if [ "$local_role" == 'prod' ] && ( [ "$production_server" ] || [ "$staging_server" ] ); then
     configtest_return=false;
     warning "In a $local_role environment, no other environments should be defined.  Remove extra settings from config."
   fi
 
   # Test for directories
-  if [ ! -d "$local_db_dir" ]
-  then
+  if [ ! -d "$local_db_dir" ]; then
     configtest_return=false;
     warning "local_db_dir: $local_db_dir does not exist."
   fi
 
-  if [ "$local_files" ] && [ ! -d "$local_files" ]
-  then
+  if [ "$local_files" ] && [ ! -d "$local_files" ]; then
     configtest_return=false;
     warning "local_files: $local_files does not exist."
   fi
@@ -1256,57 +1220,49 @@ function configtest() {
 
 
   # Test for a production root in dev environments
-  if [ "$production_server" ] && [ "$local_role" == 'dev' ] && [ ! "$production_root" ]
-  then
+  if [ "$production_server" ] && [ "$local_role" == 'dev' ] && [ ! "$production_root" ]; then
     configtest_return=false;
     warning "production_root: Please define the production environment's root directory "
   fi
 
   # Connection test for prod
-  if [ "$production_server" ] && ! ssh -q $production_server$production_ssh_port exit
-  then
+  if [ "$production_server" ] && ! ssh -q $production_server$production_ssh_port exit; then
     configtest_return=false
     warning "Can't connect to production server."
   fi
 
   # Connection test for staging
-  if [ "$staging_server" ] && ! ssh -q $staging_server exit
-  then
+  if [ "$staging_server" ] && ! ssh -q $staging_server exit; then
     configtest_return=false
     warning "Can't connect to staging server."
   fi
 
   # Test for a staging root in dev environments
-  if [ "$staging_server" ] && [ "$local_role" == 'dev' ] && [ ! "$staging_root" ]
-  then
+  if [ "$staging_server" ] && [ "$local_role" == 'dev' ] && [ ! "$staging_root" ]; then
     configtest_return=false;
     warning "staging_root: Please define the staging environment's root directory"
   fi  
 
   # Connection test to production/config test for production
-  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_root}/.loft_deploy/config' ]"
-  then
+  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_root}/.loft_deploy/config' ]"; then
     configtest_return=false
     warning "production_root: ${production_root}/.loft_deploy/config does not exist"
   fi
 
   # Connection test to production script test for production
-  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_script}' ]"
-  then
+  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_script}' ]"; then
     configtest_return=false
     warning "production_script: ${production_script} not found. Make sure you're not using ~ in the path."
   fi
 
   # Connection test to staging/config test for staging
-  if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_root}/.loft_deploy/config' ]"
-  then
+  if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_root}/.loft_deploy/config' ]"; then
     configtest_return=false
     warning "staging_root: ${staging_root}/.loft_deploy/config does not exist"
   fi
 
   # Connection test to staging script test for staging
-  if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_script}' ]"
-  then
+  if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_script}' ]"; then
     configtest_return=false
     warning "staging_script: ${staging_script} not found. Make sure you're not using ~ in the path."
   fi  
@@ -1314,8 +1270,7 @@ function configtest() {
   # Test for db access
   mysql_check_result=false
   mysql_check $local_db_user $local_db_pass $local_db_name $local_db_host
-  if [ $mysql_check_result == false ]
-  then
+  if [ $mysql_check_result == false ]; then
     configtest_return=false;
     warning "Can't connect to local DB; check credentials"
   fi
@@ -1324,8 +1279,7 @@ function configtest() {
   # @todo test for ssh connection to staging
 
   # @todo test local and remote paths match
-  if [ "$configtest_return" == true ]
-  then
+  if [ "$configtest_return" == true ]; then
     echo "`tty -s && tput setaf $color_green`All tests passed.`tty -s && tput op`"
   else
     echo "`tty -s && tput setaf $color_red`Some tests failed.`tty -s && tput op`"
@@ -1438,8 +1392,7 @@ function warning() {
   echo
   #echo "!!!!!!WARNING!!!!!!"
   echo "`tty -s && tput setaf 3`$1`tty -s && tput op`"
-  if [ "$2" ]
-  then
+  if [ "$2" ]; then
     echo_fix "$2"
   fi
   confirm 'Disregard warning'
@@ -1560,8 +1513,7 @@ function do_ls() {
  #
 
 # init has to come before configuration loading
-if [ "$op" == 'init' ]
-then
+if [ "$op" == 'init' ]; then
   if _access_check $op; then
     init $2
   else
@@ -1572,8 +1524,7 @@ fi
 
 load_config
 
-if [ "$op" == 'update' ]
-then
+if [ "$op" == 'update' ]; then
   if _access_check $op; then
     update $2
   else
@@ -1583,12 +1534,10 @@ then
 fi
 
 # Help MUST COME AFTER CONFIG FOR ACCESS CHECKING!!!! DON'T MOVE
-if [ ! "$op" ] || [ "$op" == 'help' ]
-then
+if [ ! "$op" ] || [ "$op" == 'help' ]; then
   show_help
 
-  if [ ! "$op" ]
-  then
+  if [ ! "$op" ]; then
     echo "Please call with one or more arguments."
   fi
   end

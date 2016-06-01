@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+# @file
+# Configuration file for loft_deploy for a local development environment
+#
+
+##
+ # LOCAL CONFIGURATION (For Development)
+ #
+local_role="dev"
+
+# An arbitrary title describing this environment to you for personal id; the
+# provided format is a suggestion, any is valid
+local_title="{Developer's business or office name} ~ {local url}"
+
+# Optional, where are your non-versioned, dynamic files kept?
+local_files='/path/to/dev/branch/site/public_html/sites/default/files'
+
+# Where do you want db dumps saved?
+local_db_dir='/path/to/dev/branch/site/private/default/db/purgeable'
+
+# What are the credentials for connecting to the database?
+local_db_host='localhost'
+local_db_name='mp_mantis'
+local_db_user='loft'
+local_db_pass='dloft8'
+
+ld_mysql='/Applications/MAMP/Library/bin/mysql'
+ld_mysqldump='/Applications/MAMP/Library/bin/mysqldump'
+ld_gzip='/usr/bin/gzip'
+ld_gunzip='/usr/bin/gunzip'
+
+##
+ # END LOCAL CONFIGURATION
+ #
+
+
+##
+ # PRODUCTION CONFIGURATION
+ #
+production_script='/path/to/loft_deploy'
+production_server='prod_user@prod_host'
+#production_port=2222
+#production_pass='prod_pass'
+# Production root is directory containing .loft_deploy in the production envirionment.
+production_root='/path/to/prod_branch/'
+production_scp='/path/to/prod_branch/public_html/.htaccess .htaccess'
+
+##
+ # END PRODUCTION CONFIGURATION
+ #
+
+##
+ # STAGING SERVER
+ #
+staging_script='/path/to/loft_deploy'
+staging_server='staging_user@staging_host'
+#staging_pass='staging_pass'
+# Staging root is directory containing .loft_deploy in the production envirionment.
+staging_root='path/to/staging_branch/'
+
+##
+ # END STAGING CONFIGURATION
+ #
