@@ -25,6 +25,10 @@ local_db_name='mp_mantis'
 local_db_user='loft'
 local_db_pass='dloft8'
 
+# Alternately to the credentials declaration above, if this is Drupal just point to the settings.php file
+#local_drupal_settings='/some/path/to/settings.php'
+#local_drupal_db='default'
+
 ld_mysql='/Applications/MAMP/Library/bin/mysql'
 ld_mysqldump='/Applications/MAMP/Library/bin/mysqldump'
 ld_gzip='/usr/bin/gzip'
