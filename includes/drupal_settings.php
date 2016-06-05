@@ -9,7 +9,7 @@ define('DRUPAL_ROOT', '/');
 function t($a) {
   return $a;
 }
-function conf_path($a) {
+function conf_path() {
   return $a;
 }
 
@@ -22,7 +22,7 @@ try {
     throw new \RuntimeException("$path_to_settings settings file is not readable.");
   }
 
-  require $path_to_settings;
+  @require $path_to_settings;
 
   if (!isset($databases[$db_key][$fallback])) {
     throw new \RuntimeException("Missing $database variable.");
