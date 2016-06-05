@@ -4,6 +4,7 @@
  */
 
 
+// TODO Possibly a better way to do all this? 2016-06-05T09:03, aklump
 define('DRUPAL_ROOT', '/');
 
 function t($a) {
