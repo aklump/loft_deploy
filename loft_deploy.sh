@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.11.4
+ld_version=0.12
 
 # theme color definitions
 color_red=1
@@ -415,9 +415,18 @@ function load_config() {
 
   source $config_dir/config
 
+  # Handle reading the drupal settings file if asked
+  if [ "$local_drupal_settings" ]; then
+    IFS=', ' read -r -a settings <<< $(php "$root/includes/drupal_settings.php" $local_drupal_settings $local_drupal_db)
+    local_db_host=${settings[0]};
+    local_db_name=${settings[1]};
+    local_db_user=${settings[2]};
+    local_db_pass=${settings[3]};
+  fi
+
   if [[ ! $production_scp ]]; then
     production_scp=$production_root
-  fi
+  fi;
 
   # Setup the port by prefixing with -p
   production_ssh_port=''
