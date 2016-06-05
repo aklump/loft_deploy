@@ -9,6 +9,9 @@ define('DRUPAL_ROOT', '/');
 function t($a) {
   return $a;
 }
+function conf_dir($a) {
+  return $a;
+}
 
 $path_to_settings = $argv[1];
 $db_key = isset($argv[2]) ? $argv[2] : 'default';
