@@ -1274,7 +1274,13 @@ function configtest() {
   if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_script}' ]"; then
     configtest_return=false
     warning "staging_script: ${staging_script} not found. Make sure you're not using ~ in the path."
-  fi  
+  fi
+
+  # Test drupal settings file
+  if [ "$local_drupal_settings" ]  && ! test -e "$local_drupal_settings"; then
+    configtest_return=false
+    warning "Drupal: Settings file cannot be found at $local_drupal_settings"
+  fi
 
   # Test for db access
   mysql_check_result=false
@@ -1345,6 +1351,9 @@ function show_info() {
   theme_header 'LOCAL' $color_local
   echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config        : $config_dir"
+  if [ "$local_drupal_settings" ]; then
+    echo "Drupal        : $local_drupal_settings"
+  fi
   echo "DB Host       : $local_db_host"
   echo "DB Name       : $local_db_name"
   echo "DB User       : $local_db_user"

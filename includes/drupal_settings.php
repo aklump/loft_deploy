@@ -16,7 +16,7 @@ $fallback = 'default';
 
 try {
   if (!is_readable($path_to_settings)) {
-    throw new \RuntimeException("$settings settings file is not readable.");
+    throw new \RuntimeException("$path_to_settings settings file is not readable.");
   }
 
   require $path_to_settings;
