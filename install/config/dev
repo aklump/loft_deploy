@@ -42,7 +42,7 @@ ld_gunzip='/usr/bin/gunzip'
 ##
  # PRODUCTION CONFIGURATION
  #
-production_script='/path/to/loft_deploy'
+production_script='/usr/local/bin/loft_deploy'
 production_server='prod_user@prod_host'
 #production_port=2222
 #production_pass='prod_pass'
