@@ -15,20 +15,19 @@ $db_key = isset($argv[2]) ? $argv[2] : 'default';
 $fallback = 'default';
 
 try {
-
   if (!is_readable($path_to_settings)) {
-    throw "$settings settings file is not readable.";
+    throw new \RuntimeException("$settings settings file is not readable.");
   }
 
   require $path_to_settings;
 
   if (!isset($databases[$db_key][$fallback])) {
-    throw 'Missing $database variable.';
+    throw new \RuntimeException("Missing $database variable.");
   }
   $db = $databases[$db_key][$fallback];
 
   if ($db['driver'] !== 'mysql') {
-    throw 'Drivers other than mysql are not yet supported by loft_deploy';
+    throw new \RuntimeException("Drivers other than mysql are not yet supported by loft_deploy");
   }
 
   $return[] = empty($db['host']) ? 'localhost' : $db['host'];
