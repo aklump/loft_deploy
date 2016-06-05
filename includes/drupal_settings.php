@@ -9,7 +9,7 @@ define('DRUPAL_ROOT', '/');
 function t($a) {
   return $a;
 }
-function conf_dir($a) {
+function conf_path($a) {
   return $a;
 }
 
