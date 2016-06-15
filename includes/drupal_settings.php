@@ -38,6 +38,7 @@ try {
   $return[] = $db['database'];
   $return[] = $db['username'];
   $return[] = $db['password'];
+  $return[] = $db['port'];
 
 } catch (Exception $e) {
   $return = array_fill(0, 4, '?');

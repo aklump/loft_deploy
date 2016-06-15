@@ -340,7 +340,7 @@ function handle_sql_files() {
   for file in $(find $processed_dir  -type f -iname "*.sql"); do
     local cmd=$(cat $file)
     local outfile=${file%.*}.txt
-    $ld_mysql -u$local_db_user -p$local_db_pass -h$local_db_host $local_db_name -s -N -e "$cmd" > "$outfile"
+    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_db_port $local_db_name -s -N -e "$cmd" > "$outfile"
     rm $file
   done
 
@@ -356,7 +356,7 @@ function handle_sql_files() {
     tables=${tables:1}
     cmd="SELECT table_name FROM information_schema.tables WHERE table_schema = '$local_db_name' AND table_name NOT IN ($tables)"
     outfile=$(get_filename_db_tables_data)
-    $ld_mysql -u$local_db_user -p$local_db_pass -h$local_db_host $local_db_name -s -N -e "$cmd" > "$outfile"
+    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_db_port $local_db_name -s -N -e "$cmd" > "$outfile"
     rm $no_data
   fi
 }
@@ -422,11 +422,17 @@ function load_config() {
     local_db_name=${settings[1]};
     local_db_user=${settings[2]};
     local_db_pass=${settings[3]};
+    local_db_port=${settings[4]};
   fi
 
   if [[ ! $production_scp ]]; then
     production_scp=$production_root
   fi;
+
+  # Setup the mysql port.
+  if [ "$local_db_port" ]; then
+    local_mysql_port=" --port=$local_db_port"
+  fi
 
   # Setup the port by prefixing with -p
   production_ssh_port=''
@@ -435,6 +441,15 @@ function load_config() {
   if [ "$production_port" ]; then
     production_ssh_port=" -p $production_port "
     production_scp_port=" -P $production_port "
+  fi
+
+  # Setup the port by prefixing with -p
+  staging_ssh_port=''
+  staging_scp_port=''
+  staging_rsync_port=''
+  if [ "$staging_port" ]; then
+    staging_ssh_port=" -p $staging_port "
+    staging_scp_port=" -P $staging_port "
   fi
 
   cd $start_dir
@@ -537,9 +552,15 @@ function _fetch_files_staging() {
     echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
   fi
 
-  cmd="rsync -av \"$staging_server:$staging_files/\" \"$config_dir/staging/files/\" --delete $ld_rsync_ex"
-  echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
-  eval $cmd;  
+  if [[ "$staging_port" ]]; then
+    cmd="rsync -av -e \"ssh -p $staging_port\" \"$staging_server:$staging_files/\" \"$config_dir/staging/files/\" --delete $ld_rsync_ex"
+      echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+      eval $cmd;
+  else
+    cmd="rsync -av \"$staging_server:$staging_files/\" \"$config_dir/staging/files/\" --delete $ld_rsync_ex"
+    echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+    eval $cmd;
+  fi
 
   # record the fetch date
   echo $now > $config_dir/staging/cached_files  
@@ -844,10 +865,10 @@ function export_db() {
   data=$(get_sql_ready_db_tables_data)
   if [[ "$data" ]]; then
     echo "`tty -s && tput setaf 3`Omitting data from some tables.`tty -s && tput op`"
-    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name --no-data > "$file"
-    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name $data --no-create-info >> "$file"
+    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name --no-data > "$file"
+    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name $data --no-create-info >> "$file"
   else
-    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -r "$file"  
+    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name -r "$file"
   fi
   
   if [ "$2" == '-f' ]; then
@@ -890,7 +911,7 @@ function import_db() {
     $ld_gunzip "$file"
     file=${file%.*}
   fi
-  $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name < $file
+  $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name < $file
 }
 
 ##
@@ -902,11 +923,11 @@ function _drop_tables() {
   # if [ $confirm_result == false ]; then
   #   return
   # fi
-  tables=$($ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
+  tables=$($ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
   echo "Dropping all tables from the $local_db_name database..."
   for t	in $tables; do
     echo $t
-    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name -e "drop table $t"
+    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name -e "drop table $t"
   done
   echo
 }
@@ -1109,11 +1130,16 @@ function show_help() {
  #   Sets the value of $mysql_check_result
  #
 function mysql_check() {
-  db_user=$1
-  db_pass=$2
-  db_name=$3
-  db_host=$4
-  $ld_mysql -u "${db_user}" -p"${db_pass}" -h "${db_host}" "${db_name}" -e exit 2>/dev/null
+  local db_user=$1
+  local db_pass=$2
+  local db_name=$3
+  local db_host=$4
+  local db_port=$5
+
+  if [ "$db_port" ]; then
+    db_port=" --port=$db_port"
+  fi
+  $ld_mysql -u "$db_user" -p"$db_pass" -h "$db_host$db_port" "$db_name" -e exit 2>/dev/null
   db_status=`echo $?`
   if [ $db_status -ne 0 ]; then
     mysql_check_result=false;
@@ -1284,7 +1310,7 @@ function configtest() {
 
   # Test for db access
   mysql_check_result=false
-  mysql_check $local_db_user $local_db_pass $local_db_name $local_db_host
+  mysql_check $local_db_user $local_db_pass $local_db_name $local_db_host $local_db_port
   if [ $mysql_check_result == false ]; then
     configtest_return=false;
     warning "Can't connect to local DB; check credentials"
@@ -1357,6 +1383,9 @@ function show_info() {
   echo "DB Host       : $local_db_host"
   echo "DB Name       : $local_db_name"
   echo "DB User       : $local_db_user"
+  if [ "$local_db_port" ]; then
+    echo "DB Port       : $local_db_port"
+  fi
   echo "Dumps         : $local_db_dir"
   echo "Files         : $local_files"
   if _access_check 'fetch_db'; then
@@ -1393,6 +1422,9 @@ function show_info() {
     echo
     theme_header 'STAGING' $color_staging
     echo "Server        : $staging_server"
+    if [ $staging_port ]; then
+      echo "Port          : $staging_port"
+    fi
     echo "DB Host       : $staging_db_host"
     echo "DB Name       : $staging_db_name"
     echo "Dumps         : $staging_db_dir"
@@ -1597,7 +1629,7 @@ case $op in
     end
     ;;
   'mysql')
-    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host $local_db_name
+    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name
     handle_post_hook $op
     complete 'Your mysql session has ended.'
     handle_post_hook $op
