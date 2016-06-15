@@ -21,9 +21,10 @@ local_db_dir='/path/to/dev/branch/site/private/default/db/purgeable'
 
 # What are the credentials for connecting to the database?
 local_db_host='localhost'
-local_db_name='mp_mantis'
-local_db_user='loft'
-local_db_pass='dloft8'
+local_db_name=''
+local_db_user=''
+local_db_pass=''
+local_db_port=3306
 
 # Alternately to the credentials declaration above, if this is Drupal just point to the settings.php file
 #local_drupal_settings='/some/path/to/settings.php'
@@ -37,7 +38,6 @@ ld_gunzip='/usr/bin/gunzip'
 ##
  # END LOCAL CONFIGURATION
  #
-
 
 ##
  # PRODUCTION CONFIGURATION
@@ -59,6 +59,7 @@ production_scp='/path/to/prod_branch/public_html/.htaccess .htaccess'
  #
 staging_script='/path/to/loft_deploy'
 staging_server='staging_user@staging_host'
+#staging_port=2222
 #staging_pass='staging_pass'
 # Staging root is directory containing .loft_deploy in the production envirionment.
 staging_root='path/to/staging_branch/'
