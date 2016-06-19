@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.12.8
+ld_version=0.12.9
 
 # theme color definitions
 color_red=1
@@ -587,7 +587,6 @@ function reset_files() {
   if [ ! -d $source ]; then
     end "Please fetch files first"
   fi
-  confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE LOCAL FILES with $source_server files?`tty -s && tput op`"
 
   # Excludes message...
   if test -e "$ld_rsync_exclude_file"; then
@@ -595,9 +594,15 @@ function reset_files() {
     echo "`tty -s && tput setaf 3`Excluding per: $ld_rsync_exclude_file`tty -s && tput op`"
     echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
   fi
+
   # Have to exclude here because there might be some lingering files in the cache
   # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
   cmd="rsync -av $source/ $local_files/ --delete $ld_rsync_ex"
+
+  echo "`tty -s && tput setaf 2`Here is a preview:`tty -s && tput op`"
+  eval "$cmd --dry-run"
+  confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE LOCAL FILES with these $source_server files?`tty -s && tput op`"
+
   echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
   eval $cmd
 }  
