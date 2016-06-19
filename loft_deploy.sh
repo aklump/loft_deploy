@@ -473,10 +473,10 @@ function load_production_config() {
  #
 function load_staging_config() {
   if [ "$staging_server" ]; then
-    staging_db_host=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_host")
-    staging_db_name=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_name")
-    staging_db_dir=$(ssh $staging_server "cd $staging_root && . $staging_script get local_db_dir")
-    staging_files=$(ssh $staging_server "cd $staging_root && . $staging_script get local_files")
+    staging_db_host=$(ssh $staging_server$staging_ssh_port "cd $staging_root && . $staging_script get local_db_host")
+    staging_db_name=$(ssh $staging_server$staging_ssh_port "cd $staging_root && . $staging_script get local_db_name")
+    staging_db_dir=$(ssh $staging_server$staging_ssh_port "cd $staging_root && . $staging_script get local_db_dir")
+    staging_files=$(ssh $staging_server$staging_ssh_port "cd $staging_root && . $staging_script get local_files")
   fi
 }
 
@@ -1180,6 +1180,50 @@ function configtest() {
     warning "production_script variable is missing or empty in local coniguration."
   fi
 
+  # Assert production script is found on remote
+  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_script}' ]"; then
+    configtest_return=false
+    warning "production_script: ${production_script} not found. Make sure you're not using ~ in the path."
+  fi
+
+  if [ "$production_server" ]; then
+    load_production_config
+  fi
+
+  # Test that local prod connects to a remote environment with a prod role
+  if [ "$prod_server" ]; then
+    role=$(ssh $prod_server$prod_ssh_port "cd $prod_root && . $prod_script get local_role")
+    if [ "$role" != 'prod' ]; then
+      configtest_return=false
+      warning "Prod server as defined locally reports it's role as '$role'"
+    fi
+  fi
+
+  # Test for the staging_script variable.
+  if [ "$staging_server" ] && [ ! "$staging_script" ]; then
+    configtest_return=false
+    warning "staging_script variable is missing or empty in local coniguration."
+  fi
+
+  # Assert staging script is found on remote
+  if [ "$staging_root" ] && ! ssh $staging_server$staging_ssh_port "[ -f '${staging_script}' ]"; then
+    configtest_return=false
+    warning "staging_script: ${staging_script} not found. Make sure you're not using ~ in the path."
+  fi
+
+  if [ "$staging_server" ]; then
+    load_staging_config
+  fi
+
+  # Test that local staging connects to a remote environment with a staging role
+  if [ "$staging_server" ]; then
+    role=$(ssh $staging_server$staging_ssh_port "cd $staging_root && . $staging_script get local_role")
+    if [ "$role" != 'staging' ]; then
+      configtest_return=false
+      warning "Staging server as defined locally reports it's role as '$role'"
+    fi
+  fi
+
   # Test if the staging and production files are the same, but only if we have production files
   if [ "$production_files" ] && [ "$local_files" == "$production_files" ]; then
     configtest_return=false;
@@ -1253,7 +1297,6 @@ function configtest() {
     warning "Staging db dir doesn't exist: $staging_db_dir"
   fi
 
-
   # Test for a production root in dev environments
   if [ "$production_server" ] && [ "$local_role" == 'dev' ] && [ ! "$production_root" ]; then
     configtest_return=false;
@@ -1282,12 +1325,6 @@ function configtest() {
   if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_root}/.loft_deploy/config' ]"; then
     configtest_return=false
     warning "production_root: ${production_root}/.loft_deploy/config does not exist"
-  fi
-
-  # Connection test to production script test for production
-  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_script}' ]"; then
-    configtest_return=false
-    warning "production_script: ${production_script} not found. Make sure you're not using ~ in the path."
   fi
 
   # Connection test to staging/config test for staging

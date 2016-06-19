@@ -1,0 +1,7 @@
+css
+js
+php
+styles
+config_*
+tmp
+.DS_Store
