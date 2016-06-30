@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.12.11
+ld_version=0.12.12
 
 # theme color definitions
 color_red=1
@@ -1432,7 +1432,7 @@ function show_info() {
   echo "Files         : $local_files"
   if _access_check 'fetch_db'; then
     if [[ -f "$config_dir/cached_db" ]]; then
-      echo "DB Fetched    : " $(cat $config_dir/cached_db)
+      echo "DB Fetched    : "$(cat $config_dir/cached_db)
     fi
   fi
   if _access_check 'fetch_files'; then
@@ -1440,10 +1440,10 @@ function show_info() {
       echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
     fi
     if [[ -f "$config_dir/prod/cached_files" ]]; then
-      echo "Files Prod    : " $(cat $config_dir/prod/cached_files)
+      echo "Files Prod    : "$(cat $config_dir/prod/cached_files)
     fi
     if [[ -f "$config_dir/staging/cached_files" ]]; then
-      echo "Files Staging : " $(cat $config_dir/staging/cached_files)
+      echo "Files Staging : "$(cat $config_dir/staging/cached_files)
     fi
   fi
   echo
