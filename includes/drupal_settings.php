@@ -10,6 +10,7 @@ define('DRUPAL_ROOT', '/');
 function t($a) {
   return $a;
 }
+
 function conf_path() {
   return $a;
 }
@@ -25,10 +26,25 @@ try {
 
   @require $path_to_settings;
 
-  if (!isset($databases[$db_key][$fallback])) {
+  // Drupal 6
+  if (isset($db_url)) {
+    $parts = parse_url($db_url);
+    $db = array(
+      'driver' => $parts['scheme'],
+      'host' => $parts['host'],
+      'database' => trim($parts['path'], '/'),
+      'username' => $parts['user'],
+      'password' => $parts['pass'],
+      'port' => isset($parts['port']) ? $parts['port'] : '',
+    );
+  }
+  // Drupal 7, 8
+  elseif (isset($databases[$db_key][$fallback])) {
+    $db = $databases[$db_key][$fallback];
+  }
+  else {
     throw new \RuntimeException("Missing $database variable.");
   }
-  $db = $databases[$db_key][$fallback];
 
   if ($db['driver'] !== 'mysql') {
     throw new \RuntimeException("Drivers other than mysql are not yet supported by loft_deploy");
