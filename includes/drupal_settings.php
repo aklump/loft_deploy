@@ -46,8 +46,8 @@ try {
     throw new \RuntimeException("Missing $database variable.");
   }
 
-  if ($db['driver'] !== 'mysql') {
-    throw new \RuntimeException("Drivers other than mysql are not yet supported by loft_deploy");
+  if (!in_array($db['driver'], array('mysql', 'mysqli'))) {
+    throw new \RuntimeException("Your driver {$db['driver']} is not yet supported by loft_deploy");
   }
 
   $return[] = empty($db['host']) ? 'localhost' : $db['host'];
