@@ -460,11 +460,11 @@ function load_config() {
  #
 function load_production_config() {
   if [ "$production_server" ]; then
-    # @todo Log in once to speed this up.
-    production_db_host=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_db_host")
-    production_db_name=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_db_name")
-    production_db_dir=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_db_dir")
-    production_files=$(ssh $production_server$production_ssh_port "cd $production_root && . $production_script get local_files")
+    production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_dir; $production_script get local_files"))
+    production_db_host=${production[0]};
+    production_db_name=${production[1]};
+    production_db_dir=${production[2]};
+    production_files=${production[3]};
   fi
 }
 
@@ -473,10 +473,11 @@ function load_production_config() {
  #
 function load_staging_config() {
   if [ "$staging_server" ]; then
-    staging_db_host=$(ssh $staging_server$staging_ssh_port "cd $staging_root && . $staging_script get local_db_host")
-    staging_db_name=$(ssh $staging_server$staging_ssh_port "cd $staging_root && . $staging_script get local_db_name")
-    staging_db_dir=$(ssh $staging_server$staging_ssh_port "cd $staging_root && . $staging_script get local_db_dir")
-    staging_files=$(ssh $staging_server$staging_ssh_port "cd $staging_root && . $staging_script get local_files")
+      staging=($(ssh $staging_server$staging_ssh_port "cd $staging_root && $staging_script get local_db_host; $staging_script get local_db_name; $staging_script get local_db_dir; $staging_script get local_files"))
+    staging_db_host=${staging[0]};
+    staging_db_name=${staging[1]};
+    staging_db_dir=${staging[2]};
+    staging_files=${staging[3]};
   fi
 }
 
