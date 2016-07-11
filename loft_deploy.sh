@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.12.13
+ld_version=0.12.14
 
 # theme color definitions
 color_red=1
@@ -748,7 +748,7 @@ function push_files() {
   confirm 'Are you sure you want to push local files OVERWRITING STAGING files'
   echo 'Previewing...'
   if [[ "$ld_rsync_ex" ]]; then
-    echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
+    echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file are being ignored.`tty -s && tput op`"
   fi  
   rsync -av $local_files/ $staging_server:$staging_files/ --delete --dry-run $ld_rsync_ex
   confirm 'That was a preview... do it for real?'
@@ -1438,7 +1438,7 @@ function show_info() {
   fi
   if _access_check 'fetch_files'; then
     if [[ "$ld_rsync_ex" ]]; then
-      echo "`tty -s && tput setaf 3`Files listed in $dir/files_exclude.txt are being ignored.`tty -s && tput op`"
+      echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file are being ignored.`tty -s && tput op`"
     fi
     if [[ -f "$config_dir/prod/cached_files" ]]; then
       echo "Files Prod    : "$(cat $config_dir/prod/cached_files)

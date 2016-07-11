@@ -2,6 +2,7 @@ css
 js
 php
 styles
+imagecache
 config_*
 tmp
 .DS_Store
