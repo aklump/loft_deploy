@@ -40,7 +40,7 @@ try {
   }
   // Drupal 7, 8
   elseif (isset($databases[$db_key][$fallback])) {
-    $db = $databases[$db_key][$fallback];
+    $db = $databases[$db_key][$fallback] + array_fill_keys(array('database', 'username', 'password', 'port'), NULL);
   }
   else {
     throw new \RuntimeException("Missing $database variable.");
