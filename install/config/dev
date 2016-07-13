@@ -50,6 +50,12 @@ production_server='prod_user@prod_host'
 production_root='/path/to/prod_branch/'
 production_scp='/path/to/prod_branch/public_html/.htaccess .htaccess'
 
+# This should only be used if the production server does not have loft_deploy installed, e.g. Pantheon
+#production_files='files'
+#pantheon_live_uuid='uuid_goes_here'
+#terminus_site='sitename'
+#terminus_machine_token='machine_token_goes_here'
+
 ##
  # END PRODUCTION CONFIGURATION
  #
