@@ -1,0 +1,26 @@
+{
+    "chapters": [],
+    "sections": [
+        {
+            "id": "readme",
+            "title": "README",
+            "file": "README.md",
+            "sort": 0
+        },
+        {
+            "id": "hooks",
+            "title": "Hooks",
+            "file": "hooks.md",
+            "sort": 1
+        },
+        {
+            "id": "pantheon",
+            "title": "Pantheon",
+            "file": "pantheon.md",
+            "sort": 2
+        }
+    ],
+    "settings": {
+        "search": "tipuesearch"
+    }
+}

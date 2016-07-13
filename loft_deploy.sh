@@ -107,7 +107,10 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.12.14
+ld_version=0.12.15
+
+# For Pantheon support we need to find terminus
+ld_terminus=$(which terminus)
 
 # theme color definitions
 color_red=1
@@ -120,6 +123,10 @@ color_white=7
 color_staging=$color_green
 color_local=$color_yellow
 color_prod=$color_red
+
+ld_remote_rsync_cmd="rsync -azP"
+
+lobster_user=$(whoami)
 
 ##
  # Function Declarations
@@ -197,6 +204,15 @@ function get_param() {
       return
     fi
   done
+}
+
+function loft_deploy_mysql() {
+  cmd="$ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name"
+  if [ "$1" ]; then
+    echo "$1"
+    cmd="$cmd --execute=\"$1\""
+  fi
+  eval $cmd
 }
 
 function update_needed() {
@@ -459,12 +475,12 @@ function load_config() {
  # Logs in to production server for dynamic variables
  #
 function load_production_config() {
-  if [ "$production_server" ]; then
+  if [ "$production_server" ] && [ "$production_script" ]; then
     production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_dir; $production_script get local_files"))
-    production_db_host=${production[0]};
-    production_db_name=${production[1]};
-    production_db_dir=${production[2]};
-    production_files=${production[3]};
+    production_db_host="${production[0]}";
+    production_db_name="${production[1]}";
+    production_db_dir="${production[2]}";
+    production_files="${production[3]}";
   fi
 }
 
@@ -472,12 +488,12 @@ function load_production_config() {
  # Logs in to staging for dynamic variables
  #
 function load_staging_config() {
-  if [ "$staging_server" ]; then
+  if [ "$staging_server" ] && [ "$staging_script" ]; then
       staging=($(ssh $staging_server$staging_ssh_port "cd $staging_root && $staging_script get local_db_host; $staging_script get local_db_name; $staging_script get local_db_dir; $staging_script get local_files"))
-    staging_db_host=${staging[0]};
-    staging_db_name=${staging[1]};
-    staging_db_dir=${staging[2]};
-    staging_files=${staging[3]};
+    staging_db_host="${staging[0]}";
+    staging_db_name="${staging[1]}";
+    staging_db_dir="${staging[2]}";
+    staging_files="${staging[3]}";
   fi
 }
 
@@ -507,8 +523,14 @@ function fetch_files() {
  # 
 function _fetch_files_production() {
   load_production_config
-  if [ ! "$production_files" ] || [ ! "$local_files" ] || [ "$production_files" == "$local_files" ]; then
-    end "Bad config"
+  if [ ! "$production_files" ]; then
+    end "\$production_files cannot be blank, try '.' instead."
+  fi
+  if [ ! "$local_files" ]; then
+    end "\local_files cannot be blank, try '.' instead."
+  fi
+  if [ "$production_files" != '.' ] && [ "$production_files" == "$local_files" ]; then
+    end "\$production_files and \$local_files should not be the same path."
   fi
 
   echo "Copying files from production server..."
@@ -521,11 +543,12 @@ function _fetch_files_production() {
   fi
 
   if [[ "$production_port" ]]; then
-    cmd="rsync -av -e \"ssh -p $production_port\" \"$production_server:$production_files/\" \"$config_dir/prod/files/\" --delete $ld_rsync_ex"
+    cmd="$ld_remote_rsync_cmd -e \"ssh -p $production_port\" \"$production_server:$production_files/\" \"$config_dir/prod/files/\" --delete $ld_rsync_ex"
+
       echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
       eval $cmd;    
   else
-    cmd="rsync -av \"$production_server:$production_files/\" \"$config_dir/prod/files/\" --delete $ld_rsync_ex"
+    cmd="$ld_remote_rsync_cmd \"$production_server:$production_files/\" \"$config_dir/prod/files/\" --delete $ld_rsync_ex"
     echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
     eval $cmd;
   fi
@@ -554,11 +577,11 @@ function _fetch_files_staging() {
   fi
 
   if [[ "$staging_port" ]]; then
-    cmd="rsync -av -e \"ssh -p $staging_port\" \"$staging_server:$staging_files/\" \"$config_dir/staging/files/\" --delete $ld_rsync_ex"
+    cmd="$ld_remote_rsync_cmd -e \"ssh -p $staging_port\" \"$staging_server:$staging_files/\" \"$config_dir/staging/files/\" --delete $ld_rsync_ex"
       echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
       eval $cmd;
   else
-    cmd="rsync -av \"$staging_server:$staging_files/\" \"$config_dir/staging/files/\" --delete $ld_rsync_ex"
+    cmd="$ld_remote_rsync_cmd \"$staging_server:$staging_files/\" \"$config_dir/staging/files/\" --delete $ld_rsync_ex"
     echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
     eval $cmd;
   fi
@@ -625,11 +648,7 @@ function fetch_db() {
 ##
  # Fetch the remote db and import it to local
  #
-function _fetch_db_production() {  
-  load_production_config
-  if [ ! "$production_script" ] || [ ! "$production_db_dir" ] || [ ! "$production_server" ] || [ ! "$production_db_name" ]; then
-    end "Bad production db config"
-  fi
+function _fetch_db_production() {
 
   if [[ ! -d "$config_dir/prod/db" ]]; then
     mkdir "$config_dir/prod/db"
@@ -640,23 +659,51 @@ function _fetch_db_production() {
 
   echo "Exporting production db..."
   local _export_suffix='fetch_db'
-  show_switch
-
-  ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix"
-  wait
-
-  echo "Downloading from production..."
-  local _remote_file="$production_db_dir/${production_db_name}-$_export_suffix.sql.gz"
   local _local_file="$config_dir/prod/db/fetched.sql.gz"
-  scp $production_scp_port"$production_server:$_remote_file" "$_local_file"
+
+  ### Support for Pantheon
+  if  [ "$terminus_site" ]; then
+    if [ ! "$ld_terminus" ]; then
+      end "Missing dependency terminus; please install per https://github.com/pantheon-systems/terminus/blob/master/README.md#installation"
+    fi
+    if [ ! "$terminus_machine_token" ]; then
+      end "Create or add your terminus machine token as \$terminus_machine_token https://pantheon.io/docs/machine-tokens/"
+    fi
+
+    $ld_terminus auth login --machine-token=$terminus_machine_token --format=silent
+
+    confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?" "noend"
+    if [[ $confirm_result != 'true' ]]; then
+      $ld_terminus site backups create --site="$terminus_site" --env=live --element=db
+    fi
+    $ld_terminus site backups get --site="$terminus_site" --env=live --element=db --latest --to="$_local_file"
+    $ld_terminus auth logout
+
+  ### Default using SSH and SCP
+  else
+    load_production_config
+    if [ ! "$production_script" ] || [ ! "$production_db_dir" ] || [ ! "$production_server" ] || [ ! "$production_db_name" ]; then
+      end "Bad production db config"
+    fi
+
+    show_switch
+    ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix"
+    wait
+
+    echo "Downloading from production..."
+    local _remote_file="$production_db_dir/${production_db_name}-$_export_suffix.sql.gz"
+    scp $production_scp_port"$production_server:$_remote_file" "$_local_file"
+
+
+    # delete it from remote
+    echo "Deleting the production copy..."
+    ssh $production_server$production_ssh_port "rm $_remote_file"
+    show_switch
+
+  fi
 
   # record the fetch date
   echo $now > $config_dir/prod/cached_db
-
-  # delete it from remote
-  echo "Deleting the production copy..."
-  ssh $production_server$production_ssh_port "rm $_remote_file"
-  show_switch
 }
 
 ##
@@ -1093,6 +1140,7 @@ function show_help() {
   theme_help_topic export 'l' 'Dump the local db with an optional suffix' 'export [suffix]' '-f to overwrite if exists'
   theme_help_topic import 'l' 'Import a db export file overwriting local' 'import [suffix]'
   theme_help_topic 'mysql' 'l' 'Start mysql shell using local credentials'
+  theme_help_topic 'mysql "SQL"' 'l' 'Execute a mysql statement using local credentials'
   theme_help_topic 'scp' 'l' 'Display a scp stub using server values' 'see $production_scp for configuration'
   theme_help_topic help 'l' 'Show this help screen'
   theme_help_topic info 'l' 'Show info'
@@ -1672,10 +1720,9 @@ case $op in
     end
     ;;
   'mysql')
-    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name
+    loft_deploy_mysql "$2"
     handle_post_hook $op
     complete 'Your mysql session has ended.'
-    handle_post_hook $op
     end
     ;;
   'scp')

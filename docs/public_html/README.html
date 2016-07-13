@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>README</title>
+    <style type="text/css" media="all">
+      @import url("style.css");
+    </style>
+    <link href="search/tipuesearch.css" rel="stylesheet">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+    <script src="search/tipuesearch_content.js"></script>
+    <link href="search/tipuesearch.css" rel="stylesheet">
+    <script src="search/tipuesearch_set.js"></script>
+    <script src="search/tipuesearch.min.js"></script>
+
+</head>
+
+<body class="page-readme">
+<header>
+<div class="pager">
+  <a href="index.html" class="prev index" >&laquo;Index</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="hooks.html" class="next hooks">Hooks&raquo;</a>
+</div>
+
+</header>
+
+<div class="search__wrapper">
+  <form action="search--results.html">
+    <input type="text" name="q" id="tipue_search_input" autocomplete="off" required>
+  </form>
+</div>
+
+<h1>README</h1>
+<div class="breadcrumb"><a href="index.html">Index</a></div>
+
+<section>
+
+
+<h2>Summary</h2>
+
+<p>Deployment management for Drupal websites (and others with similar structures) that makes database and user file migration between production, development and staging extremly fast and simple.</p>
+
+<p>The premise of this utililty assumes that you will manage the codebase of the project with source control such as Git.  Loft deploy adds the ability to pull the database and/or the user files (files not in your version control) from <em>production</em> to <em>local</em>, and push or pull the database and user files between <em>local</em> and <em>staging</em>.</p>
+
+<p>While it is not limited to Drupal, it does assume this type of tri-component scenario (codebase, database, user files). If you have neither a database nor user files, you would be wise not to use this tool as it adds complexity without utility.  With only a codebase to manage, simply use Git.</p>
+
+<p>Loft Deploy does not intend to replace codebase management with version control systems such as Git. Such systems should continue to be used in tandem with Loft Deploy.</p>
+
+<h2>Key Concepts</h2>
+
+<h3>Fetch</h3>
+
+<p>Fetching grabs the remote assets and caches them locally, but does not alter your local environment.  You have to reset to do that.  Cached assets can be found in the <em>.loft_deploy</em> folder.</p>
+
+<h3>Reset</h3>
+
+<p>Uses the cached remote assets from the last fetch to alter your local environment.  Saves you download time if you are doing frequent resets to test update scripts or something, where you need to continusously reset to match the production database, for example.</p>
+
+<h3>Pull</h3>
+
+<p>A combination that will do a fetch and reset in one command.</p>
+
+<h3>Workflow</h3>
+
+<pre><code>[ PRODUCTION ]
+       |
+      \|/
+       '
+  [ LOCAL ] &lt;--&gt; [ STAGING ]
+</code></pre>
+
+<ul>
+<li>Assets can flow FROM production to local.</li>
+<li>Assets cannot flow TO production.</li>
+<li>Assets can flow between local and staging.</li>
+</ul>
+
+<h2>The database component</h2>
+
+<p>The production database is always considered the "origin"--that is to say it is the master of the database component of any group of production/local/staging servers.  When developing locally you should be making your database changes directly on the production database (or in an update script of a module) and then pulling using loft_deploy, but never will you push a local or staging database to production. Before local development you will need to refresh your local database and you do that with Loft Deploy <code>loft_deploy pull -d</code>.</p>
+
+<p>After you have completed local development you may want to push to a staging server for client review.  You will use Loft Deploy <code>loft_deploy push -d</code> to push your local database to the staging server.</p>
+
+<h2>The user files component</h2>
+
+<p>User files (i.e. <em>sites/default/files</em>), which are too dynamic to include in version control, also originate and must be changed on the production server. Just like the database, the dev and staging environments need to be brought to match production at times. Loft Deploy will do this using <code>loft_deploy pull -f</code>. You may still use Loft Deploy this when you do not have a user files directory, just omit any config variables referencing <code>files</code>.</p>
+
+<h3>Excluding certain files using <em>files_exclude.txt</em></h3>
+
+<p>You may set Loft Deploy to ignore certain user files by creating a file <em>.loft_deploy/files_exclude.txt</em>.  This will be used by the rsync program as an <code>--exclude-from</code> argument.</p>
+
+<h3>Filenames with special chars</h3>
+
+<p>There appears to be a shortcoming with filenames that contain special chars.  The file sync may not work in this case.  Easiest fix is to insure filenames do not have special chars, like accents, etc.</p>
+
+<h2>Fetch/reset/pull from staging</h2>
+
+<p>By default <code>fetch</code>, <code>reset</code> and <code>pull</code> will grab from <em>production</em>. In order to perform these functions using staging as the source you will need to <strong>pass the <code>--staging</code> flag</strong> like this:</p>
+
+<pre><code>loft_deploy pull --staging
+loft_deploy fetch --staging
+loft_deploy reset --staging
+</code></pre>
+
+<p>The command <code>push</code> is always directed at the staging server.</p>
+
+<h2>Warning!!!</h2>
+
+<p><strong>USE AT YOUR OWN RISK AS IMPROPER CONFIGURATION CAN RESULT IN DESTRUCTION OF DATABASE CONTENT AND FILES.</strong></p>
+
+<h2>Requirements</h2>
+
+<p>The following assumptions are made about your project:</p>
+
+<ol>
+<li>Your project's codebase is maintained using source control (git, svn, etc).</li>
+<li>Your project uses a mysql database.</li>
+<li>Your project might have a files directory that contains dynamic files, which are NOT in source control.</li>
+</ol>
+
+<p><em>If these assumptions are not true then this package may be less useful to you.</em></p>
+
+<h2>(Recommended) Installation</h2>
+
+<ol>
+<li>Loft Deploy needs to be installed in each environment: <em>Production, Local</em> and (if used) <em>Staging</em>.</li>
+<li><p>Connect using a terminal program to the home directory of the server.  If the <em>bin</em> folder does not exist, create it now.</p>
+
+<pre><code>cd /opt
+</code></pre></li>
+<li><p>Clone Loft Deploy and create a symlink that is user executable.</p>
+
+<pre><code>git clone https://github.com/aklump/loft_deploy.git loft_deploy;
+cd /usr/local/bin
+ln -s /opt/loft_deploy/loft_deploy.sh loft_deploy;
+chmod u+x loft_deploy;
+</code></pre></li>
+<li><p>Open up and modify <em>~/.bash_profile</em> or <em>~/.profile</em> (whichever you use).</p>
+
+<pre><code>alias ldp="loft_deploy"
+export PATH=$PATH:~/bin
+</code></pre></li>
+<li><p>Reload your profile and test, you should see the Loft Deploy help screen if installation was successful.</p>
+
+<pre><code>$ . ~/.bash_profile
+$ ldp
+</code></pre></li>
+</ol>
+
+<h2>Configuration (of projects)</h2>
+
+<ul>
+<li>You must configure each environment for a given project. That is to say you must run <code>loft_deploy init dev</code> and <code>loft_deploy init prod</code> and maybe <code>loft_deploy init staging</code> on each of the appropriate servers.</li>
+<li>The init process creates an empty config file in .loft_deply/config; this file must be edited with all correct params for each environment.</li>
+<li>The location where you run the init process determines the scope of usage. The best/most common location is the directory above web root. You may run loft_deploy operations in any child directory and including the directory where it's initialized.</li>
+<li>An exception to this rule is a Drupal multisite, in which case you must descend into <code>sites/[sitename]</code> and install it there run <code>loft_deploy init</code> there. You will then be restricted to running loft deploy oeprations to <code>/sites/[sitename]</code> and any child directories.</li>
+<li>There is a .htaccess file provided which denies access to all traffic, make
+sure that does not get removed; especially if you're installing this in a publicly accessible folder, such as in the case above.</li>
+<li>For each website project that you want to use this for, you must create a configuration file for that website in all environments: local, production and staging if applicable.</li>
+<li>Carefully and meticulously edit <code>.loft_deploy/config</code> making CERTAIN you pay attention to the variable <code>local_role</code>. Setting this correctly ensures certain access checks, which may help to prevent damaging your production environment.</li>
+<li>AGAIN, MAKE SURE TO CORRECTLY SET <code>local_role</code> to: dev, prod or staging.</li>
+<li>Also make certain that your paths are correct, as incorrect paths may result in data loss to your production website.</li>
+<li>Review your config info with <code>loft_deploy configtest</code>.</li>
+<li>Verify especially that local > role is correct, as are all the paths.</li>
+<li>Correct any mistakes now, BEFORE ITS TOO LATE!</li>
+<li>Once the configuration files are in place and correct, REMOVE ALL WRITE PERMISSIONS to all copies of .loft_deploy/config files.</li>
+<li><p>Finally, test each environment before first use. You may run 'configtest' at any time in the future as well.</p>
+
+<pre><code>  $ loft_deploy configtest
+</code></pre></li>
+</ul>
+
+<h2>Message of the Day MOTD</h2>
+
+<p>MOTD will print a reminder each time a Loft Deploy action is executed; use it to keep track of reminders about your project.  Here's how:</p>
+
+<p>Create a file in your project, <code>.loft_deploy/motd</code>, the contents of which is echoed when you run any loft_deploy command.  This is a way to store reminders per project.</p>
+
+<h2>SQL configuration</h2>
+
+<p><strong>GOTCHA!!!</strong> It is crucial to realize that the configuration for these needs to be created on the same environmnet as the database.  Meaning, if you are wanting to exclude files from the production database, when pulling from a local dev environment, the files described below MUST be created on the production server config files.</p>
+
+<h3>Exclude data from some tables: <code>sql/db_tables_no_data</code></h3>
+
+<p><strong>Scenario</strong>: You are working on a Drupal site and you do not want to export the contents of the <code>cache</code> or <code>cache_bootstrap</code> tables.  Here's how to configure Loft Deploy to do this:</p>
+
+<ol>
+<li>Create a file as <code>.loft_deploy/sql/db_tables_no_data.txt</code></li>
+<li><p>In that file add the following (one table per line):</p>
+
+<pre><code>cache
+cache_bootstrap
+</code></pre></li>
+<li><p>Now only the table structure and not the data will be exported.</p></li>
+</ol>
+
+<h4>But how about all <code>cache</code> tables?</h4>
+
+<p>Yes this is supported and is done like this:</p>
+
+<ol>
+<li>Create a file as <code>.loft_deploy/sql/db_tables_no_data.sql</code>; notice the extension is now <code>.sql</code>.</li>
+<li><p>In that file add the sql command to select all cache tables, e.g.,</p>
+
+<pre><code>SELECT table_name FROM information_schema.tables WHERE table_schema = '$local_db_name' AND table_name LIKE 'cache%';
+</code></pre></li>
+<li><p>Notice the use of $local_db_name, which will be dynamically replaced with the configured values for the database table.</p></li>
+<li>Now only the table structure for all cache tables and not the data will be exported.  And you will not have to update a text file listing out cache table names if your db structure grows.</li>
+</ol>
+
+<p>Here are the dynamic component(s) available:</p>
+
+<table>
+<thead>
+<tr>
+  <th>variable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>$local_db_name</code></td>
+</tr>
+</tbody>
+</table>
+
+<h2>Usage:</h2>
+
+<p>After installed and configured type: <code>loft_deploy help</code> for available commands; you may also access the help by simply typing <code>loft_develop</code></p>
+
+<h2>Contact</h2>
+
+<ul>
+<li><strong>In the Loft Studios</strong></li>
+<li>Aaron Klump - Developer</li>
+<li>PO Box 29294 Bellingham, WA 98228-1294</li>
+<li><em>aim</em>: theloft101</li>
+<li><em>skype</em>: intheloftstudios</li>
+<li><em>d.o</em>: aklump</li>
+<li><a href="http://www.InTheLoftStudios.com">http://www.InTheLoftStudios.com</a></li>
+</ul>
+</section>
+
+<div class="search__results">
+  <div id="tipue_search_content"></div>  
+</div>
+
+<footer>
+<div class="pager">
+  <a href="index.html" class="prev index" >&laquo;Index</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="hooks.html" class="next hooks">Hooks&raquo;</a>
+</div>
+
+
+  <div id="footer-legaleeze">
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Wed, 13 Jul 2016 15:57:44 -0700</p>
+  </div>
+</footer>
+
+<script>
+$(document).ready(function() {
+  $('#tipue_search_input').tipuesearch();
+});
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Pantheon</title>
+    <style type="text/css" media="all">
+      @import url("style.css");
+    </style>
+    <link href="search/tipuesearch.css" rel="stylesheet">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+    <script src="search/tipuesearch_content.js"></script>
+    <link href="search/tipuesearch.css" rel="stylesheet">
+    <script src="search/tipuesearch_set.js"></script>
+    <script src="search/tipuesearch.min.js"></script>
+
+</head>
+
+<body class="page-pantheon">
+<header>
+<div class="pager">
+  <a href="hooks.html" class="prev hooks" >&laquo;Hooks</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="index.html" class="next index">Index&raquo;</a>
+</div>
+
+</header>
+
+<div class="search__wrapper">
+  <form action="search--results.html">
+    <input type="text" name="q" id="tipue_search_input" autocomplete="off" required>
+  </form>
+</div>
+
+<h1>Pantheon</h1>
+<div class="breadcrumb"><a href="index.html">Index</a></div>
+
+<section>
+
+
+<p>Pantheon servers are supported (prod -> dev only at this time) via their CLi called Terminus.  <strong>With this method, you should not install Loft Deploy on the remote server.</strong></p>
+
+<h2>Databases</h2>
+
+<ol>
+<li>You must have <a href="https://github.com/pantheon-systems/terminus#installation">Terminus installed</a>, e.g. <code>composer global require pantheon-systems/terminus</code></li>
+<li><p>The following must appear in your <code>dev</code> config file. You can determine the site name by using <code>terminus sites list</code> after first authenticating.</p>
+
+<pre><code>terminus_site='$SITE_NAME'
+</code></pre></li>
+</ol>
+
+<h2>Files</h2>
+
+<ol>
+<li>(Terminus is not necessary for files support at this time.)</li>
+<li>Connection info is <a href="https://pantheon.io/docs/sftp/#sftp-connection-information">found in the dashboard.</a></li>
+<li><p>The following must appear in your <code>dev</code> config file:</p>
+
+<pre><code>production_server='$ENV.$SITE@appserver.$ENV.$SITE.drush.in'
+production_port=2222
+production_files='files'
+pantheon_live_uuid=''
+</code></pre></li>
+</ol>
+
+<p>More reading: <a href="https://pantheon.io/docs/rsync-and-sftp/">https://pantheon.io/docs/rsync-and-sftp/</a></p>
+</section>
+
+<div class="search__results">
+  <div id="tipue_search_content"></div>  
+</div>
+
+<footer>
+<div class="pager">
+  <a href="hooks.html" class="prev hooks" >&laquo;Hooks</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="index.html" class="next index">Index&raquo;</a>
+</div>
+
+
+  <div id="footer-legaleeze">
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Wed, 13 Jul 2016 15:57:45 -0700</p>
+  </div>
+</footer>
+
+<script>
+$(document).ready(function() {
+  $('#tipue_search_input').tipuesearch();
+});
+</script>
+
+</body>
+</html>
+
