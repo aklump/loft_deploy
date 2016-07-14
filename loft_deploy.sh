@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.13.3
+ld_version=0.13.4
 
 # theme color definitions
 color_red=1
@@ -459,12 +459,12 @@ function load_config() {
   production_root=''
   staging_pass=''
 
-  ld_mysql=$(which mysql) >/dev/null 2>&1
-  ld_mysqldump=$(which mysqldump) >/dev/null 2>&1
-  ld_gzip=$(which gzip) >/dev/null 2>&1
-  ld_gunzip=$(which gunzip) >/dev/null 2>&1
+  ld_mysql=$(type mysql >/dev/null 2>&1 && which mysql)
+  ld_mysqldump=$(type mysqldump >/dev/null 2>&1 && which mysqldump)
+  ld_gzip=$(type gzip >/dev/null 2>&1 && which gzip)
+  ld_gunzip=$(type gunzip >/dev/null 2>&1 && which gunzip)
   # For Pantheon support we need to find terminus
-  ld_terminus=$(which terminus) >/dev/null 2>&1
+  ld_terminus=$(type terminus >/dev/null 2>&1 && which terminus)
 
   source $config_dir/config
 
