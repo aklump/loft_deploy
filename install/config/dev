@@ -50,11 +50,21 @@ production_server='prod_user@prod_host'
 production_root='/path/to/prod_branch/'
 production_scp='/path/to/prod_branch/public_html/.htaccess .htaccess'
 
-# This should only be used if the production server does not have loft_deploy installed, e.g. Pantheon
-#production_files='files'
+##
+ # To support remote mysql connections
+ #
+# production_remote_db_host is not used when you use pantheon_live_uuid
+#production_remote_db_host='some.remote.db.host'
+#production_db_port=3306
+#production_db_pass='password'
+
+##
+ # To support Pantheon servers
+ #
 #pantheon_live_uuid='uuid_goes_here'
 #terminus_site='sitename'
 #terminus_machine_token='machine_token_goes_here'
+#production_files='files'
 
 ##
  # END PRODUCTION CONFIGURATION

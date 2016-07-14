@@ -232,8 +232,8 @@ function _mysql_production() {
     port=" -P $production_db_port"
   fi
   show_switch
-  cmd="$ld_mysql -A -u $production_db_user -p$production_db_pass -h $production_remote_db_host$port $production_db_name"
-  echo $cmd
+  cmd="$ld_mysql -u $production_db_user -p$production_db_pass -h $production_remote_db_host$port $production_db_name"
+  eval $cmd
   show_switch
 }
 
@@ -522,7 +522,7 @@ function load_production_config() {
     production_files="${production[5]}";
     production_db_port="${production[6]}";
   elif [ "$pantheon_live_uuid" ]; then
-    production_remote_db_host="dbserver.dev.$pantheon_live_uuid.drush.in";
+    production_remote_db_host="dbserver.live.$pantheon_live_uuid.drush.in";
     production_db_name="pantheon";
     production_db_user="pantheon";
   fi
