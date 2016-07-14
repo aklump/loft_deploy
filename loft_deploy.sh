@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.13.2
+ld_version=0.13.3
 
 # theme color definitions
 color_red=1
@@ -459,12 +459,12 @@ function load_config() {
   production_root=''
   staging_pass=''
 
-  ld_mysql=$(which mysql)  2> /dev/null
-  ld_mysqldump=$(which mysqldump)  2> /dev/null
-  ld_gzip=$(which gzip)  2> /dev/null
-  ld_gunzip=$(which gunzip)  2> /dev/null
+  ld_mysql=$(which mysql) >/dev/null 2>&1
+  ld_mysqldump=$(which mysqldump) >/dev/null 2>&1
+  ld_gzip=$(which gzip) >/dev/null 2>&1
+  ld_gunzip=$(which gunzip) >/dev/null 2>&1
   # For Pantheon support we need to find terminus
-  ld_terminus=$(which terminus)  2> /dev/null
+  ld_terminus=$(which terminus) >/dev/null 2>&1
 
   source $config_dir/config
 
@@ -699,7 +699,7 @@ function _fetch_db_production() {
   fi
 
   # Cleanup local
-  rm $config_dir/prod/db/fetched.sql* 2> /dev/null
+  rm $config_dir/prod/db/fetched.sql* >/dev/null 2>&1
 
   echo "Exporting production db..."
   local _export_suffix='fetch_db'
@@ -764,7 +764,7 @@ function _fetch_db_staging() {
   fi
 
   # Cleanup local
-  rm $config_dir/prod/db/fetched.sql* 2> /dev/null
+  rm $config_dir/prod/db/fetched.sql* >/dev/null 2>&1
 
   echo "Exporting staging db..."
   local _export_suffix='fetch_db'
