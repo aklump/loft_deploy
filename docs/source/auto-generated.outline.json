@@ -14,10 +14,16 @@
             "sort": 1
         },
         {
+            "id": "mysql",
+            "title": "Mysql",
+            "file": "mysql.md",
+            "sort": 2
+        },
+        {
             "id": "pantheon",
             "title": "Pantheon",
             "file": "pantheon.md",
-            "sort": 2
+            "sort": 3
         }
     ],
     "settings": {

@@ -3,7 +3,7 @@
 
 <html>
 <head>
-    <title>Index</title>
+    <title>Mysql</title>
     <style type="text/css" media="all">
       @import url("style.css");
     </style>
@@ -18,12 +18,12 @@
 
 </head>
 
-<body class="page-index">
+<body class="page-mysql">
 <header>
 <div class="pager">
-  <a href="pantheon.html" class="prev pantheon" >&laquo;Pantheon</a>
+  <a href="hooks.html" class="prev hooks" >&laquo;Hooks</a>
   <a href="index.html" class="index">Index</a>
-  <a href="README.html" class="next README">README&raquo;</a>
+  <a href="pantheon.html" class="next pantheon">Pantheon&raquo;</a>
 </div>
 
 </header>
@@ -34,15 +34,29 @@
   </form>
 </div>
 
-<h1>Index</h1>
+<h1>Mysql</h1>
 <div class="breadcrumb"><a href="index.html">Index</a></div>
 
 <section>
 
-<ul class="index"><li><a href="README.html">README</a></li>
-<li><a href="hooks.html">Hooks</a></li>
-<li><a href="mysql.html">Mysql</a></li>
-<li><a href="pantheon.html">Pantheon</a></li></ul>
+
+<h2>Local</h2>
+
+<p>Local mysql can be entered using <code>ldp mysql</code>.</p>
+
+<h2>Remote</h2>
+
+<p>If your production server allows remote connections you can use <code>ldp mysql --prod</code> but that requires some extra configuration.  The following needs to be added to your dev config file:</p>
+
+<pre><code>production_remote_db_host=''
+</code></pre>
+
+<h3>Pantheon</h3>
+
+<p>If terminus is installed and your server is on Pantheon you only need to make sure this is present:</p>
+
+<pre><code>pantheon_live_uuid=''
+</code></pre>
 </section>
 
 <div class="search__results">
@@ -51,14 +65,14 @@
 
 <footer>
 <div class="pager">
-  <a href="pantheon.html" class="prev pantheon" >&laquo;Pantheon</a>
+  <a href="hooks.html" class="prev hooks" >&laquo;Hooks</a>
   <a href="index.html" class="index">Index</a>
-  <a href="README.html" class="next README">README&raquo;</a>
+  <a href="pantheon.html" class="next pantheon">Pantheon&raquo;</a>
 </div>
 
 
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Wed, 13 Jul 2016 19:20:31 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Wed, 13 Jul 2016 19:20:32 -0700</p>
   </div>
 </footer>
 
@@ -70,3 +84,4 @@ $(document).ready(function() {
 
 </body>
 </html>
+

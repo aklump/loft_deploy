@@ -107,10 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.13.1
-
-# For Pantheon support we need to find terminus
-ld_terminus=$(which terminus)
+ld_version=0.13.2
 
 # theme color definitions
 color_red=1
@@ -219,24 +216,24 @@ function loft_deploy_mysql() {
 
 function _mysql_production() {
   load_production_config
+  if [ ! "$production_remote_db_host" ]; then
+    end "Bad production db config; missing: \$production_remote_db_host"
+  fi
   if [ ! "$production_db_user" ]; then
     end "Bad production db config; missing: \$production_db_user"
   fi
   if [ ! "$production_db_pass" ]; then
     end "Bad production db config; missing: \$production_db_pass"
   fi
-  if [ ! "$production_db_host" ]; then
-    end "Bad production db config; missing: \$production_db_host"
-  fi
   if [ ! "$production_db_name" ]; then
     end "Bad production db config; missing: \$production_db_name"
   fi
-  if [ "$(echo "$production_db_port" | xargs)" ]; then
+  if [ "$production_db_port" ] && [ "$production_db_port" != null ]; then
     port=" -P $production_db_port"
   fi
   show_switch
-  cmd="$ld_mysql -A -u $production_db_user -p$production_db_pass -h $production_db_host$port $production_db_name"
-  eval $cmd
+  cmd="$ld_mysql -A -u $production_db_user -p$production_db_pass -h $production_remote_db_host$port $production_db_name"
+  echo $cmd
   show_switch
 }
 
@@ -462,10 +459,12 @@ function load_config() {
   production_root=''
   staging_pass=''
 
-  ld_mysql=$(which mysql)
-  ld_mysqldump=$(which mysqldump)
-  ld_gzip=$(which gzip)
-  ld_gunzip=$(which gunzip)
+  ld_mysql=$(which mysql)  2> /dev/null
+  ld_mysqldump=$(which mysqldump)  2> /dev/null
+  ld_gzip=$(which gzip)  2> /dev/null
+  ld_gunzip=$(which gunzip)  2> /dev/null
+  # For Pantheon support we need to find terminus
+  ld_terminus=$(which terminus)  2> /dev/null
 
   source $config_dir/config
 
@@ -523,7 +522,7 @@ function load_production_config() {
     production_files="${production[5]}";
     production_db_port="${production[6]}";
   elif [ "$pantheon_live_uuid" ]; then
-    production_db_host="dbserver.dev.$pantheon_live_uuid.drush.in";
+    production_remote_db_host="dbserver.dev.$pantheon_live_uuid.drush.in";
     production_db_name="pantheon";
     production_db_user="pantheon";
   fi
