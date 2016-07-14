@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.13
+ld_version=0.13.1
 
 # For Pantheon support we need to find terminus
 ld_terminus=$(which terminus)
@@ -207,6 +207,44 @@ function get_param() {
 }
 
 function loft_deploy_mysql() {
+  #@todo When we switch to lobster we need to add taking arguments for prod and staging.
+  if has_param 'prod'; then
+    _mysql_production
+  elif has_param 'staging'; then
+    _mysql_staging
+  else
+    _mysql_local "$1"
+  fi
+}
+
+function _mysql_production() {
+  load_production_config
+  if [ ! "$production_db_user" ]; then
+    end "Bad production db config; missing: \$production_db_user"
+  fi
+  if [ ! "$production_db_pass" ]; then
+    end "Bad production db config; missing: \$production_db_pass"
+  fi
+  if [ ! "$production_db_host" ]; then
+    end "Bad production db config; missing: \$production_db_host"
+  fi
+  if [ ! "$production_db_name" ]; then
+    end "Bad production db config; missing: \$production_db_name"
+  fi
+  if [ "$(echo "$production_db_port" | xargs)" ]; then
+    port=" -P $production_db_port"
+  fi
+  show_switch
+  cmd="$ld_mysql -A -u $production_db_user -p$production_db_pass -h $production_db_host$port $production_db_name"
+  eval $cmd
+  show_switch
+}
+
+function _mysql_staging() {
+  end "Not yet supported"
+}
+
+function _mysql_local() {
   cmd="$ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name"
   if [ "$1" ]; then
     echo "$1"
@@ -476,11 +514,18 @@ function load_config() {
  #
 function load_production_config() {
   if [ "$production_server" ] && [ "$production_script" ]; then
-    production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_dir; $production_script get local_files"))
+    production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_db_port;"))
     production_db_host="${production[0]}";
     production_db_name="${production[1]}";
-    production_db_dir="${production[2]}";
-    production_files="${production[3]}";
+    production_db_user="${production[2]}";
+    production_db_pass="${production[3]}";
+    production_db_dir="${production[4]}";
+    production_files="${production[5]}";
+    production_db_port="${production[6]}";
+  elif [ "$pantheon_live_uuid" ]; then
+    production_db_host="dbserver.dev.$pantheon_live_uuid.drush.in";
+    production_db_name="pantheon";
+    production_db_user="pantheon";
   fi
 }
 
@@ -1147,6 +1192,7 @@ function show_help() {
   theme_help_topic configtest 'l' 'Test configuration'
   theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. loft_deploy -f ls -la'
   theme_help_topic pass 'l' 'Display password(s)' '--prod Production' 'staging Staging' '--all All'
+  theme_help_topic terminus 'l' 'Login to terminus with prod credentials'
 
   if [ "$local_role" != 'prod' ]; then
     theme_header 'from prod' $color_prod
@@ -1445,16 +1491,13 @@ function show_pass() {
 # @param string $name
 #
 function get_var() {
-  
-  # Do not allow passwords for security
-  case "$1" in
-    *pass )
-      return
-      ;;
-  esac
-  
   eval "answer=${!1}"
-  echo $answer
+  if [ "$answer" ]; then
+    echo "$answer"
+  else
+    # Necessary to print something or the argument placeholder gets screwed up.  see load_production_config()
+    echo "null"
+  fi
 }
 
 ##
@@ -1827,6 +1870,11 @@ case $op in
   'pass')
     show_pass
     handle_post_hook $op
+    end
+    ;;
+  'terminus')
+    cmd="auth login --machine-token=$terminus_machine_token"
+    $ld_terminus $cmd
     end
     ;;
 esac
