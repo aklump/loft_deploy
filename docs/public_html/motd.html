@@ -1,0 +1,73 @@
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Motd</title>
+    <link href="search/tipuesearch.css" rel="stylesheet">
+    <style type="text/css" media="all">
+      @import url("style.css");
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="search/tipuesearch_content.js"></script>
+    <script src="search/tipuesearch_set.js"></script>
+    <script src="search/tipuesearch.min.js"></script>
+    <script src="js/core.js"></script>
+
+</head>
+
+<body class="page-motd">
+<header>
+<div class="pager">
+  <a href="hooks.html" class="prev hooks">&laquo;Hooks</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="mysql.html" class="next mysql">MYSQL&raquo;</a>
+</div>
+
+</header>
+
+<div class="search__wrapper">
+  <form action="search--results.html">
+    <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
+  </form>
+</div>
+
+<h1>Motd</h1>
+<div class="breadcrumb"><a href="index.html">Index</a></div>
+
+<section>
+
+<h2>Message of the Day MOTD</h2>
+
+<p>MOTD will print a reminder each time a Loft Deploy action is executed; use it to keep track of reminders about your project.  Here's how:</p>
+
+<p>Create a file in your project, <code>.loft_deploy/motd</code>, the contents of which is echoed when you run any loft_deploy command.  This is a way to store reminders per project.</p>
+</section>
+
+<div class="search__results">
+  <div id="tipue_search_content"></div>  
+</div>
+
+<footer>
+<div class="pager">
+  <a href="hooks.html" class="prev hooks">&laquo;Hooks</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="mysql.html" class="next mysql">MYSQL&raquo;</a>
+</div>
+
+
+  <div id="footer-legaleeze">
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 14 Jan 2017 09:01:56 -0800</p>
+  </div>
+</footer>
+
+<script>
+$(document).ready(function() {
+  $('#tipue_search_input').tipuesearch();
+});
+</script>
+
+</body>
+</html>
+

@@ -42,7 +42,7 @@ lynx = $(which lynx)
  # 
  # This should be a relative directory, relative to the source directory.
  #
-README = '../../README.md'
+README = '../README.md'
 
 # This would also copy README.md as well as README.txt to the directory one
 # level above /source
@@ -56,4 +56,4 @@ README = '../../README.md'
 #pre_hooks = "pre_compile.sh pre_compile.php"
 #post_hooks = "post_compile.sh post_compile.php"
 
-#version_file  = "web_package.info"
+version_file = "web_package.info"
