@@ -1,0 +1,38 @@
+{
+    "chapters": [],
+    "sections": [
+        {
+            "id": "hooks",
+            "title": "Hooks",
+            "file": "hooks.md",
+            "sort": 0
+        },
+        {
+            "id": "motd",
+            "title": "Motd",
+            "file": "motd.md",
+            "sort": 1
+        },
+        {
+            "id": "mysql",
+            "title": "MYSQL",
+            "file": "mysql.md",
+            "sort": 2
+        },
+        {
+            "id": "overview",
+            "title": "Overview",
+            "file": "overview.md",
+            "sort": 3
+        },
+        {
+            "id": "pantheon",
+            "title": "Support for Pantheon websites",
+            "file": "pantheon.md",
+            "sort": 4
+        }
+    ],
+    "settings": {
+        "search": "tipuesearch"
+    }
+}
