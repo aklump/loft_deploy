@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.13.6
+ld_version=0.13.7
 
 # theme color definitions
 color_red=1
@@ -1192,6 +1192,7 @@ function show_help() {
   theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. loft_deploy -f ls -la'
   theme_help_topic pass 'l' 'Display password(s)' '--prod Production' 'staging Staging' '--all All'
   theme_help_topic terminus 'l' 'Login to terminus with prod credentials'
+  theme_help_topic hook 'l' 'Run the indicated hook, e.g. hook reset'
 
   if [ "$local_role" != 'prod' ]; then
     theme_header 'from prod' $color_prod
@@ -1597,17 +1598,16 @@ function echo_fix() {
 }
 
 function handle_pre_hook() {
-  hook="$config_dir/hooks/${1}_pre.sh"
-  name=$(basename $hook)
-  arg="`tty -s && tput setaf 2`Calling pre-hook: $name`tty -s && tput op`"
-  test -e "$hook" && source "$hook" "$arg"
+  local hook="$config_dir/hooks/${1}_pre.sh"
+  local name=$(basename $hook)
+
+  test -e "$hook" && echo "`tty -s && tput setaf 2`Calling pre-hook: $name`tty -s && tput op`" && source "$hook"
 }
 
 function handle_post_hook() {
-  hook="$config_dir/hooks/${1}_post.sh"
-  name=$(basename $hook)
-  arg="`tty -s && tput setaf 2`Calling post-hook: $name`tty -s && tput op`"
-  test -e "$hook" && source "$hook" "$arg"
+  local hook="$config_dir/hooks/${1}_post.sh"
+  local name=$(basename $hook)
+  test -e "$hook" && echo "`tty -s && tput setaf 2`Calling post-hook: $name`tty -s && tput op`" && source "$hook"
 }
 
 ##
@@ -1632,7 +1632,7 @@ function end() {
 function _access_check() {
 
   # List out helper commands, with universal access regardless of local_role
-  if [ "$1" == '' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'configtest' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ] || [ "$1" == 'update' ] || [ "$1" == 'mysql' ]; then
+  if [ "$1" == '' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'configtest' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ] || [ "$1" == 'update' ] || [ "$1" == 'mysql' ] || [ "$1" == 'hook' ]; then
     return 0
   fi
 
@@ -1755,6 +1755,15 @@ update_needed
 handle_pre_hook $op
 
 case $op in
+  'hook')
+    if [ "$2" ]; then
+      handle_pre_hook "$2"
+      handle_post_hook "$2"
+    else
+      echo "`tty -s && tput setaf 1`What type of hook? e.g. ldp hook reset`tty -s && tput op`"
+    fi
+    end
+    ;;
   'init')
     init $2
     complete
