@@ -73,30 +73,6 @@ The following assumptions are made about your project:
 _If these assumptions are not true then this package may be less useful to you._
 
 
-## (Recommended) Installation
-
-1. Loft Deploy needs to be installed in each environment: _Production, Local_ and (if used) _Staging_.
-1. Connect using a terminal program to the home directory of the server.  If the _bin_ folder does not exist, create it now.
-
-        cd /opt
-
-1. Clone Loft Deploy and create a symlink that is user executable.
-
-        git clone https://github.com/aklump/loft_deploy.git loft_deploy;
-        cd /usr/local/bin
-        ln -s /opt/loft_deploy/loft_deploy.sh loft_deploy;
-        chmod u+x loft_deploy;
-
-1. Open up and modify _~/.bash_profile_ or _~/.profile_ (whichever you use).
-
-        alias ldp="loft_deploy"
-        export PATH=$PATH:~/bin
-
-1. Reload your profile and test, you should see the Loft Deploy help screen if installation was successful.
-
-        $ . ~/.bash_profile
-        $ ldp
-
 ## Configuration (of projects)
 
 * You must configure each environment for a given project. That is to say you must run `loft_deploy init dev` and `loft_deploy init prod` and maybe `loft_deploy init staging` on each of the appropriate servers.

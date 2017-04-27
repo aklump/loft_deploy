@@ -1,72 +1,66 @@
-
 <!DOCTYPE html>
 
 <html>
 <head>
-    <title>Index</title>
-    <link href="search/tipuesearch.css" rel="stylesheet">
-    <style type="text/css" media="all">
-      @import url("style.css");
-    </style>
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script src="search/tipuesearch_content.js"></script>
-    <script src="search/tipuesearch_set.js"></script>
-    <script src="search/tipuesearch.min.js"></script>
-    <script src="js/core.js"></script>
-
+  <title></title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
 </head>
 
-<body class="page-index">
+<body class="page--index">
 <header>
-<div class="pager">
-  <a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon websites</a>
+  <div class="pager">
+  <a href="_tasklist.html" class="prev _tasklist">&laquo; Tasklist</a>
   <a href="index.html" class="index">Index</a>
-  <a href="hooks.html" class="next hooks">Hooks&raquo;</a>
+  <a href="README.html" class="next readme">Installation&raquo;</a>
 </div>
-
 </header>
 
-<div class="search__wrapper">
+  <div class="search__wrapper">
   <form action="search--results.html">
     <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
   </form>
 </div>
 
-<h1>Index</h1>
-<div class="breadcrumb"><a href="index.html">Index</a></div>
+  <h1>Index</h1>
 
-<section>
-
-<ul class="index"><li><a href="hooks.html">Hooks</a></li>
-<li><a href="motd.html">Motd</a></li>
-<li><a href="mysql.html">MYSQL</a></li>
-<li><a href="overview.html">Overview</a></li>
-<li><a href="pantheon.html">Support for Pantheon websites</a></li></ul>
+<section><ul class="index">
+      <li><a href="README.html">Installation</a></li>
+      <li><a href="hooks.html">Hooks</a></li>
+      <li><a href="motd.html">Motd</a></li>
+      <li><a href="mysql.html">MYSQL</a></li>
+      <li><a href="overview.html">Overview</a></li>
+      <li><a href="pantheon.html">Support for Pantheon websites</a></li>
+      <li><a href="_tasklist.html"> Tasklist</a></li>
+  </ul>
 </section>
 
 <div class="search__results">
-  <div id="tipue_search_content"></div>  
+  <div id="tipue_search_content"></div>
 </div>
 
 <footer>
-<div class="pager">
-  <a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon websites</a>
+  <div class="pager">
+  <a href="_tasklist.html" class="prev _tasklist">&laquo; Tasklist</a>
   <a href="index.html" class="index">Index</a>
-  <a href="hooks.html" class="next hooks">Hooks&raquo;</a>
+  <a href="README.html" class="next readme">Installation&raquo;</a>
 </div>
-
-
+  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 11 Feb 2017 08:47:23 -0800</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Thu, 27 Apr 2017 07:04:44 -0700</p>
   </div>
 </footer>
 
-<script>
-$(document).ready(function() {
-  $('#tipue_search_input').tipuesearch();
-});
-</script>
-
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#tipue_search_input').tipuesearch();
+    });
+  </script>
+<script src="js/core.js"></script>
 </body>
 </html>
+

@@ -1,43 +1,31 @@
-
 <!DOCTYPE html>
 
 <html>
 <head>
-    <title>Hooks</title>
-    <link href="search/tipuesearch.css" rel="stylesheet">
-    <style type="text/css" media="all">
-      @import url("style.css");
-    </style>
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script src="search/tipuesearch_content.js"></script>
-    <script src="search/tipuesearch_set.js"></script>
-    <script src="search/tipuesearch.min.js"></script>
-    <script src="js/core.js"></script>
-
+  <title>Hooks</title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
 </head>
 
-<body class="page-hooks">
+<body class="page--hooks">
 <header>
-<div class="pager">
-  <a href="index.html" class="prev index">&laquo;Index</a>
+  <div class="pager">
+  <a href="README.html" class="prev README">&laquo;Installation</a>
   <a href="index.html" class="index">Index</a>
   <a href="motd.html" class="next motd">Motd&raquo;</a>
 </div>
-
 </header>
 
-<div class="search__wrapper">
+  <div class="search__wrapper">
   <form action="search--results.html">
     <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
   </form>
 </div>
 
-<h1>Hooks</h1>
-<div class="breadcrumb"><a href="index.html">Index</a></div>
+  <h1>Hooks</h1>
+  <div class="breadcrumb"><a href="index.html">Index</a></div>
 
 <section>
-
 
 <p>You may create <code>.sh</code> files that will execute before or after an operation.  These are called hooks and should be created in <code>.loft_deploy/hooks</code>.  An example is a hook to be executed after a <code>reset</code> operation, you need only create a file at using the pattern <code>{op}_{post|pre}</code>.  The variables from loft_deploy.sh are available to your hook files, e.g., <code>$config_dir</code>.  If you want the same file to be executed for multiple operations you should use symlinks.</p>
 
@@ -84,28 +72,31 @@ loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 </section>
 
 <div class="search__results">
-  <div id="tipue_search_content"></div>  
+  <div id="tipue_search_content"></div>
 </div>
 
 <footer>
-<div class="pager">
-  <a href="index.html" class="prev index">&laquo;Index</a>
+  <div class="pager">
+  <a href="README.html" class="prev README">&laquo;Installation</a>
   <a href="index.html" class="index">Index</a>
   <a href="motd.html" class="next motd">Motd&raquo;</a>
 </div>
-
-
+  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 11 Feb 2017 08:47:24 -0800</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Thu, 27 Apr 2017 07:04:42 -0700</p>
   </div>
 </footer>
 
-<script>
-$(document).ready(function() {
-  $('#tipue_search_input').tipuesearch();
-});
-</script>
-
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#tipue_search_input').tipuesearch();
+    });
+  </script>
+<script src="js/core.js"></script>
 </body>
 </html>
 

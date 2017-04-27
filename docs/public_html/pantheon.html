@@ -1,43 +1,31 @@
-
 <!DOCTYPE html>
 
 <html>
 <head>
-    <title>Support for Pantheon websites</title>
-    <link href="search/tipuesearch.css" rel="stylesheet">
-    <style type="text/css" media="all">
-      @import url("style.css");
-    </style>
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script src="search/tipuesearch_content.js"></script>
-    <script src="search/tipuesearch_set.js"></script>
-    <script src="search/tipuesearch.min.js"></script>
-    <script src="js/core.js"></script>
-
+  <title>Support for Pantheon websites</title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
 </head>
 
-<body class="page-pantheon">
+<body class="page--pantheon">
 <header>
-<div class="pager">
+  <div class="pager">
   <a href="overview.html" class="prev overview">&laquo;Overview</a>
   <a href="index.html" class="index">Index</a>
-  <a href="index.html" class="next index">Index&raquo;</a>
+  <a href="_tasklist.html" class="next _tasklist"> Tasklist&raquo;</a>
 </div>
-
 </header>
 
-<div class="search__wrapper">
+  <div class="search__wrapper">
   <form action="search--results.html">
     <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
   </form>
 </div>
 
-<h1>Support for Pantheon websites</h1>
-<div class="breadcrumb"><a href="index.html">Index</a></div>
+  <h1>Support for Pantheon websites</h1>
+  <div class="breadcrumb"><a href="index.html">Index</a></div>
 
 <section>
-
 
 <p>Pantheon servers are supported (prod -> dev only at this time) via their CLi called Terminus.  <strong>With this method, you should not install Loft Deploy on the remote server.</strong></p>
 
@@ -71,28 +59,31 @@ pantheon_live_uuid=''
 </section>
 
 <div class="search__results">
-  <div id="tipue_search_content"></div>  
+  <div id="tipue_search_content"></div>
 </div>
 
 <footer>
-<div class="pager">
+  <div class="pager">
   <a href="overview.html" class="prev overview">&laquo;Overview</a>
   <a href="index.html" class="index">Index</a>
-  <a href="index.html" class="next index">Index&raquo;</a>
+  <a href="_tasklist.html" class="next _tasklist"> Tasklist&raquo;</a>
 </div>
-
-
+  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 11 Feb 2017 08:47:25 -0800</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Thu, 27 Apr 2017 07:04:43 -0700</p>
   </div>
 </footer>
 
-<script>
-$(document).ready(function() {
-  $('#tipue_search_input').tipuesearch();
-});
-</script>
-
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#tipue_search_input').tipuesearch();
+    });
+  </script>
+<script src="js/core.js"></script>
 </body>
 </html>
 
