@@ -1,43 +1,31 @@
-
 <!DOCTYPE html>
 
 <html>
 <head>
-    <title>Overview</title>
-    <link href="search/tipuesearch.css" rel="stylesheet">
-    <style type="text/css" media="all">
-      @import url("style.css");
-    </style>
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script src="search/tipuesearch_content.js"></script>
-    <script src="search/tipuesearch_set.js"></script>
-    <script src="search/tipuesearch.min.js"></script>
-    <script src="js/core.js"></script>
-
+  <title>Overview</title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
 </head>
 
-<body class="page-overview">
+<body class="page--overview">
 <header>
-<div class="pager">
+  <div class="pager">
   <a href="mysql.html" class="prev mysql">&laquo;MYSQL</a>
   <a href="index.html" class="index">Index</a>
   <a href="pantheon.html" class="next pantheon">Support for Pantheon websites&raquo;</a>
 </div>
-
 </header>
 
-<div class="search__wrapper">
+  <div class="search__wrapper">
   <form action="search--results.html">
     <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
   </form>
 </div>
 
-<h1>Overview</h1>
-<div class="breadcrumb"><a href="index.html">Index</a></div>
+  <h1>Overview</h1>
+  <div class="breadcrumb"><a href="index.html">Index</a></div>
 
 <section>
-
 
 <h2>Summary</h2>
 
@@ -123,33 +111,6 @@ loft_deploy reset --staging
 
 <p><em>If these assumptions are not true then this package may be less useful to you.</em></p>
 
-<h2>(Recommended) Installation</h2>
-
-<ol>
-<li>Loft Deploy needs to be installed in each environment: <em>Production, Local</em> and (if used) <em>Staging</em>.</li>
-<li><p>Connect using a terminal program to the home directory of the server.  If the <em>bin</em> folder does not exist, create it now.</p>
-
-<pre><code>cd /opt
-</code></pre></li>
-<li><p>Clone Loft Deploy and create a symlink that is user executable.</p>
-
-<pre><code>git clone https://github.com/aklump/loft_deploy.git loft_deploy;
-cd /usr/local/bin
-ln -s /opt/loft_deploy/loft_deploy.sh loft_deploy;
-chmod u+x loft_deploy;
-</code></pre></li>
-<li><p>Open up and modify <em>~/.bash_profile</em> or <em>~/.profile</em> (whichever you use).</p>
-
-<pre><code>alias ldp="loft_deploy"
-export PATH=$PATH:~/bin
-</code></pre></li>
-<li><p>Reload your profile and test, you should see the Loft Deploy help screen if installation was successful.</p>
-
-<pre><code>$ . ~/.bash_profile
-$ ldp
-</code></pre></li>
-</ol>
-
 <h2>Configuration (of projects)</h2>
 
 <ul>
@@ -226,28 +187,31 @@ cache_bootstrap
 </section>
 
 <div class="search__results">
-  <div id="tipue_search_content"></div>  
+  <div id="tipue_search_content"></div>
 </div>
 
 <footer>
-<div class="pager">
+  <div class="pager">
   <a href="mysql.html" class="prev mysql">&laquo;MYSQL</a>
   <a href="index.html" class="index">Index</a>
   <a href="pantheon.html" class="next pantheon">Support for Pantheon websites&raquo;</a>
 </div>
-
-
+  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 11 Feb 2017 08:47:25 -0800</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Thu, 27 Apr 2017 07:03:48 -0700</p>
   </div>
 </footer>
 
-<script>
-$(document).ready(function() {
-  $('#tipue_search_input').tipuesearch();
-});
-</script>
-
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#tipue_search_input').tipuesearch();
+    });
+  </script>
+<script src="js/core.js"></script>
 </body>
 </html>
 
