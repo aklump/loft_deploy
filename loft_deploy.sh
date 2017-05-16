@@ -232,7 +232,7 @@ function _mysql_production() {
     port=" -P $production_db_port"
   fi
   show_switch
-  cmd="$ld_mysql -u $production_db_user -p$production_db_pass -h $production_remote_db_host$port $production_db_name"
+  cmd=$ld_mysql -u $production_db_user -p"$production_db_pass" -h $production_remote_db_host$port $production_db_name
   eval $cmd
   show_switch
 }
@@ -242,7 +242,7 @@ function _mysql_staging() {
 }
 
 function _mysql_local() {
-  cmd="$ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name"
+  cmd=$ld_mysql -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_mysql_port $local_db_name
   if [ "$1" ]; then
     echo "$1"
     cmd="$cmd --execute=\"$1\""
@@ -391,7 +391,7 @@ function handle_sql_files() {
   for file in $(find $processed_dir  -type f -iname "*.sql"); do
     local cmd=$(cat $file)
     local outfile=${file%.*}.txt
-    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_db_port $local_db_name -s -N -e "$cmd" > "$outfile"
+    $ld_mysql -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_db_port $local_db_name -s -N -e "$cmd" > "$outfile"
     rm $file
   done
 
@@ -407,7 +407,7 @@ function handle_sql_files() {
     tables=${tables:1}
     cmd="SELECT table_name FROM information_schema.tables WHERE table_schema = '$local_db_name' AND table_name NOT IN ($tables)"
     outfile=$(get_filename_db_tables_data)
-    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_db_port $local_db_name -s -N -e "$cmd" > "$outfile"
+    $ld_mysql -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_db_port $local_db_name -s -N -e "$cmd" > "$outfile"
     rm $no_data
   fi
 }
@@ -962,10 +962,10 @@ function export_db() {
   data=$(get_sql_ready_db_tables_data)
   if [[ "$data" ]]; then
     echo "`tty -s && tput setaf 3`Omitting data from some tables.`tty -s && tput op`"
-    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name --no-data > "$file"
-    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name $data --no-create-info >> "$file"
+    $ld_mysqldump -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_mysql_port $local_db_name --no-data > "$file"
+    $ld_mysqldump -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_mysql_port $local_db_name $data --no-create-info >> "$file"
   else
-    $ld_mysqldump -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name -r "$file"
+    $ld_mysqldump -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_mysql_port $local_db_name -r "$file"
   fi
   
   if [ "$2" == '-f' ]; then
@@ -1008,7 +1008,7 @@ function import_db() {
     $ld_gunzip "$file"
     file=${file%.*}
   fi
-  $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name < $file
+  $ld_mysql -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_mysql_port $local_db_name < $file
 }
 
 ##
@@ -1020,11 +1020,11 @@ function _drop_tables() {
   # if [ $confirm_result == false ]; then
   #   return
   # fi
-  tables=$($ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
+  tables=$($ld_mysql -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_mysql_port $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
   echo "Dropping all tables from the $local_db_name database..."
   for t	in $tables; do
     echo $t
-    $ld_mysql -u $local_db_user -p$local_db_pass -h $local_db_host$local_mysql_port $local_db_name -e "drop table $t"
+    $ld_mysql -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_mysql_port $local_db_name -e "drop table $t"
   done
   echo
 }
