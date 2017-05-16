@@ -232,7 +232,7 @@ function _mysql_production() {
     port=" -P $production_db_port"
   fi
   show_switch
-  cmd=$ld_mysql -u $production_db_user -p"$production_db_pass" -h $production_remote_db_host$port $production_db_name
+  cmd="$ld_mysql -u $production_db_user -p\"$production_db_pass\" -h $production_remote_db_host$port $production_db_name"
   eval $cmd
   show_switch
 }
@@ -242,7 +242,7 @@ function _mysql_staging() {
 }
 
 function _mysql_local() {
-  cmd=$ld_mysql -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_mysql_port $local_db_name
+  cmd="$ld_mysql -u $local_db_user -p\"$local_db_pass\" -h $local_db_host$local_mysql_port $local_db_name"
   if [ "$1" ]; then
     echo "$1"
     cmd="$cmd --execute=\"$1\""
