@@ -14,7 +14,7 @@ local_role="dev"
 local_title="{Developer's business or office name} ~ {local url}"
 
 # Optional, where are your non-versioned, dynamic files kept?
-local_files='/path/to/dev/branch/site/public_html/sites/default/files'
+local_files='/path/to/dev/branch/site/web/sites/default/files'
 
 # Where do you want db dumps saved?
 local_db_dir='/path/to/dev/branch/site/private/default/db/purgeable'
@@ -48,7 +48,7 @@ production_server='prod_user@prod_host'
 #production_pass='prod_pass'
 # Production root is directory containing .loft_deploy in the production envirionment.
 production_root='/path/to/prod_branch/'
-production_scp='/path/to/prod_branch/public_html/.htaccess .htaccess'
+production_scp='/path/to/prod_branch/web/.htaccess .htaccess'
 
 ##
  # To support remote mysql connections
