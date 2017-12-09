@@ -1610,16 +1610,19 @@ function echo_fix() {
 }
 
 function handle_pre_hook() {
-  local hook="$config_dir/hooks/${1}_pre.sh"
-  local name=$(basename $hook)
-
-  test -e "$hook" && echo "`tty -s && tput setaf 2`Calling pre-hook: $name`tty -s && tput op`" && source "$hook"
+    _handle_hook $1 pre
 }
 
 function handle_post_hook() {
-  local hook="$config_dir/hooks/${1}_post.sh"
+    _handle_hook $1 post
+}
+
+function _handle_hook() {
+  local hook="$config_dir/hooks/${1}_${2}.sh"
   local name=$(basename $hook)
-  test -e "$hook" && echo "`tty -s && tput setaf 2`Calling post-hook: $name`tty -s && tput op`" && source "$hook"
+  declare -a hook_args=("$1" "$production_server" "$staging_server" "" "" "" "" "" "" "" "" "" "$config_dir/hooks/");
+
+  test -e "$hook" && echo "`tty -s && tput setaf 2`Calling ${2}-hook: $name`tty -s && tput op`" && source "$hook" "${hook_args[@]}"
 }
 
 ##
@@ -1893,7 +1896,7 @@ case $op in
     end
     ;;
   'terminus')
-    cmd="auth login --machine-token=$terminus_machine_token"
+    cmd="auth:login --machine-token=$terminus_machine_token"
     $ld_terminus $cmd
     end
     ;;
