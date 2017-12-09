@@ -714,14 +714,16 @@ function _fetch_db_production() {
       end "Create or add your terminus machine token as \$terminus_machine_token https://pantheon.io/docs/machine-tokens/"
     fi
 
-    $ld_terminus auth login --machine-token=$terminus_machine_token --format=silent
+    $ld_terminus auth:login --machine-token=$terminus_machine_token --quiet
 
     confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?" "noend"
     if [[ $confirm_result != 'true' ]]; then
-      $ld_terminus site backups create --site="$terminus_site" --env=live --element=db
+      echo "Creating new backup using Terminus..."
+      $ld_terminus backup:create $terminus_site.live --element=db
     fi
-    $ld_terminus site backups get --site="$terminus_site" --env=live --element=db --latest --to="$_local_file"
-    $ld_terminus auth logout
+    echo "Downloading backup..."
+    $ld_terminus backup:get $terminus_site.live --element=db --to="$_local_file"
+    $ld_terminus auth:logout
 
   ### Default using SSH and SCP
   else
@@ -1273,6 +1275,16 @@ function print_header() {
 function configtest() {
   configtest_return=true;
   echo 'Testing...'
+
+  # Test for Pantheon support
+  if  [ "$terminus_site" ]; then
+
+    # assert can login
+    if ! $ld_terminus auth:login --machine-token=$terminus_machine_token; then
+        warning "Terminus cannot login; check variable terminus_machine_token."
+        configtest_return=false
+    fi
+  fi
 
   # Test for the production_script variable.
   if [ "$production_server" ] && [ ! "$production_script" ]; then
