@@ -34,4 +34,10 @@ You can add mysql commands against the local environment in a hook using `loft_d
     loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 
 ## Hook vars
-tbd
+
+| $1 | operation  | push |
+| $2 | production server |   |
+| $3 | staging server |   |
+
+
+| ${13} | path to hooks dir | /do/re/hooks  |

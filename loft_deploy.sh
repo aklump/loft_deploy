@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.13.11
+ld_version=0.13.12
 
 # theme color definitions
 color_red=1
@@ -714,14 +714,16 @@ function _fetch_db_production() {
       end "Create or add your terminus machine token as \$terminus_machine_token https://pantheon.io/docs/machine-tokens/"
     fi
 
-    $ld_terminus auth login --machine-token=$terminus_machine_token --format=silent
+    $ld_terminus auth:login --machine-token=$terminus_machine_token --quiet
 
     confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?" "noend"
     if [[ $confirm_result != 'true' ]]; then
-      $ld_terminus site backups create --site="$terminus_site" --env=live --element=db
+      echo "Creating new backup using Terminus..."
+      $ld_terminus backup:create $terminus_site.live --element=db
     fi
-    $ld_terminus site backups get --site="$terminus_site" --env=live --element=db --latest --to="$_local_file"
-    $ld_terminus auth logout
+    echo "Downloading backup..."
+    $ld_terminus backup:get $terminus_site.live --element=db --to="$_local_file"
+    $ld_terminus auth:logout
 
   ### Default using SSH and SCP
   else
@@ -1274,6 +1276,16 @@ function configtest() {
   configtest_return=true;
   echo 'Testing...'
 
+  # Test for Pantheon support
+  if  [ "$terminus_site" ]; then
+
+    # assert can login
+    if ! $ld_terminus auth:login --machine-token=$terminus_machine_token; then
+        warning "Terminus cannot login; check variable terminus_machine_token."
+        configtest_return=false
+    fi
+  fi
+
   # Test for the production_script variable.
   if [ "$production_server" ] && [ ! "$production_script" ]; then
     configtest_return=false
@@ -1598,16 +1610,19 @@ function echo_fix() {
 }
 
 function handle_pre_hook() {
-  local hook="$config_dir/hooks/${1}_pre.sh"
-  local name=$(basename $hook)
-
-  test -e "$hook" && echo "`tty -s && tput setaf 2`Calling pre-hook: $name`tty -s && tput op`" && source "$hook"
+    _handle_hook $1 pre
 }
 
 function handle_post_hook() {
-  local hook="$config_dir/hooks/${1}_post.sh"
+    _handle_hook $1 post
+}
+
+function _handle_hook() {
+  local hook="$config_dir/hooks/${1}_${2}.sh"
   local name=$(basename $hook)
-  test -e "$hook" && echo "`tty -s && tput setaf 2`Calling post-hook: $name`tty -s && tput op`" && source "$hook"
+  declare -a hook_args=("$1" "$production_server" "$staging_server" "" "" "" "" "" "" "" "" "" "$config_dir/hooks/");
+
+  test -e "$hook" && echo "`tty -s && tput setaf 2`Calling ${2}-hook: $name`tty -s && tput op`" && source "$hook" "${hook_args[@]}"
 }
 
 ##
@@ -1881,7 +1896,7 @@ case $op in
     end
     ;;
   'terminus')
-    cmd="auth login --machine-token=$terminus_machine_token"
+    cmd="auth:login --machine-token=$terminus_machine_token"
     $ld_terminus $cmd
     end
     ;;
