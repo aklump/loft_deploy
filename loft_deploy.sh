@@ -470,7 +470,7 @@ function load_config() {
 
   # Handle reading the drupal settings file if asked
   if [ "$local_drupal_settings" ]; then
-    IFS=', ' read -r -a settings <<< $(php "$root/includes/drupal_settings.php" $local_drupal_settings $local_drupal_db)
+    read -r -a settings <<< $(php "$root/includes/drupal_settings.php" $local_drupal_settings $local_drupal_db)
     local_db_host=${settings[0]};
     local_db_name=${settings[1]};
     local_db_user=${settings[2]};
@@ -1459,7 +1459,7 @@ function configtest() {
 
   # Test for db access
   mysql_check_result=false
-  mysql_check $local_db_user $local_db_pass $local_db_name $local_db_host $local_db_port
+  mysql_check "$local_db_user" "$local_db_pass" "$local_db_name" "$local_db_host" "$local_db_port"
   if [ $mysql_check_result == false ]; then
     configtest_return=false;
     warning "Can't connect to local DB; check credentials"

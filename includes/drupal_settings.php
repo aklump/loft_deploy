@@ -39,7 +39,7 @@ try {
     );
   }
   // Drupal 7, 8
-  elseif (isset($databases[$db_key][$fallback])) {
+  else if (isset($databases[$db_key][$fallback])) {
     $db = $databases[$db_key][$fallback] + array_fill_keys(array('database', 'username', 'password', 'port'), NULL);
   }
   else {
@@ -59,4 +59,5 @@ try {
 } catch (Exception $e) {
   $return = array_fill(0, 4, '?');
 }
-echo implode(' ', $return);
+$return = implode(" ", $return);
+echo $return;
