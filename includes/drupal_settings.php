@@ -10,7 +10,7 @@ function t($a) {
 }
 
 $path_to_settings = $argv[2];
-$db_key = isset($argv[3]) ? $argv[3] : 'default';
+$db_key = !empty($argv[3]) ? $argv[3] : 'default';
 $fallback = 'default';
 
 try {

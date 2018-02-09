@@ -470,7 +470,7 @@ function load_config() {
 
   # Handle reading the drupal settings file if asked
   if [ "$local_drupal_settings" ]; then
-    read -r -a settings <<< $(php "$root/includes/drupal_settings.php" $local_drupal_root $local_drupal_settings $local_drupal_db)
+    read -r -a settings <<< $(php "$root/includes/drupal_settings.php" "$local_drupal_root" "$local_drupal_settings" "$local_drupal_db")
     local_db_host=${settings[0]};
     local_db_name=${settings[1]};
     local_db_user=${settings[2]};
@@ -1455,6 +1455,12 @@ function configtest() {
   if [ "$local_drupal_settings" ]  && ! test -e "$local_drupal_settings"; then
     configtest_return=false
     warning "Drupal: Settings file cannot be found at $local_drupal_settings"
+  fi
+
+  # Test drupal settings has drupal_root
+  if [ "$local_drupal_settings" ]  && ! [ "$local_drupal_root" ]; then
+    configtest_return=false
+    warning "Missing config variable: \$local_drupal_root"
   fi
 
   # Test for db access
