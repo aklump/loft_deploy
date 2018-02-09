@@ -19,8 +19,8 @@ function conf_path() {}
 // End "bootstrap"
 //
 
-$path_to_settings = $argv[1];
-$db_key = isset($argv[2]) ? $argv[2] : 'default';
+$path_to_settings = $argv[2];
+$db_key = !empty($argv[3]) ? $argv[3] : 'default';
 $fallback = 'default';
 
 try {
@@ -47,7 +47,7 @@ try {
     $db = $databases[$db_key][$fallback] + array_fill_keys(array('database', 'username', 'password', 'port'), NULL);
   }
   else {
-    throw new \RuntimeException("Missing $database variable.");
+    throw new \RuntimeException("Missing \$database variable.");
   }
 
   if (!in_array($db['driver'], array('mysql', 'mysqli'))) {
