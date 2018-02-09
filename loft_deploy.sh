@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.13.15
+ld_version=0.13.16
 
 # theme color definitions
 color_red=1
@@ -1530,6 +1530,7 @@ function show_info() {
   echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config        : $config_dir"
   if [ "$local_drupal_settings" ]; then
+    echo "DRUPAL_ROOT   : $local_drupal_root"
     echo "Drupal        : $local_drupal_settings"
   fi
   echo "DB Host       : $local_db_host"
