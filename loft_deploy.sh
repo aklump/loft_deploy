@@ -1530,6 +1530,7 @@ function show_info() {
   echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config        : $config_dir"
   if [ "$local_drupal_settings" ]; then
+    echo "DRUPAL_ROOT   : $local_drupal_root"
     echo "Drupal        : $local_drupal_settings"
   fi
   echo "DB Host       : $local_db_host"
