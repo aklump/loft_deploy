@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.13.12
+ld_version=0.13.14
 
 # theme color definitions
 color_red=1
@@ -309,10 +309,10 @@ function _update_0_7_0() {
 
   if [[ ! -d "$config_dir/staging" ]]; then
     mkdir -p "$config_dir/staging/db"
-    mkdir -p "$config_dir/staging/files"    
+    mkdir -p "$config_dir/staging/files"
   fi
-  
-  rm -rf "$config_dir/db" "$config_dir/files" "$config_dir/cached_db" "$config_dir/cached_files"  
+
+  rm -rf "$config_dir/db" "$config_dir/files" "$config_dir/cached_db" "$config_dir/cached_files"
 }
 
 ##
@@ -377,7 +377,7 @@ function handle_sql_files() {
   # First compile sql files' dynamic variables
   for file in $(find $sql_dir  -type f -iname "*.sql"); do
     local sql=$(cat $file);
-    
+
     sql=$(echo $sql | sed -e "s/\$local_db_name/$local_db_name/g")
     # sql=$(echo $sql | sed -e "s/\$local_db_user/$local_db_user/g")
     # sql=$(echo $sql | sed -e "s/\$local_db_pass/$local_db_pass/g")
@@ -418,7 +418,7 @@ function get_filename_db_tables_data() {
 
 ##
  # Returns a csv snippet of all database tables to export data for
- # 
+ #
  # This is ready to use in the sql statement.
  #
 function get_sql_ready_db_tables_data() {
@@ -470,7 +470,7 @@ function load_config() {
 
   # Handle reading the drupal settings file if asked
   if [ "$local_drupal_settings" ]; then
-    read -r -a settings <<< $(php "$root/includes/drupal_settings.php" $local_drupal_settings $local_drupal_db)
+    read -r -a settings <<< $(php "$root/includes/drupal_settings.php" $local_drupal_root $local_drupal_settings $local_drupal_db)
     local_db_host=${settings[0]};
     local_db_name=${settings[1]};
     local_db_user=${settings[2]};
@@ -564,7 +564,7 @@ function fetch_files() {
 
 ##
  # Fetch prod files to local
- # 
+ #
 function _fetch_files_production() {
   load_production_config
   if [ ! "$production_files" ]; then
@@ -578,7 +578,7 @@ function _fetch_files_production() {
   fi
 
   echo "Copying files from production server..."
-  
+
   # Excludes message...
   if test -e "$ld_rsync_exclude_file"; then
     excludes="$(cat $ld_rsync_exclude_file)"
@@ -590,7 +590,7 @@ function _fetch_files_production() {
     cmd="$ld_remote_rsync_cmd -e \"ssh -p $production_port\" \"$production_server:$production_files/\" \"$config_dir/prod/files/\" --delete $ld_rsync_ex"
 
       echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
-      eval $cmd;    
+      eval $cmd;
   else
     cmd="$ld_remote_rsync_cmd \"$production_server:$production_files/\" \"$config_dir/prod/files/\" --delete $ld_rsync_ex"
     echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
@@ -598,12 +598,12 @@ function _fetch_files_production() {
   fi
 
   # record the fetch date
-  echo $now > $config_dir/prod/cached_files  
+  echo $now > $config_dir/prod/cached_files
 }
 
 ##
  # Fetch staging files to local
- # 
+ #
 function _fetch_files_staging() {
   load_staging_config
   if [ ! "$staging_files" ] || [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]; then
@@ -631,7 +631,7 @@ function _fetch_files_staging() {
   fi
 
   # record the fetch date
-  echo $now > $config_dir/staging/cached_files  
+  echo $now > $config_dir/staging/cached_files
 }
 
 ##
@@ -673,7 +673,7 @@ function reset_files() {
 
   echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
   eval $cmd
-}  
+}
 
 ##
  # Fetch the remote db and import it to local
@@ -842,7 +842,7 @@ function push_files() {
   echo 'Previewing...'
   if [[ "$ld_rsync_ex" ]]; then
     echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file are being ignored.`tty -s && tput op`"
-  fi  
+  fi
   rsync -av $local_files/ $staging_server:$staging_files/ --delete --dry-run $ld_rsync_ex
   confirm 'That was a preview... do it for real?'
   rsync -av $local_files/ $staging_server:$staging_files/ --delete $ld_rsync_ex
@@ -878,14 +878,14 @@ function push_db() {
 
   # delete it from remote
   echo "Deleting the db copy from production..."
-  
+
   # Strip off the gz suffix
   _remote_file=${_remote_file%.*}
   ssh $staging_server "rm $_remote_file"
   show_switch
 
   # Delete our local copy
-  rm "$current_db_dir/$filename"  
+  rm "$current_db_dir/$filename"
 
   complete "Push db complete; please test your staging site."
 }
@@ -957,7 +957,7 @@ function export_db() {
   echo "Exporting database as $file_gz..."
 
   # Do we need to process a db_tables_no_data file?
-  handle_sql_files    
+  handle_sql_files
 
   # There are two ways of doing this, it will depend if we are to exclude data
   # from some tables or not
@@ -969,7 +969,7 @@ function export_db() {
   else
     $ld_mysqldump -u $local_db_user -p"$local_db_pass" -h $local_db_host$local_mysql_port $local_db_name -r "$file"
   fi
-  
+
   if [ "$2" == '-f' ]; then
     $ld_gzip -f "$file"
   else
@@ -989,11 +989,11 @@ function import_db() {
 
   if [[ ! "$1" ]]; then
     echo "`tty -s && tput setaf 1`Filename of db dump required.`tty -s && tput op`"
-    end 
+    end
   fi
 
   if file=$1 && check1=$file && [ ! -f $1 ] && file=$current_db_dir$current_db_filename && check2=$file && [ ! -f $file ] && file=$file.gz && check3=$file && [ ! -f $file ]; then
-    
+
     echo "File not found as:"
     echo $check1;
     echo $check2;
@@ -1431,7 +1431,7 @@ function configtest() {
   if [ "$staging_server" ] && [ "$local_role" == 'dev' ] && [ ! "$staging_root" ]; then
     configtest_return=false;
     warning "staging_root: Please define the staging environment's root directory"
-  fi  
+  fi
 
   # Connection test to production/config test for production
   if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_root}/.loft_deploy/config' ]"; then
@@ -1497,7 +1497,7 @@ function show_pass() {
 
 #
 # Return a specific variable value
-# 
+#
 # Does not work on passwords
 #
 # @param string $name
@@ -1888,7 +1888,7 @@ case $op in
     show_info
     complete
     handle_post_hook $op
-    end    
+    end
     ;;
   'pass')
     show_pass

@@ -27,6 +27,7 @@ local_db_user='staging_db_user'
 local_db_pass='staging_db_pass'
 
 # Alternately to the credentials declaration above, if this is Drupal just point to the settings.php file
+#local_drupal_root='/some/path/drupal/webroot'
 #local_drupal_settings='/some/path/to/settings.php'
 #local_drupal_db='default'
 
