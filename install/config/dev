@@ -27,6 +27,7 @@ local_db_pass=''
 local_db_port=3306
 
 # Alternately to the credentials declaration above, if this is Drupal just point to the settings.php file
+#local_drupal_root='/some/path/drupal/webroot'
 #local_drupal_settings='/some/path/to/settings.php'
 #local_drupal_db='default'
 

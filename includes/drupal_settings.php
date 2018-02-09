@@ -3,20 +3,14 @@
  * Read a drupal settings file dynamically pulling out the db credentials
  */
 
-
-// TODO Possibly a better way to do all this? 2016-06-05T09:03, aklump
-define('DRUPAL_ROOT', '/');
+define('DRUPAL_ROOT', $argv[1]);
 
 function t($a) {
   return $a;
 }
 
-function conf_path() {
-  return $a;
-}
-
-$path_to_settings = $argv[1];
-$db_key = isset($argv[2]) ? $argv[2] : 'default';
+$path_to_settings = $argv[2];
+$db_key = isset($argv[3]) ? $argv[3] : 'default';
 $fallback = 'default';
 
 try {
@@ -39,7 +33,7 @@ try {
     );
   }
   // Drupal 7, 8
-  elseif (isset($databases[$db_key][$fallback])) {
+  else if (isset($databases[$db_key][$fallback])) {
     $db = $databases[$db_key][$fallback] + array_fill_keys(array('database', 'username', 'password', 'port'), NULL);
   }
   else {
@@ -59,4 +53,5 @@ try {
 } catch (Exception $e) {
   $return = array_fill(0, 4, '?');
 }
-echo implode(' ', $return);
+$return = implode(" ", $return);
+echo $return;
