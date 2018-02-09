@@ -5,12 +5,22 @@
 
 define('DRUPAL_ROOT', $argv[1]);
 
-function t($a) {
-  return $a;
+//
+//
+// These functions are called in settings.php and should not be removed.
+//
+function t($text) {
+  return $text;
 }
 
-$path_to_settings = $argv[2];
-$db_key = !empty($argv[3]) ? $argv[3] : 'default';
+function conf_path() {}
+//
+//
+// End "bootstrap"
+//
+
+$path_to_settings = $argv[1];
+$db_key = isset($argv[2]) ? $argv[2] : 'default';
 $fallback = 'default';
 
 try {
