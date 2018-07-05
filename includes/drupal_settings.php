@@ -5,6 +5,10 @@
 
 define('DRUPAL_ROOT', $argv[1]);
 
+// These are for Drupal8
+$app_root = $argv[1];
+$site_path = 'sites/' . $argv[3];
+
 //
 //
 // These functions are called in settings.php and should not be removed.
@@ -28,7 +32,7 @@ try {
     throw new \RuntimeException("$path_to_settings settings file is not readable.");
   }
 
-  @require $path_to_settings;
+  require $path_to_settings;
 
   // Drupal 6
   if (isset($db_url)) {
