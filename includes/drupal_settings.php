@@ -4,6 +4,7 @@
  */
 
 define('DRUPAL_ROOT', $argv[1]);
+define('CONFIG_SYNC_DIRECTORY', 'sync');
 
 // These are for Drupal8
 $app_root = $argv[1];
