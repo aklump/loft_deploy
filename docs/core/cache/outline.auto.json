@@ -38,10 +38,16 @@
             "sort": 5
         },
         {
+            "id": "user_files",
+            "title": "User (non-versioned) files component",
+            "file": "user_files.md",
+            "sort": 6
+        },
+        {
             "id": "_tasklist",
             "title": " Tasklist",
             "file": "_tasklist.md",
-            "sort": 6
+            "sort": 7
         }
     ],
     "settings": {
