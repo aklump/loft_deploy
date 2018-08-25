@@ -43,11 +43,7 @@ After you have completed local development you may want to push to a staging ser
 
 User files (i.e. _sites/default/files_), which are too dynamic to include in version control, also originate and must be changed on the production server. Just like the database, the dev and staging environments need to be brought to match production at times. Loft Deploy will do this using `loft_deploy pull -f`. You may still use Loft Deploy this when you do not have a user files directory, just omit any config variables referencing `files`.
 
-### Excluding certain files using _files_exclude.txt_
-You may set Loft Deploy to ignore certain user files by creating a file _.loft_deploy/files_exclude.txt_.  This will be used by the rsync program as an `--exclude-from` argument.
-
-### Filenames with special chars
-There appears to be a shortcoming with filenames that contain special chars.  The file sync may not work in this case.  Easiest fix is to insure filenames do not have special chars, like accents, etc.
+For more information see [user files](user_files.html).
 
 ## Fetch/reset/pull from staging
 By default `fetch`, `reset` and `pull` will grab from _production_. In order to perform these functions using staging as the source you will need to **pass the `--staging` flag** like this:

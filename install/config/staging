@@ -16,6 +16,8 @@ local_title="Host Company or Location ~ local url"
 
 # Where are your non-versioned, dynamic files kept?
 local_files='path/to/staging_branch/web/sites/default/files'
+local_files2=''
+local_files3=''
 
 # Where do you want db dumps saved?
 local_db_dir='path/to/staging_branch/releases/current/db/tags'

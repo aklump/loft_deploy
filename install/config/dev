@@ -15,6 +15,8 @@ local_title="{Developer's business or office name} ~ {local url}"
 
 # Optional, where are your non-versioned, dynamic files kept?
 local_files='/path/to/dev/branch/site/web/sites/default/files'
+local_files2=''
+local_files3=''
 
 # Where do you want db dumps saved?
 local_db_dir='/path/to/dev/branch/site/private/default/db/purgeable'

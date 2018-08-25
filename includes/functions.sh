@@ -327,6 +327,14 @@ function load_config() {
     ld_rsync_exclude_file="$config_dir/files_exclude.txt";
     ld_rsync_ex="--exclude-from=$ld_rsync_exclude_file"
   fi
+  if [[ -f "$config_dir/files2_exclude.txt" ]]; then
+    ld_rsync_exclude_file2="$config_dir/files2_exclude.txt";
+    ld_rsync_ex2="--exclude-from=$ld_rsync_exclude_file2"
+  fi
+  if [[ -f "$config_dir/files3_exclude.txt" ]]; then
+    ld_rsync_exclude_file3="$config_dir/files3_exclude.txt";
+    ld_rsync_ex3="--exclude-from=$ld_rsync_exclude_file3"
+  fi
 
   # these are defaults
   local_role="prod"
@@ -400,14 +408,16 @@ function load_config() {
  #
 function load_production_config() {
   if [ "$production_server" ] && [ "$production_script" ]; then
-    production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_db_port;"))
+    production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_files2; $production_script get local_files3; $production_script get local_db_port;"))
     production_db_host="${production[0]}";
     production_db_name="${production[1]}";
     production_db_user="${production[2]}";
     production_db_pass="${production[3]}";
     production_db_dir="${production[4]}";
     production_files="${production[5]}";
-    production_db_port="${production[6]}";
+    production_files2="${production[6]}";
+    production_files3="${production[7]}";
+    production_db_port="${production[8]}";
   elif [ "$pantheon_live_uuid" ]; then
     production_remote_db_host="dbserver.live.$pantheon_live_uuid.drush.in";
     production_db_name="pantheon";
@@ -420,11 +430,13 @@ function load_production_config() {
  #
 function load_staging_config() {
   if [ "$staging_server" ] && [ "$staging_script" ]; then
-      staging=($(ssh $staging_server$staging_ssh_port "cd $staging_root && $staging_script get local_db_host; $staging_script get local_db_name; $staging_script get local_db_dir; $staging_script get local_files"))
+      staging=($(ssh $staging_server$staging_ssh_port "cd $staging_root && $staging_script get local_db_host; $staging_script get local_db_name; $staging_script get local_db_dir; $staging_script get local_files; $staging_script get local_files2; $staging_script get local_files3"))
     staging_db_host="${staging[0]}";
     staging_db_name="${staging[1]}";
     staging_db_dir="${staging[2]}";
     staging_files="${staging[3]}";
+    staging_files2="${staging[4]}";
+    staging_files3="${staging[5]}";
   fi
 }
 
@@ -435,90 +447,69 @@ function _upsearch () {
   test / == "$PWD" && echo && echo "`tty -s && tput setaf 1`NO CONFIG FILE FOUND!`tty -s && tput op`" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
 }
 
+#
+# Helper function to fetch remote files to local.
+#
+function _fetch_files() {
+  local title="$1"
+  local server_remote="$2"
+  local port_remote="$3"
+  local path_remote="$4"
+  local path_local="$5"
+  local path_stash="$6"
+  local exclude_file="$7"
+  local exclude="$8"
+
+  if [ ! "$path_remote" ]; then
+    end "\$path_remote cannot be blank, try '.' instead."
+  fi
+  if [ ! "$path_local" ]; then
+    end "\local_files cannot be blank, try '.' instead."
+  fi
+  if [ "$path_remote" != '.' ] && [ "$path_remote" == "$path_local" ]; then
+    end "\$path_remote and \$path_local should not be the same path."
+  fi
+
+  echo "Copying files using $title ..."
+
+  # Excludes message...
+  if test -e "$exclude_file"; then
+    excludes="$(cat $exclude_file)"
+    echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
+    echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
+  fi
+
+  if [[ "$port_remote" ]]; then
+    cmd="$ld_remote_rsync_cmd -e \"ssh -p $port_remote\" \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
+  else
+    cmd="$ld_remote_rsync_cmd \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
+  fi
+
+  echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+  eval $cmd;
+}
+
 ##
  # Fetch files from the appropriate server
  #
 function fetch_files() {
-  case $source_server in
-    'prod' )
-      _fetch_files_production
-      ;;
-    'staging' )
-      _fetch_files_staging
-      ;;
-  esac
-}
-
-##
- # Fetch prod files to local
- #
-function _fetch_files_production() {
-  load_production_config
-  if [ ! "$production_files" ]; then
-    end "\$production_files cannot be blank, try '.' instead."
-  fi
-  if [ ! "$local_files" ]; then
-    end "\local_files cannot be blank, try '.' instead."
-  fi
-  if [ "$production_files" != '.' ] && [ "$production_files" == "$local_files" ]; then
-    end "\$production_files and \$local_files should not be the same path."
-  fi
-
-  echo "Copying files from production server..."
-
-  # Excludes message...
-  if test -e "$ld_rsync_exclude_file"; then
-    excludes="$(cat $ld_rsync_exclude_file)"
-    echo "`tty -s && tput setaf 3`Excluding per: $ld_rsync_exclude_file`tty -s && tput op`"
-    echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
-  fi
-
-  if [[ "$production_port" ]]; then
-    cmd="$ld_remote_rsync_cmd -e \"ssh -p $production_port\" \"$production_server:$production_files/\" \"$config_dir/prod/files/\" --delete $ld_rsync_ex"
-
-      echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
-      eval $cmd;
-  else
-    cmd="$ld_remote_rsync_cmd \"$production_server:$production_files/\" \"$config_dir/prod/files/\" --delete $ld_rsync_ex"
-    echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
-    eval $cmd;
-  fi
-
-  # record the fetch date
-  echo $now > $config_dir/prod/cached_files
-}
-
-##
- # Fetch staging files to local
- #
-function _fetch_files_staging() {
-  load_staging_config
-  if [ ! "$staging_files" ] || [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]; then
-    end "Bad config"
-  fi
-
-  # ld_rsync_ex=''
-  echo "Copying files from staging server..."
-
-  # Excludes message...
-  if test -e "$ld_rsync_exclude_file"; then
-    excludes="$(cat $ld_rsync_exclude_file)"
-    echo "`tty -s && tput setaf 3`Excluding per: $ld_rsync_exclude_file`tty -s && tput op`"
-    echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
-  fi
-
-  if [[ "$staging_port" ]]; then
-    cmd="$ld_remote_rsync_cmd -e \"ssh -p $staging_port\" \"$staging_server:$staging_files/\" \"$config_dir/staging/files/\" --delete $ld_rsync_ex"
-      echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
-      eval $cmd;
-  else
-    cmd="$ld_remote_rsync_cmd \"$staging_server:$staging_files/\" \"$config_dir/staging/files/\" --delete $ld_rsync_ex"
-    echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
-    eval $cmd;
-  fi
-
-  # record the fetch date
-  echo $now > $config_dir/staging/cached_files
+    if [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
+        case $source_server in
+            'prod' )
+                load_production_config
+                [ "$local_files" ] && _fetch_files 'Production:files' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex"
+                [ "$local_files2" ] && _fetch_files 'Production:files2' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2"
+                [ "$local_files3" ] && _fetch_files 'Production:files3' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3"
+            ;;
+            'staging' )
+                load_staging_config
+                [ "$local_files" ] && _fetch_files 'Staging:files' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$config_dir/staging/files" "$ld_rsync_exclude_file" "$ld_rsync_ex"
+                [ "$local_files2" ] && _fetch_files 'Staging:files2' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$config_dir/staging/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2"
+                [ "$local_files3" ] && _fetch_files 'Staging:files3' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$config_dir/staging/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3"
+            ;;
+        esac
+        echo $now > "$config_dir/$source_server/cached_files"
+    fi
 }
 
 ##
@@ -1425,25 +1416,35 @@ function show_info() {
   echo "DB Host       : $local_db_host"
   echo "DB Name       : $local_db_name"
   echo "DB User       : $local_db_user"
-  if [ "$local_db_port" ]; then
-    echo "DB Port       : $local_db_port"
-  fi
+  [ "$local_db_port" ] && echo "DB Port       : $local_db_port"
   echo "Dumps         : $local_db_dir"
-  echo "Files         : $local_files"
   if _access_check 'fetch_db'; then
     if [[ -f "$config_dir/cached_db" ]]; then
       echo "DB Fetched    : "$(cat $config_dir/cached_db)
     fi
   fi
   if _access_check 'fetch_files'; then
+    echo "Files         : $local_files"
     if [[ "$ld_rsync_ex" ]]; then
       echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file are being ignored.`tty -s && tput op`"
     fi
-    if [[ -f "$config_dir/prod/cached_files" ]]; then
-      echo "Files Prod    : "$(cat $config_dir/prod/cached_files)
+
+    [ "$local_files2" ] && echo "Files2        : $local_files2"
+    if [[ "$ld_rsync_ex2" ]]; then
+      echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file2 are being ignored.`tty -s && tput op`"
     fi
+
+    [ "$local_files3" ] && echo "Files3        : $local_files3"
+    if [[ "$ld_rsync_ex3" ]]; then
+      echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file3 are being ignored.`tty -s && tput op`"
+    fi
+
+    if [[ -f "$config_dir/prod/cached_files" ]]; then
+      echo "Prod files    : "$(cat $config_dir/prod/cached_files)
+    fi
+
     if [[ -f "$config_dir/staging/cached_files" ]]; then
-      echo "Files Staging : "$(cat $config_dir/staging/cached_files)
+      echo "Staging files : "$(cat $config_dir/staging/cached_files)
     fi
   fi
   echo
@@ -1461,6 +1462,8 @@ function show_info() {
     echo "DB Name       : $production_db_name"
     echo "Dumps         : $production_db_dir"
     echo "Files         : $production_files"
+    [[ "$production_files2" != null ]] && echo "Files2        : $production_files2"
+    [[ "$production_files3" != null ]] && echo "Files3        : $production_files3"
     echo
     theme_header 'STAGING' $color_staging
     echo "Server        : $staging_server"
