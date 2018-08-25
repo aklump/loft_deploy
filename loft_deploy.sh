@@ -1239,9 +1239,9 @@ function mysql_check() {
   local db_port=$5
 
   if [ "$db_port" ]; then
-    db_port="--port=$db_port"
+    db_port=" --port=$db_port"
   fi
-  $ld_mysql -u "$db_user" -p'"$db_pass"' "$db_port" -h "$db_host" "$db_name" -e exit 2>/dev/null
+  $ld_mysql -u "$db_user" -p"$db_pass" -h "$db_host$db_port" "$db_name" -e exit 2>/dev/null
   db_status=`echo $?`
   if [ $db_status -ne 0 ]; then
     mysql_check_result=false;
