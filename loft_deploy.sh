@@ -107,7 +107,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.13.20
+ld_version=0.13.21
 
 # theme color definitions
 color_red=1
@@ -229,7 +229,7 @@ function _mysql_production() {
     end "Bad production db config; missing: \$production_db_name"
   fi
   if [ "$production_db_port" ] && [ "$production_db_port" != null ]; then
-    port=" -P $production_db_port"
+    port=" --port=$production_db_port"
   fi
   show_switch
   cmd="$ld_mysql -u $production_db_user -p\"$production_db_pass\" -h $production_remote_db_host$port $production_db_name"
@@ -1239,9 +1239,9 @@ function mysql_check() {
   local db_port=$5
 
   if [ "$db_port" ]; then
-    db_port=" --port=$db_port"
+    db_port="--port=$db_port"
   fi
-  $ld_mysql -u "$db_user" -p"$db_pass" -h "$db_host$db_port" "$db_name" -e exit 2>/dev/null
+  $ld_mysql -u "$db_user" -p'"$db_pass"' "$db_port" -h "$db_host" "$db_name" -e exit 2>/dev/null
   db_status=`echo $?`
   if [ $db_status -ne 0 ]; then
     mysql_check_result=false;
@@ -1461,6 +1461,16 @@ function configtest() {
   if [ "$local_drupal_settings" ]  && ! [ "$local_drupal_root" ]; then
     configtest_return=false
     warning "Missing config variable: \$local_drupal_root"
+  fi
+
+  # Check for 127.0.0.1 and port usage on local
+  if [[ "$local_db_port" ]]  && [[ "$local_db_host" == 'localhost' ]]; then
+      warning 'When using $local_db_port, you should not set $local_db_host to "localhost", rather an IP.  See https://serverfault.com/questions/306421/why-does-the-mysql-command-line-tool-ignore-the-port-parameter'
+  fi
+
+  # Check for 127.0.0.1 and port usage on prod
+  if [[ "$production_db_port" ]]  && [[ "$production_remote_db_host" == 'localhost' ]]; then
+      warning 'When using $production_db_port, you should not set $production_remote_db_host to "localhost", rather an IP. See https://serverfault.com/questions/306421/why-does-the-mysql-command-line-tool-ignore-the-port-parameter'
   fi
 
   # Test for db access
