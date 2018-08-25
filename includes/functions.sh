@@ -447,9 +447,9 @@ function _upsearch () {
   test / == "$PWD" && echo && echo "`tty -s && tput setaf 1`NO CONFIG FILE FOUND!`tty -s && tput op`" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
 }
 
-#
-# Helper function to fetch remote files to local.
-#
+##
+ # Helper function to fetch remote files to local.
+ #
 function _fetch_files() {
   local title="$1"
   local server_remote="$2"
@@ -515,42 +515,56 @@ function fetch_files() {
 ##
  # Reset the local files with fetched prod files
  #
- # @param string $1
- #   description of param
- #
- # @return NULL
- #   Sets the value of global $reset_files_return
- #
 function reset_files() {
-  echo "This process will reset your local files to match the most recently fetched"
-  echo "$source_server files, removing any local files that are not present in the fetched"
-  echo "set. You will be given a preview of what will happen first. To absolutely"
-  echo "match $source_server as of this moment in time, consider fetching first, however it is slower."
-  echo
-  echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
+    if [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
+        echo "This process will reset your local files to match the most recently fetched"
+        echo "$source_server files, removing any local files that are not present in the fetched"
+        echo "set. You will be given a preview of what will happen first. To absolutely"
+        echo "match $source_server as of this moment in time, consider fetching first, however it is slower."
+        echo
+        echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
 
-  source="$config_dir/$source_server/files"
-  if [ ! -d $source ]; then
-    end "Please fetch files first"
-  fi
+        local path_stash=
+        local path_local=$local_files
 
-  # Excludes message...
-  if test -e "$ld_rsync_exclude_file"; then
-    excludes="$(cat $ld_rsync_exclude_file)"
-    echo "`tty -s && tput setaf 3`Excluding per: $ld_rsync_exclude_file`tty -s && tput op`"
-    echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
-  fi
+        [ "$local_files" ] && _reset_files "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex"
+        [ "$local_files2" ] && _reset_files "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2"
+        [ "$local_files3" ] && _reset_files "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3"
+    fi
+}
 
-  # Have to exclude here because there might be some lingering files in the cache
-  # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
-  cmd="rsync -av $source/ $local_files/ --delete $ld_rsync_ex"
+##
+ # Helper function to reset a single files directory.
+ #
+function _reset_files() {
+    local title="$1"
+    local path_stash="$2"
+    local path_local="$3"
+    local exclude_file="$4"
+    local exclude="$5"
 
-  echo "`tty -s && tput setaf 2`Here is a preview:`tty -s && tput op`"
-  eval "$cmd --dry-run"
-  confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE LOCAL FILES with these $source_server files?`tty -s && tput op`"
+    if [ ! -d $path_stash ]; then
+        end "Please fetch files first."
+    fi
 
-  echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
-  eval $cmd
+    # Excludes message...
+    if test -e "$exclude_file"; then
+        excludes="$(cat $exclude_file)"
+        echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
+        echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
+        echo
+    fi
+
+    # Have to exclude here because there might be some lingering files in the cache
+    # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
+    cmd="rsync -av $path_stash/ $path_local/ --delete $exclude"
+
+    echo "`tty -s && tput setaf 2`Here is a preview:`tty -s && tput op`"
+    eval "$cmd --dry-run"
+    confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE $title with these $source_server files?`tty -s && tput op`"
+
+    echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+    eval $cmd
 }
 
 ##
@@ -668,9 +682,6 @@ function _fetch_db_staging() {
 
 ##
  # Reset the local database with a previously fetched copy
- #
- # @return NULL
- #   Sets the value of global $reset_db_return
  #
 function reset_db() {
   echo "This process will reset your local db to match the most recently fetched"
@@ -1450,7 +1461,6 @@ function show_info() {
   echo
 
   if [ "$local_role" == 'dev' ]; then
-    echo "Loading remote configurations..."
     load_staging_config
     load_production_config
     theme_header 'PRODUCTION' $color_prod
