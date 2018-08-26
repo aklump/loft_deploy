@@ -16,7 +16,7 @@ noindex: false
         ln -s /opt/loft_deploy/loft_deploy.sh loft_deploy;
         chmod u+x loft_deploy;
 
-1. Install dependencies using composer.
+1. Install dependencies using [Composer](https://getcomposer.org/).
 
         cd /usr/local/bin/loft_deploy
         composer install

@@ -1,6 +1,32 @@
 # Hooks
 
-You may create `.sh` files that will execute before or after an operation.  These are called hooks and should be created in `.loft_deploy/hooks`.  An example is a hook to be executed after a `reset` operation, you need only create a file at using the pattern `{op}_{post|pre}`.  The variables from loft_deploy.sh are available to your hook files, e.g., `$config_dir`.  If you want the same file to be executed for multiple operations you should use symlinks.
+## Quick Start
+
+The hook filename is comprised of: OPERATION_{ASSET_}POSITION, e.g.
+
+    .loft_deploy/hooks/
+    ├── fetch_db_post.sh
+    ├── fetch_db_pre.sh
+    ├── fetch_files_post.sh
+    ├── fetch_files_pre.sh
+    ├── fetch_post.sh
+    ├── fetch_pre.sh
+    ├── pull_db_post.sh
+    ├── pull_db_pre.sh
+    ├── pull_files_post.sh
+    ├── pull_files_pre.sh
+    ├── pull_post.sh
+    ├── pull_pre.sh
+    ├── reset_db_post.sh
+    ├── reset_db_pre.sh
+    ├── reset_files_post.sh
+    ├── reset_files_pre.sh
+    ├── reset_post.sh
+    └── reset_pre.sh
+
+## Description
+
+You may create `.sh` files that will execute before or after an operation.  These are called hooks and should be created in `.loft_deploy/hooks`.  An example is a hook to be executed after a `reset` operation, you need only create a file at using the pattern `OPERATION_{ASSET_}POSITION`.  The variables from _loft_deploy.sh_ are available to your hook files, e.g., `$config_dir`.  If you want the same file to be executed for multiple operations you should use symlinks.
 
     .loft_deploy/hooks/reset_post.sh
 
