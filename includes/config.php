@@ -52,9 +52,9 @@ try {
         break;
 
       case 'url':
-        $data['title'][] = $config['local']['location'] ?? '';
-        $data['title'][] = $item;
-        $data['title'] = implode(' ~ ', $data['title']);
+        $data['local_title'][] = $config['local']['location'] ?? '';
+        $data['local_title'][] = preg_replace('/https?:\/\//i', '', $item);
+        $data['local_title'] = implode(' ~ ', $data['local_title']);
         break;
 
       case 'database':
