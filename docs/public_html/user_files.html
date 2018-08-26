@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>User (non-versioned) files component</title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+
+<body class="page--user_files">
+<header>
+  <div class="pager">
+  <a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon websites</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="_tasklist.html" class="next _tasklist"> Tasklist&raquo;</a>
+</div>
+</header>
+
+  <div class="search__wrapper">
+  <form action="search--results.html">
+    <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
+  </form>
+</div>
+
+  <h1>User (non-versioned) files component</h1>
+  <div class="breadcrumb"><a href="index.html">Index</a></div>
+
+<section>
+
+<p>Loft Deploy supports up to three directories of non-versioned files as part of the files fetch/pull operation.  This is ample to cover Drupal's concept of <em>public</em> and <em>private</em> directories, with one more directory to spare.</p>
+
+<p>Be sure that the prod and staging directories map to the correct files path to local, e.g. prod:local_files2 maps to local:local_files2 and so on.</p>
+
+<h2>Configuration</h2>
+
+<table>
+<thead>
+<tr>
+  <th>config var</th>
+  <th>rsync exclusion file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>local_files</td>
+  <td>files_exclude.txt</td>
+</tr>
+<tr>
+  <td>local_files2</td>
+  <td>files2_exclude.txt</td>
+</tr>
+<tr>
+  <td>local_files3</td>
+  <td>files3_exclude.txt</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Excluding certain files using <em>files_exclude.txt</em></h2>
+
+<p>You may set Loft Deploy to ignore certain user files by creating a file <em>.loft_deploy/files_exclude.txt</em>.  This will be used by the rsync program as an <code>--exclude-from</code> argument.  Notice that you will need to use <em>files2_exclude.txt</em> and <em>files3_exclude.txt</em> to target files in those other directories, if necessary.</p>
+
+<h2>Filenames with special chars</h2>
+
+<p>There appears to be a shortcoming with filenames that contain special chars.  The file sync may not work in this case.  Easiest fix is to insure filenames do not have special chars, like accents, etc.</p>
+</section>
+
+<div class="search__results">
+  <div id="tipue_search_content"></div>
+</div>
+
+<footer>
+  <div class="pager">
+  <a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon websites</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="_tasklist.html" class="next _tasklist"> Tasklist&raquo;</a>
+</div>
+  
+  <div id="footer-legaleeze">
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 25 Aug 2018 19:15:19 -0700</p>
+  </div>
+</footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#tipue_search_input').tipuesearch();
+    });
+  </script>
+<script src="js/core.js"></script>
+</body>
+</html>
+

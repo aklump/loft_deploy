@@ -221,7 +221,7 @@ function init() {
   elif [ "$1" == 'dev' ] || [ "$1" == 'staging' ] || [ "$1" == 'prod' ]; then
     mkdir $config_dir && rsync -a "$root/install/base/" "$config_dir/"
     chmod 0644 "$config_dir/.htaccess"
-    cp "$root/install/config/$1.yml" "$config_dir/config"
+    cp "$root/install/config/$1.yml" "$config_dir/config.yml"
     cd "$start_dir"
     complete
     end "Please configure and save $config_dir/config.yml"

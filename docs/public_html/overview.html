@@ -76,13 +76,7 @@
 
 <p>User files (i.e. <em>sites/default/files</em>), which are too dynamic to include in version control, also originate and must be changed on the production server. Just like the database, the dev and staging environments need to be brought to match production at times. Loft Deploy will do this using <code>loft_deploy pull -f</code>. You may still use Loft Deploy this when you do not have a user files directory, just omit any config variables referencing <code>files</code>.</p>
 
-<h3>Excluding certain files using <em>files_exclude.txt</em></h3>
-
-<p>You may set Loft Deploy to ignore certain user files by creating a file <em>.loft_deploy/files_exclude.txt</em>.  This will be used by the rsync program as an <code>--exclude-from</code> argument.</p>
-
-<h3>Filenames with special chars</h3>
-
-<p>There appears to be a shortcoming with filenames that contain special chars.  The file sync may not work in this case.  Easiest fix is to insure filenames do not have special chars, like accents, etc.</p>
+<p>For more information see <a href="user_files.html">user files</a>.</p>
 
 <h2>Fetch/reset/pull from staging</h2>
 
@@ -115,13 +109,12 @@ loft_deploy reset --staging
 
 <ul>
 <li>You must configure each environment for a given project. That is to say you must run <code>loft_deploy init dev</code> and <code>loft_deploy init prod</code> and maybe <code>loft_deploy init staging</code> on each of the appropriate servers.</li>
-<li>The init process creates an empty config file in .loft_deply/config; this file must be edited with all correct params for each environment.</li>
+<li>The init process creates an empty config file <em>.loft_deply/config.yml</em>; this file must be edited with all correct params for each environment.</li>
 <li>The location where you run the init process determines the scope of usage. The best/most common location is the directory above web root. You may run loft_deploy operations in any child directory and including the directory where it's initialized.</li>
 <li>An exception to this rule is a Drupal multisite, in which case you must descend into <code>sites/[sitename]</code> and install it there run <code>loft_deploy init</code> there. You will then be restricted to running loft deploy oeprations to <code>/sites/[sitename]</code> and any child directories.</li>
-<li>There is a .htaccess file provided which denies access to all traffic, make
-sure that does not get removed; especially if you're installing this in a publicly accessible folder, such as in the case above.</li>
+<li>There is a .htaccess file provided which denies access to all traffic, make sure that does not get removed; especially if you're installing this in a publicly accessible folder, such as in the case above.</li>
 <li>For each website project that you want to use this for, you must create a configuration file for that website in all environments: local, production and staging if applicable.</li>
-<li>Carefully and meticulously edit <code>.loft_deploy/config</code> making CERTAIN you pay attention to the variable <code>local_role</code>. Setting this correctly ensures certain access checks, which may help to prevent damaging your production environment.</li>
+<li>Carefully and meticulously edit <em>.loft_deploy/config</em> making CERTAIN you pay attention to the variable <code>local_role</code>. Setting this correctly ensures certain access checks, which may help to prevent damaging your production environment.</li>
 <li>AGAIN, MAKE SURE TO CORRECTLY SET <code>local_role</code> to: dev, prod or staging.</li>
 <li>Also make certain that your paths are correct, as incorrect paths may result in data loss to your production website.</li>
 <li>Review your config info with <code>loft_deploy configtest</code>.</li>
@@ -143,7 +136,7 @@ sure that does not get removed; especially if you're installing this in a public
 <p><strong>Scenario</strong>: You are working on a Drupal site and you do not want to export the contents of the <code>cache</code> or <code>cache_bootstrap</code> tables.  Here's how to configure Loft Deploy to do this:</p>
 
 <ol>
-<li>Create a file as <code>.loft_deploy/sql/db_tables_no_data.txt</code></li>
+<li>Create a file as <em>.loft_deploy/sql/db_tables_no_data.txt</em></li>
 <li><p>In that file add the following (one table per line):</p>
 
 <pre><code>cache
@@ -157,7 +150,7 @@ cache_bootstrap
 <p>Yes this is supported and is done like this:</p>
 
 <ol>
-<li>Create a file as <code>.loft_deploy/sql/db_tables_no_data.sql</code>; notice the extension is now <code>.sql</code>.</li>
+<li>Create a file as <em>.loft_deploy/sql/db_tables_no_data.sql</em>; notice the extension is now <code>.sql</code>.</li>
 <li><p>In that file add the sql command to select all cache tables, e.g.,</p>
 
 <pre><code>SELECT table_name FROM information_schema.tables WHERE table_schema = '$local_db_name' AND table_name LIKE 'cache%';
@@ -198,7 +191,7 @@ cache_bootstrap
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 25 Aug 2018 10:34:24 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 25 Aug 2018 19:15:18 -0700</p>
   </div>
 </footer>
 

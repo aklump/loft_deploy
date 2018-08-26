@@ -12,7 +12,7 @@
   <div class="pager">
   <a href="overview.html" class="prev overview">&laquo;Overview</a>
   <a href="index.html" class="index">Index</a>
-  <a href="_tasklist.html" class="next _tasklist"> Tasklist&raquo;</a>
+  <a href="user_files.html" class="next user_files">User (non-versioned) files component&raquo;</a>
 </div>
 </header>
 
@@ -29,19 +29,30 @@
 
 <p>Pantheon servers are supported (prod -> dev only at this time) via their CLi called Terminus.  <strong>With this method, you should not install Loft Deploy on the remote server.</strong></p>
 
+<h2>Configuration</h2>
+
+<p>You must have something like the following in <em>config.yml</em> on your local dev machine for the <code>production</code> section:</p>
+
+<pre><code>production:
+  files:
+  - files
+  pantheon:
+    uuid: UUID-GOES-HERE
+    site: SITE_NAME
+    machine_token: 'MACHINE_TOKEN_HERE'
+</code></pre>
+
 <h2>Databases</h2>
 
 <ol>
 <li>You must have <a href="https://github.com/pantheon-systems/terminus#installation">Terminus installed</a>, e.g. <code>composer global require pantheon-systems/terminus</code></li>
 <li>More info about <a href="https://pantheon.io/docs/machine-tokens/">machine tokens</a></li>
-<li><p>The following must appear in your <code>dev</code> config file. You can determine the site name by using <code>terminus sites list</code> after first authenticating.</p>
-
-<pre><code>terminus_site='$SITE_NAME'
-terminus_machine_token=''
-</code></pre></li>
+<li>You can determine the site name by using <code>terminus sites list</code> after first authenticating.</li>
 </ol>
 
 <h2>Files</h2>
+
+<p>@todo This must be updated with the new YAML format:</p>
 
 <ol>
 <li>(Terminus is not necessary for files support at this time.)</li>
@@ -66,11 +77,11 @@ pantheon_live_uuid=''
   <div class="pager">
   <a href="overview.html" class="prev overview">&laquo;Overview</a>
   <a href="index.html" class="index">Index</a>
-  <a href="_tasklist.html" class="next _tasklist"> Tasklist&raquo;</a>
+  <a href="user_files.html" class="next user_files">User (non-versioned) files component&raquo;</a>
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 25 Aug 2018 10:34:25 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 25 Aug 2018 19:15:19 -0700</p>
   </div>
 </footer>
 

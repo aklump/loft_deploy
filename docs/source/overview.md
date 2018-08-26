@@ -11,13 +11,17 @@ While it is not limited to Drupal, it does assume this type of tri-component sce
 Loft Deploy does not intend to replace codebase management with version control systems such as Git. Such systems should continue to be used in tandem with Loft Deploy.
 
 ## Key Concepts
+
 ### Fetch
+
 Fetching grabs the remote assets and caches them locally, but does not alter your local environment.  You have to reset to do that.  Cached assets can be found in the _.loft_deploy_ folder.
 
 ### Reset
+
 Uses the cached remote assets from the last fetch to alter your local environment.  Saves you download time if you are doing frequent resets to test update scripts or something, where you need to continusously reset to match the production database, for example.
 
 ### Pull
+
 A combination that will do a fetch and reset in one command.
 
 
@@ -72,13 +76,12 @@ _If these assumptions are not true then this package may be less useful to you._
 ## Configuration (of projects)
 
 * You must configure each environment for a given project. That is to say you must run `loft_deploy init dev` and `loft_deploy init prod` and maybe `loft_deploy init staging` on each of the appropriate servers.
-* The init process creates an empty config file in .loft_deply/config; this file must be edited with all correct params for each environment.
+* The init process creates an empty config file _.loft_deply/config.yml_; this file must be edited with all correct params for each environment.
 * The location where you run the init process determines the scope of usage. The best/most common location is the directory above web root. You may run loft_deploy operations in any child directory and including the directory where it's initialized.
 * An exception to this rule is a Drupal multisite, in which case you must descend into `sites/[sitename]` and install it there run `loft_deploy init` there. You will then be restricted to running loft deploy oeprations to `/sites/[sitename]` and any child directories.
-* There is a .htaccess file provided which denies access to all traffic, make
-  sure that does not get removed; especially if you're installing this in a publicly accessible folder, such as in the case above.
+* There is a .htaccess file provided which denies access to all traffic, make sure that does not get removed; especially if you're installing this in a publicly accessible folder, such as in the case above.
 * For each website project that you want to use this for, you must create a configuration file for that website in all environments: local, production and staging if applicable.
-* Carefully and meticulously edit `.loft_deploy/config` making CERTAIN you pay attention to the variable `local_role`. Setting this correctly ensures certain access checks, which may help to prevent damaging your production environment.
+* Carefully and meticulously edit _.loft_deploy/config_ making CERTAIN you pay attention to the variable `local_role`. Setting this correctly ensures certain access checks, which may help to prevent damaging your production environment.
 * AGAIN, MAKE SURE TO CORRECTLY SET `local_role` to: dev, prod or staging.
 * Also make certain that your paths are correct, as incorrect paths may result in data loss to your production website.
 * Review your config info with `loft_deploy configtest`.
@@ -95,7 +98,7 @@ _If these assumptions are not true then this package may be less useful to you._
 ### Exclude data from some tables: `sql/db_tables_no_data`
 **Scenario**: You are working on a Drupal site and you do not want to export the contents of the `cache` or `cache_bootstrap` tables.  Here's how to configure Loft Deploy to do this:
 
-1. Create a file as `.loft_deploy/sql/db_tables_no_data.txt`
+1. Create a file as _.loft_deploy/sql/db_tables_no_data.txt_
 1. In that file add the following (one table per line):
     
         cache
@@ -106,7 +109,7 @@ _If these assumptions are not true then this package may be less useful to you._
 #### But how about all `cache` tables?
 Yes this is supported and is done like this:
 
-1. Create a file as `.loft_deploy/sql/db_tables_no_data.sql`; notice the extension is now `.sql`.
+1. Create a file as _.loft_deploy/sql/db_tables_no_data.sql_; notice the extension is now `.sql`.
 1. In that file add the sql command to select all cache tables, e.g.,
     
         SELECT table_name FROM information_schema.tables WHERE table_schema = '$local_db_name' AND table_name LIKE 'cache%';

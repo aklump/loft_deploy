@@ -4,8 +4,8 @@ local:
   basepath: /path/to/staging/branch
   role: staging
   files:
-  - web/sites/default/files
-  - private/default/files
+    - web/sites/default/files
+    - private/default/files
   database:
     backups: private/default/db/purgeable
   drupal:

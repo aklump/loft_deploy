@@ -10,7 +10,7 @@
 <body class="page--hooks">
 <header>
   <div class="pager">
-  <a href="README.html" class="prev README">&laquo;Installation</a>
+  <a href="configuration.html" class="prev configuration">&laquo;Configuration Examples</a>
   <a href="index.html" class="index">Index</a>
   <a href="motd.html" class="next motd">Motd&raquo;</a>
 </div>
@@ -68,11 +68,37 @@ loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 
 <h2>Hook vars</h2>
 
-<p>| $1 | operation  | push |
-| $2 | production server |   |
-| $3 | staging server |   |</p>
-
-<p>| ${13} | path to hooks dir | /do/re/hooks  |</p>
+<table>
+<thead>
+<tr>
+  <th>arg</th>
+  <th>definition</th>
+  <th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>$1</td>
+  <td>operation</td>
+  <td>push</td>
+</tr>
+<tr>
+  <td>$2</td>
+  <td>production server</td>
+  <td></td>
+</tr>
+<tr>
+  <td>$3</td>
+  <td>staging server</td>
+  <td></td>
+</tr>
+<tr>
+  <td>${13}</td>
+  <td>path to hooks dir</td>
+  <td>/do/re/hooks</td>
+</tr>
+</tbody>
+</table>
 </section>
 
 <div class="search__results">
@@ -81,13 +107,13 @@ loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 
 <footer>
   <div class="pager">
-  <a href="README.html" class="prev README">&laquo;Installation</a>
+  <a href="configuration.html" class="prev configuration">&laquo;Configuration Examples</a>
   <a href="index.html" class="index">Index</a>
   <a href="motd.html" class="next motd">Motd&raquo;</a>
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 25 Aug 2018 10:34:24 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 25 Aug 2018 19:15:18 -0700</p>
   </div>
 </footer>
 
