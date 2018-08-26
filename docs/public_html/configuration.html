@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Configuration Examples</title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+
+<body class="page--configuration">
+<header>
+  <div class="pager">
+  <a href="README.html" class="prev README">&laquo;Installation</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="hooks.html" class="next hooks">Hooks&raquo;</a>
+</div>
+</header>
+
+  <div class="search__wrapper">
+  <form action="search--results.html">
+    <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
+  </form>
+</div>
+
+  <h1>Configuration Examples</h1>
+  <div class="breadcrumb"><a href="index.html">Index</a></div>
+
+<section>
+
+<p>After configuration changes you must call <code>ldp clearcache</code>.
+See <em>includes/schema--config.json</em> for more info.</p>
+
+<h2>Example A</h2>
+
+<ul>
+<li>Local site using Drupal <em>settings.php</em> for database connection.</li>
+<li><p>Production and staging connection via SSH</p>
+
+<pre><code>local:
+  location: ITLS
+  url: website.local
+  basepath: /Users/aklump/Code/Projects/Client/Website/site/dist/
+  role: dev
+  files:
+  - private/default/files
+  - web/sites/default/files
+  database:
+    backups: private/default/db/purgeable
+  drupal:
+    root: web
+    settings: web/sites/default/settings.php
+    database: default
+production:
+  config: /var/www/website/.loft_deploy
+  script: /usr/local/bin/loft_deploy
+  user: USERNAME
+  ip: NN.NN.NNN.NNN
+staging:
+  config: /var/www/stage.website/.loft_deploy
+  script: /usr/local/bin/loft_deploy
+  user: USERNAME
+  ip: NN.NN.NNN.NNN
+</code></pre></li>
+</ul>
+
+<table>
+<thead>
+<tr>
+  <th>local property</th>
+  <th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>location</td>
+  <td>The business name of the physical location</td>
+</tr>
+<tr>
+  <td>url</td>
+  <td>The URL of the local website without protocol</td>
+</tr>
+<tr>
+  <td>basepath</td>
+  <td>The local path to the project, this is prepended to all other paths in <em>local</em>, which do not begin with a forward slash</td>
+</tr>
+<tr>
+  <td>role</td>
+  <td>one of: dev, staging, production</td>
+</tr>
+<tr>
+  <td>files</td>
+  <td>up to three relative or absolute local file paths, which will be used in the files operations</td>
+</tr>
+<tr>
+  <td>database</td>
+  <td>See below</td>
+</tr>
+<tr>
+  <td>drupal</td>
+  <td>See below</td>
+</tr>
+</tbody>
+</table>
+
+<h2>Example B</h2>
+
+<ul>
+<li>Local site using explicit mysql credentials.</li>
+<li><p>No production nor staging servers.</p>
+
+<pre><code>local:
+  location: ITLS
+  url: website.local
+  basepath: /Users/aklump/Code/Projects/Client/Website/site/dist/
+  role: dev
+  files:
+  - private/default/files
+  - web/sites/default/files
+  database:
+    backups: private/default/db/purgeable
+    host: localhost
+    user: DB_USER
+    password: "PASSWORD-GOES-HERE"
+    name: DB_NAME
+</code></pre></li>
+</ul>
+
+<h2>Indicating Specific Binaries</h2>
+
+<p>You can define the binaries (except PHP) to use; more info in <em>includes/schema--config.json</em>.</p>
+
+<pre><code>    bin:
+      mysql: /Applications/MAMP/Library/bin/mysql
+      gzip: /usr/bin/gzip
+</code></pre>
+
+<h2>To indicate PHP version</h2>
+
+<p>If you need to specify a php version you must add the following to <em>.bash_profile</em> or <em>.bashrc</em>.  You cannot add PHP to the YAML configuration.</p>
+
+<pre><code>export LOFT_DEPLOY_PHP="/Applications/MAMP/bin/php/php7.1.12/bin/php"
+</code></pre>
+</section>
+
+<div class="search__results">
+  <div id="tipue_search_content"></div>
+</div>
+
+<footer>
+  <div class="pager">
+  <a href="README.html" class="prev README">&laquo;Installation</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="hooks.html" class="next hooks">Hooks&raquo;</a>
+</div>
+  
+  <div id="footer-legaleeze">
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sun, 26 Aug 2018 13:01:40 -0700</p>
+  </div>
+</footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#tipue_search_input').tipuesearch();
+    });
+  </script>
+<script src="js/core.js"></script>
+</body>
+</html>
+

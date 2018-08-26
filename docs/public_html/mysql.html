@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>MYSQL</title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+
+<body class="page--mysql">
+<header>
+  <div class="pager">
+  <a href="motd.html" class="prev motd">&laquo;Motd</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="overview.html" class="next overview">Overview&raquo;</a>
+</div>
+</header>
+
+  <div class="search__wrapper">
+  <form action="search--results.html">
+    <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
+  </form>
+</div>
+
+  <h1>MYSQL</h1>
+  <div class="breadcrumb"><a href="index.html">Index</a></div>
+
+<section>
+
+<h2>Local</h2>
+
+<p>Local mysql can be entered using <code>ldp mysql</code>.</p>
+
+<h2>Remote</h2>
+
+<p>If your production server allows remote connections you can use <code>ldp mysql --prod</code> but that requires some extra configuration.  The following needs to be added to your dev config file:</p>
+
+<pre><code>production_remote_db_host=''
+</code></pre>
+
+<h3>Pantheon</h3>
+
+<p>If terminus is installed and your server is on Pantheon you only need to make sure this is present:</p>
+
+<pre><code>pantheon_live_uuid=''
+</code></pre>
+</section>
+
+<div class="search__results">
+  <div id="tipue_search_content"></div>
+</div>
+
+<footer>
+  <div class="pager">
+  <a href="motd.html" class="prev motd">&laquo;Motd</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="overview.html" class="next overview">Overview&raquo;</a>
+</div>
+  
+  <div id="footer-legaleeze">
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sun, 26 Aug 2018 13:01:40 -0700</p>
+  </div>
+</footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#tipue_search_input').tipuesearch();
+    });
+  </script>
+<script src="js/core.js"></script>
+</body>
+</html>
+

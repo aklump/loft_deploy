@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Hooks</title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+
+<body class="page--hooks">
+<header>
+  <div class="pager">
+  <a href="configuration.html" class="prev configuration">&laquo;Configuration Examples</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="motd.html" class="next motd">Motd&raquo;</a>
+</div>
+</header>
+
+  <div class="search__wrapper">
+  <form action="search--results.html">
+    <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
+  </form>
+</div>
+
+  <h1>Hooks</h1>
+  <div class="breadcrumb"><a href="index.html">Index</a></div>
+
+<section>
+
+<h2>Quick Start</h2>
+
+<p>The hook filename is comprised of: OPERATION_{ASSET_}POSITION, e.g.</p>
+
+<pre><code>.loft_deploy/hooks/
+├── fetch_db_post.sh
+├── fetch_db_pre.sh
+├── fetch_files_post.sh
+├── fetch_files_pre.sh
+├── fetch_post.sh
+├── fetch_pre.sh
+├── pull_db_post.sh
+├── pull_db_pre.sh
+├── pull_files_post.sh
+├── pull_files_pre.sh
+├── pull_post.sh
+├── pull_pre.sh
+├── reset_db_post.sh
+├── reset_db_pre.sh
+├── reset_files_post.sh
+├── reset_files_pre.sh
+├── reset_post.sh
+└── reset_pre.sh
+</code></pre>
+
+<h2>Description</h2>
+
+<p>You may create <code>.sh</code> files that will execute before or after an operation.  These are called hooks and should be created in <code>.loft_deploy/hooks</code>.  An example is a hook to be executed after a <code>reset</code> operation, you need only create a file at using the pattern <code>OPERATION_{ASSET_}POSITION</code>.  The variables from <em>loft_deploy.sh</em> are available to your hook files, e.g., <code>$config_dir</code>.  If you want the same file to be executed for multiple operations you should use symlinks.</p>
+
+<pre><code>.loft_deploy/hooks/reset_post.sh
+</code></pre>
+
+<p>Then create a symlink:</p>
+
+<pre><code>cd .loft_deploy/hooks/ &amp;&amp; ln -s reset_post.sh pull_post.sh
+</code></pre>
+
+<p>The contents of the file could look like this, where $1 is a verbose comment about calling the hook, you should echo it if you care to have it displayed.</p>
+
+<pre><code>#!/bin/bash
+# 
+# @file
+# Clears the drupal cache after the database has been reset
+
+# Verbose statement about this hook
+echo $1
+
+# Leverage the $relative location and then do a drush cc all
+echo "`tty -s &amp;&amp; tput setaf 3`Clearing the drupal cache...`tty -s &amp;&amp; tput op`"
+(cd "$(dirname $config_dir)/public_html" &amp;&amp; drush cc all)
+</code></pre>
+
+<h2>MYSQL in your hooks</h2>
+
+<p>You can add mysql commands against the local environment in a hook using <code>loft_deploy_mysql</code> like this:</p>
+
+<pre><code>#!/bin/bash
+# 
+# @file
+# Clears the drupal cache after the database has been reset
+
+# Verbose statement about this hook
+echo $1
+loft_deploy_mysql "DROP TABLE cache_admin_menu;"
+</code></pre>
+
+<h2>Hook vars</h2>
+
+<table>
+<thead>
+<tr>
+  <th>arg</th>
+  <th>definition</th>
+  <th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>$1</td>
+  <td>operation</td>
+  <td>push</td>
+</tr>
+<tr>
+  <td>$2</td>
+  <td>production server</td>
+  <td></td>
+</tr>
+<tr>
+  <td>$3</td>
+  <td>staging server</td>
+  <td></td>
+</tr>
+<tr>
+  <td>${13}</td>
+  <td>path to hooks dir</td>
+  <td>/do/re/hooks</td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<div class="search__results">
+  <div id="tipue_search_content"></div>
+</div>
+
+<footer>
+  <div class="pager">
+  <a href="configuration.html" class="prev configuration">&laquo;Configuration Examples</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="motd.html" class="next motd">Motd&raquo;</a>
+</div>
+  
+  <div id="footer-legaleeze">
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sun, 26 Aug 2018 13:01:40 -0700</p>
+  </div>
+</footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#tipue_search_input').tipuesearch();
+    });
+  </script>
+<script src="js/core.js"></script>
+</body>
+</html>
+
