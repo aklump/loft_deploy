@@ -27,7 +27,34 @@
 
 <section>
 
-<p>You may create <code>.sh</code> files that will execute before or after an operation.  These are called hooks and should be created in <code>.loft_deploy/hooks</code>.  An example is a hook to be executed after a <code>reset</code> operation, you need only create a file at using the pattern <code>{op}_{post|pre}</code>.  The variables from loft_deploy.sh are available to your hook files, e.g., <code>$config_dir</code>.  If you want the same file to be executed for multiple operations you should use symlinks.</p>
+<h2>Quick Start</h2>
+
+<p>The hook filename is comprised of: OPERATION_{ASSET_}POSITION, e.g.</p>
+
+<pre><code>.loft_deploy/hooks/
+├── fetch_db_post.sh
+├── fetch_db_pre.sh
+├── fetch_files_post.sh
+├── fetch_files_pre.sh
+├── fetch_post.sh
+├── fetch_pre.sh
+├── pull_db_post.sh
+├── pull_db_pre.sh
+├── pull_files_post.sh
+├── pull_files_pre.sh
+├── pull_post.sh
+├── pull_pre.sh
+├── reset_db_post.sh
+├── reset_db_pre.sh
+├── reset_files_post.sh
+├── reset_files_pre.sh
+├── reset_post.sh
+└── reset_pre.sh
+</code></pre>
+
+<h2>Description</h2>
+
+<p>You may create <code>.sh</code> files that will execute before or after an operation.  These are called hooks and should be created in <code>.loft_deploy/hooks</code>.  An example is a hook to be executed after a <code>reset</code> operation, you need only create a file at using the pattern <code>OPERATION_{ASSET_}POSITION</code>.  The variables from <em>loft_deploy.sh</em> are available to your hook files, e.g., <code>$config_dir</code>.  If you want the same file to be executed for multiple operations you should use symlinks.</p>
 
 <pre><code>.loft_deploy/hooks/reset_post.sh
 </code></pre>
@@ -113,7 +140,7 @@ loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sun, 26 Aug 2018 09:32:58 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sun, 26 Aug 2018 12:34:20 -0700</p>
   </div>
 </footer>
 
