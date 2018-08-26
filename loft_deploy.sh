@@ -239,12 +239,12 @@ case $op in
     end
     ;;
   'pull')
-    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset files; then
       fetch_db
       reset_db
       echo_green 'Database fetched and reset.'
     fi
-    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset database; then
       fetch_files
       reset_files
       echo_green 'Files fetched and reset.'
