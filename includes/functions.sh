@@ -1086,6 +1086,7 @@ function show_help() {
   theme_help_topic 'scp' 'l' 'Display a scp stub using server values' 'see $production_scp for configuration'
   theme_help_topic help 'l' 'Show this help screen'
   theme_help_topic info 'l' 'Show info'
+  theme_help_topic clearcache 'l' 'Import new configuration after editing config.yml' 'clearcache'
   theme_help_topic configtest 'l' 'Test configuration'
   theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. loft_deploy -f ls -la'
   theme_help_topic pass 'l' 'Display password(s)' '--prod Production' 'staging Staging' '--all All'
