@@ -108,7 +108,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.14.2
+ld_version=0.14.3
 
 # theme color definitions
 color_red=1
@@ -183,8 +183,8 @@ if [[ "$target" == 'staging' ]]; then
 fi
 
 if [ $op == "get" ]; then
-  get_var $2
-  exit
+  get_var $2 && exit 0
+  exit 1
 fi
 
 print_header
@@ -204,18 +204,17 @@ case $op in
     ;;
   'init')
     init $2
-    complete
     handle_post_hook $op
     end
     ;;
   'mysql')
     loft_deploy_mysql "$2"
     handle_post_hook $op
-    complete 'Your mysql session has ended.'
+    echo_green 'Your mysql session has ended.'
     end
     ;;
   'scp')
-    complete "scp $production_scp_port$production_server:$production_scp"
+    echo_green "scp $production_scp_port$production_server:$production_scp"
     handle_post_hook $op
     end
     ;;
@@ -231,38 +230,36 @@ case $op in
     ;;
   'configtest')
     configtest
-    complete
     handle_post_hook $op
     end
     ;;
   'export')
-    export_db $2
-    complete
+    export_db $2 &&  echo_green "Export complete."
     handle_post_hook $op
     end
     ;;
   'pull')
-    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset files; then
       fetch_db
       reset_db
-      echo 'Database fetched and reset'
+      echo_green 'Database fetched and reset.'
     fi
-    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset database; then
       fetch_files
       reset_files
-      echo 'Files fetched and reset'
+      echo_green 'Files fetched and reset.'
     fi
     handle_post_hook $op
     end
     ;;
   'push')
-    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset database; then
       push_db
-      complete 'Database pushed to staging'
+      echo_green 'Database pushed to staging.'
     fi
-    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset files; then
       push_files
-      complete 'Files pushed to staging'
+      echo_green 'Files pushed to staging.'
     fi
     handle_post_hook $op
     end
@@ -272,44 +269,41 @@ case $op in
     if [[ "$source_server" != 'prod' ]]; then
       suffix=" --$source_server"
     fi
-    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset database; then
       fetch_db
-      complete "The database has been fetched; use 'loft_deploy reset -d$suffix' when ready."
+      echo_green "The database has been fetched; use 'loft_deploy reset -d$suffix' when ready."
     fi
-    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset files; then
       fetch_files
-      complete "Files have been fetched; use 'loft_deploy reset -f$suffix' when ready."
+      echo_green "Files have been fetched; use 'loft_deploy reset -f$suffix' when ready."
     fi
     handle_post_hook $op
     end
     ;;
   'reset')
-    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset database; then
       reset_db
-      complete 'Local database has been reset with production.'
+      echo_green 'Local database has been reset with production.'
     fi
-    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset files; then
       reset_files
-      complete 'Local files have been reset with production.'
+      echo_green 'Local files have been reset with production.'
     fi
     handle_post_hook $op
     end
     ;;
   'import')
-    import_db $2
-    complete
+    import_db $2  && echo_green "Import complete."
     handle_post_hook $op
     end
     ;;
   'help')
     show_help
-    complete
     handle_post_hook $op
     end
     ;;
   'info')
     show_info
-    complete
     handle_post_hook $op
     end
     ;;
@@ -329,4 +323,5 @@ case $op in
     ;;
 esac
 
-end "loft_deploy $op is an unknown operation."
+echo_red "loft_deploy $op is an unknown operation."
+end

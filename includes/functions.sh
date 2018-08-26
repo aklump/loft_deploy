@@ -31,6 +31,34 @@ function has_flag() {
 }
 
 ##
+ # Return an array of assets being operated on by the current operation.
+ #
+ # This is based on the flags used and will set $operation_assets to contain
+ # 'files', 'database' or both (if no flags are used by the user)
+ #
+declare -a operation_assets=()
+function refresh_operation_assets() {
+    operation_assets=()
+    local flag_count=${#flags[@]}
+    ( has_flag f || (! has_flag f && ! has_flag d ) ) && operation_assets=("${operation_assets[@]}" "files")
+    ( has_flag d || (! has_flag f && ! has_flag d ) ) && operation_assets=("${operation_assets[@]}" "database")
+}
+
+##
+ # Determine if the current operation contains an asset
+ #
+ # @param string $1
+ #   One of files, database
+ #
+function has_asset() {
+    refresh_operation_assets
+    for i in "${operation_assets[@]}"; do
+       [[ "$i" == "$1" ]] && return 0
+    done
+    return 1
+}
+
+##
  # Test for a parameter
  #
  # @code
@@ -224,7 +252,7 @@ function init() {
     cp "$root/install/config/$1.yml" "$config_dir/config.yml"
     cd "$start_dir"
     complete
-    end "Please configure and save $config_dir/config.yml"
+    end "Please configure and save $config_dir/config.yml.  Then run: clearcache"
   else
     end "Invalid argument: $1"
   fi
@@ -373,7 +401,9 @@ function load_config() {
     local_db_port=${settings[4]};
   fi
 
+  # Define and ensure the mysql credentials.
   local_db_cnf=$config_dir/cache/local.cnf
+  test -f $local_db_cnf || generate_db_cnf
 
   if [[ ! $production_scp ]]; then
     production_scp=$production_root
@@ -472,10 +502,10 @@ function _fetch_files() {
     end "\$path_remote and \$path_local should not be the same path."
   fi
 
-  echo "Copying files using $title ..."
+  echo "Downloading files to the stage: $title ..."
 
   # Excludes message...
-  if test -e "$exclude_file"; then
+  if has_flag 'v' && test -e "$exclude_file"; then
     excludes="$(cat $exclude_file)"
     echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
     echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
@@ -487,7 +517,7 @@ function _fetch_files() {
     cmd="$ld_remote_rsync_cmd \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
   fi
 
-  echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+  has_flag 'v' && echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
   eval $cmd;
 }
 
@@ -519,15 +549,15 @@ function fetch_files() {
  #
 function reset_files() {
     if [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
-        echo "This process will reset your local files to match the most recently fetched"
-        echo "$source_server files, removing any local files that are not present in the fetched"
-        echo "set. You will be given a preview of what will happen first. To absolutely"
-        echo "match $source_server as of this moment in time, consider fetching first, however it is slower."
-        echo
-        echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
 
-        local path_stash=
-        local path_local=$local_files
+        if has_flag 'v'; then
+            echo "This process will reset your local files to match the most recently fetched"
+            echo "$source_server files, removing any local files that are not present in the fetched"
+            echo "set. You will be given a preview of what will happen first. To absolutely"
+            echo "match $source_server as of this moment in time, consider fetching first, however it is slower."
+            echo
+            echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
+        fi
 
         [ "$local_files" ] && _reset_files "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex"
         [ "$local_files2" ] && _reset_files "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2"
@@ -545,27 +575,32 @@ function _reset_files() {
     local exclude_file="$4"
     local exclude="$5"
 
+
     if [ ! -d $path_stash ]; then
-        end "Please fetch files first."
+        echo_red "Please fetch files first."
+        end
     fi
 
+    echo "Reset local files pulling from stage: $title..."
+
     # Excludes message...
-    if test -e "$exclude_file"; then
+    if has_flag 'v' && test -e "$exclude_file"; then
         excludes="$(cat $exclude_file)"
         echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
         echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
         echo
+        echo "`tty -s && tput setaf 2`Here is a preview:`tty -s && tput op`"
+        cmd="rsync -av $path_stash/ $path_local/ --delete $exclude"
+        eval "$cmd --dry-run"
+    else
+        cmd="rsync -a $path_stash/ $path_local/ --delete $exclude"
     fi
 
     # Have to exclude here because there might be some lingering files in the cache
     # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
-    cmd="rsync -av $path_stash/ $path_local/ --delete $exclude"
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local \"$title\", are you sure?`tty -s && tput op`"
 
-    echo "`tty -s && tput setaf 2`Here is a preview:`tty -s && tput op`"
-    eval "$cmd --dry-run"
-    confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE $title with these $source_server files?`tty -s && tput op`"
-
-    echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+    has_flag 'v' && echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
     eval $cmd
 }
 
@@ -595,7 +630,7 @@ function _fetch_db_production() {
   # Cleanup local
   rm $config_dir/prod/db/fetched.sql* >/dev/null 2>&1
 
-  echo "Exporting production db..."
+  echo_green "Exporting production db..."
   local _export_suffix='fetch_db'
   local _local_file="$config_dir/prod/db/fetched.sql.gz"
 
@@ -692,7 +727,7 @@ function reset_db() {
   echo
   echo "`tty -s && tput setaf 3`End result: Your local database will match the $source_server database.`tty -s && tput op`"
 
-  confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source_server db"
+  has_flag 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source_server db"
 
   local _file=($(find $config_dir/$source_server/db -name fetched.sql*))
   if [[ ${#_file[@]} -gt 1 ]]; then
@@ -701,16 +736,12 @@ function reset_db() {
     end "Please fetch_db first"
   fi
 
-  #backup local
-#  confirm "Would you like a backup of the current db" "noend"
-#  if [[ $confirm_result == 'true' ]]; then
-    export_db "reset_backup_$now"
-#  fi
+  export_db "reset_backup_$now"
 
   echo "Importing $_file"
+  import_db_silent=true
   import_db "$_file"
 }
-
 
 ##
  # Push local files to staging
@@ -817,10 +848,9 @@ function export_db() {
     if ! has_flag f; then
       confirm_result=false
       confirm "File $file exists, replace" noend
-      if [ $confirm_result == false ]
-      then
-        echo "`tty -s && tput setaf 1`Cancelled.`tty -s && tput op`"
-        return
+      if [ $confirm_result == false ]; then
+        echo_red "Cancelled."
+        return 1
       fi
     fi
     rm $file
@@ -829,10 +859,9 @@ function export_db() {
     if ! has_flag f; then
       confirm_result=false
       confirm "File $file_gz exists, replace" noend
-      if [ $confirm_result == false ]
-      then
-        echo "`tty -s && tput setaf 1`Cancelled.`tty -s && tput op`"
-        return
+      if [ $confirm_result == false ]; then
+        echo_red "Cancelled."
+        return 1
       fi
     fi
     rm $file_gz
@@ -875,6 +904,7 @@ function export_db() {
  #   If this is not a path to a file, it will be assumed a filename in
  #   $local_db_dir
  #
+import_db_silent=false
 function import_db() {
   _current_db_paths $1
 
@@ -892,10 +922,9 @@ function import_db() {
     end
   fi
 
-  confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure"
-  # echo "It's advisable to empty the database first."
+  has_flag 'y' || [ $import_db_silent = true ] || confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure"
   _drop_tables
-  echo "Importing $file to $local_db_host $local_db_name database..."
+  echo_green "Importing $file to $local_db_host $local_db_name database..."
 
   if [[ ${file##*.} == 'gz' ]]; then
     $ld_gunzip "$file"
@@ -908,18 +937,12 @@ function import_db() {
  # Drop all local db tables
  #
 function _drop_tables() {
-  # confirm_result=false;
-  # confirm "Should we `tty -s && tput setaf 3`DUMP ALL TABLES (empty database)`tty -s && tput op` from $local_db_host $local_db_name, first" noend
-  # if [ $confirm_result == false ]; then
-  #   return
-  # fi
   tables=$($ld_mysql --defaults-file=$local_db_cnf $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
-  echo "Dropping all tables from the $local_db_name database..."
+  echo_yellow "Dropping all tables from the $local_db_name database..."
   for t	in $tables; do
-    echo $t
+    has_flag 'v' && echo "├── $t"
     $ld_mysql --defaults-file=$local_db_cnf $local_db_name -e "drop table $t"
   done
-  echo
 }
 
 ###
@@ -928,6 +951,7 @@ function _drop_tables() {
  # @param string $1
  #   The message to delive
  #
+ # @deprecated
  ##
 function complete() {
   if [ $# -ne 0 ]; then
@@ -1063,7 +1087,6 @@ function show_switch() {
   echo "`tty -s && tput setaf 6`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`tty -s && tput op`"
 }
 
-
 ##
  # Display help for this script
  #
@@ -1081,6 +1104,7 @@ function show_help() {
   theme_help_topic 'scp' 'l' 'Display a scp stub using server values' 'see $production_scp for configuration'
   theme_help_topic help 'l' 'Show this help screen'
   theme_help_topic info 'l' 'Show info'
+  theme_help_topic clearcache 'l' 'Import new configuration after editing config.yml' 'clearcache'
   theme_help_topic configtest 'l' 'Test configuration'
   theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. loft_deploy -f ls -la'
   theme_help_topic pass 'l' 'Display password(s)' '--prod Production' 'staging Staging' '--all All'
@@ -1092,8 +1116,8 @@ function show_help() {
   fi
 
   theme_help_topic fetch 'pl' 'Fetch production assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database'
-  theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database'
+  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations'
+  theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations'
 
   if [ "$local_role" != 'staging' ]; then
     theme_header 'to/from staging' $color_staging
@@ -1102,8 +1126,8 @@ function show_help() {
   theme_help_topic push 'lst' 'A push all shortcut' '-f files only' '-d database only'
 
   theme_help_topic fetch 'pl' 'Use `staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f staging' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database'
-  theme_help_topic pull 'pl' 'Use `staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database'
+  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations'
+  theme_help_topic pull 'pl' 'Use `staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations'
 
 }
 
@@ -1520,20 +1544,57 @@ function echo_fix() {
   echo
 }
 
+function echo_yellow() {
+    echo "`tty -s && tput setaf $color_yellow`$1`tty -s && tput op`"
+}
+
+function echo_green() {
+    echo "`tty -s && tput setaf $color_green`$1`tty -s && tput op`"
+}
+
+function echo_red() {
+    echo "`tty -s && tput setaf $color_red`$1`tty -s && tput op`"
+}
+
+##
+ # Handle a pre hook for an op.
+ #
+ # @param string $1 The operation being called, e.g. reset, fetch, pull
+ #
 function handle_pre_hook() {
     _handle_hook $1 pre
 }
 
+##
+ # Handle a post hook for an op.
+ #
+ # @param string $1 The operation being called, e.g. reset, fetch, pull
+ #
 function handle_post_hook() {
     _handle_hook $1 post
 }
 
+##
+ # Handle a single hook
+ #
+ # @param string $1 The operation being called, e.g. reset, fetch, pull
+ # @param string $2 The timing, e.g. pre, post
+ #
 function _handle_hook() {
-  local hook="$config_dir/hooks/${1}_${2}.sh"
-  local name=$(basename $hook)
-  declare -a hook_args=("$1" "$production_server" "$staging_server" "" "" "" "" "" "" "" "" "" "$config_dir/hooks/");
+    refresh_operation_assets
 
-  test -e "$hook" && echo "`tty -s && tput setaf 2`Calling ${2}-hook: $name`tty -s && tput op`" && source "$hook" "${hook_args[@]}"
+    for item in "${operation_assets[@]}"; do
+        [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${1}_files_${2}")
+        [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${1}_db_${2}")
+    done
+    hooks=("${hooks[@]}" "${1}_${2}")
+
+    for hook_stub in "${hooks[@]}"; do
+        local hook="$config_dir/hooks/$hook_stub.sh"
+        local basename=$(basename $hook)
+        declare -a hook_args=("$hook_stub" "$production_server" "$staging_server" "" "" "" "" "" "" "" "" "" "$config_dir/hooks/");
+        test -e "$hook" && echo "`tty -s && tput setaf 2`Calling ${2}-hook: $basename`tty -s && tput op`" && source "$hook" "${hook_args[@]}"
+    done
 }
 
 ##
@@ -1624,6 +1685,14 @@ function do_clearcache() {
         exit
     fi
     load_config
+    generate_db_cnf
+    complete "`tty -s && tput setaf $color_green`Caches were cleared.`tty -s && tput op`"
+}
+
+##
+ # Generate the local.cnf with db creds.
+ #
+function generate_db_cnf() {
 
     # Create the .cnf file
     test -f $local_db_cnf && chmod 600 $local_db_cnf
@@ -1634,5 +1703,4 @@ function do_clearcache() {
     echo "user=$local_db_user" >> $local_db_cnf
     echo "password=$local_db_pass" >> $local_db_cnf
     chmod 400 $local_db_cnf
-    complete "`tty -s && tput setaf $color_green`Caches were cleared.`tty -s && tput op`"
 }

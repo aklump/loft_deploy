@@ -13,9 +13,14 @@ use AKlump\LoftLib\Storage\FilePath;
 use JsonSchema\Validator;
 use Symfony\Component\Yaml\Yaml;
 
-require_once dirname(__FILE__) . '/../vendor/autoload.php';
 
 try {
+  $autoload = dirname(__FILE__) . '/../vendor/autoload.php';
+  if (!file_exists($autoload)) {
+    echo "Missing dependencies.  Have you run composer install?" . PHP_EOL;
+    exit(1);
+  }
+  require $autoload;
   $config_dir = $argv[1];
   $schema = $argv[2];
   $config_file = FilePath::create("$config_dir/config.yml");
@@ -24,7 +29,7 @@ try {
     exit(0);
   }
 
-  $bash = new ConfigBash($config_dir . '/cache', 'config.yml.sh');
+  $bash = new ConfigBash($config_dir . '/cache', 'config.yml.sh', array('install' => TRUE));
 
   $config = Yaml::parse($config_file->load()->get());
   $validator = new Validator;
