@@ -474,10 +474,10 @@ function _fetch_files() {
     end "\$path_remote and \$path_local should not be the same path."
   fi
 
-  echo "Copying files using $title ..."
+  echo "Downloading files to the stage: $title ..."
 
   # Excludes message...
-  if test -e "$exclude_file"; then
+  if has_flag 'v' && test -e "$exclude_file"; then
     excludes="$(cat $exclude_file)"
     echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
     echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
@@ -489,7 +489,7 @@ function _fetch_files() {
     cmd="$ld_remote_rsync_cmd \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
   fi
 
-  echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+  has_flag 'v' && echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
   eval $cmd;
 }
 
@@ -521,15 +521,15 @@ function fetch_files() {
  #
 function reset_files() {
     if [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
-        echo "This process will reset your local files to match the most recently fetched"
-        echo "$source_server files, removing any local files that are not present in the fetched"
-        echo "set. You will be given a preview of what will happen first. To absolutely"
-        echo "match $source_server as of this moment in time, consider fetching first, however it is slower."
-        echo
-        echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
 
-        local path_stash=
-        local path_local=$local_files
+        if has_flag 'v'; then
+            echo "This process will reset your local files to match the most recently fetched"
+            echo "$source_server files, removing any local files that are not present in the fetched"
+            echo "set. You will be given a preview of what will happen first. To absolutely"
+            echo "match $source_server as of this moment in time, consider fetching first, however it is slower."
+            echo
+            echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
+        fi
 
         [ "$local_files" ] && _reset_files "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex"
         [ "$local_files2" ] && _reset_files "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2"
@@ -547,27 +547,30 @@ function _reset_files() {
     local exclude_file="$4"
     local exclude="$5"
 
+    echo "Reset local files pulling from stage: $title"
+
     if [ ! -d $path_stash ]; then
         end "Please fetch files first."
     fi
 
     # Excludes message...
-    if test -e "$exclude_file"; then
+    if has_flag 'v' && test -e "$exclude_file"; then
         excludes="$(cat $exclude_file)"
         echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
         echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
         echo
+        echo "`tty -s && tput setaf 2`Here is a preview:`tty -s && tput op`"
+        cmd="rsync -av $path_stash/ $path_local/ --delete $exclude"
+        eval "$cmd --dry-run"
+    else
+        cmd="rsync -a $path_stash/ $path_local/ --delete $exclude"
     fi
 
     # Have to exclude here because there might be some lingering files in the cache
     # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
-    cmd="rsync -av $path_stash/ $path_local/ --delete $exclude"
+    confirm "`tty -s && tput setaf 3`Are you sure?`tty -s && tput op`"
 
-    echo "`tty -s && tput setaf 2`Here is a preview:`tty -s && tput op`"
-    eval "$cmd --dry-run"
-    confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE $title with these $source_server files?`tty -s && tput op`"
-
-    echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+    has_flag 'v' && echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
     eval $cmd
 }
 
