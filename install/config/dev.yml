@@ -1,0 +1,25 @@
+local:
+  url: http://some-site.loft
+  location: ITLS
+  basepath: /path/to/dev/branch/site
+  role: dev
+  files:
+  - web/sites/default/files
+  - private/default/files
+  database:
+    backups: private/default/db/purgeable
+  drupal:
+    root: web
+    settings: web/sites/default/settings.php
+    database: default
+production:
+  config: /var/www/sef_application/.loft_deploy
+  script: /usr/local/bin/loft_deploy
+  user: 398e
+  ip: NNN.NNN.NNN.NNN
+staging:
+  config: /var/www/sef_application/.loft_deploy
+  script: /usr/local/bin/loft_deploy
+  user: 398e
+  ip: NNN.NNN.NNN.NNN
+

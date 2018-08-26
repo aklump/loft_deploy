@@ -206,6 +206,27 @@
         },
         "staging": {
             "$ref": "#/definitions/remote"
+        },
+        "bin": {
+            "type": "object",
+            "properties": {
+                "mysql": {
+                    "type": "string",
+                    "pattern": "^/"
+                },
+                "mysqldump": {
+                    "type": "string",
+                    "pattern": "^/"
+                },
+                "gzip": {
+                    "type": "string",
+                    "pattern": "^/"
+                },
+                "gunzip": {
+                    "type": "string",
+                    "pattern": "^/"
+                }
+            }
         }
     },
     "required": [
