@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "aklump/loft-lib",
-            "version": "1.0.4",
+            "version": "1.0.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aklump/loft-lib.git",
-                "reference": "ab3b838533d53e570c8bf098d11b490c6bf51914"
+                "reference": "cac0b47e55c73d737658c525e22d8a70306a5f61"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aklump/loft-lib/zipball/ab3b838533d53e570c8bf098d11b490c6bf51914",
-                "reference": "ab3b838533d53e570c8bf098d11b490c6bf51914",
+                "url": "https://api.github.com/repos/aklump/loft-lib/zipball/cac0b47e55c73d737658c525e22d8a70306a5f61",
+                "reference": "cac0b47e55c73d737658c525e22d8a70306a5f61",
                 "shasum": ""
             },
             "require": {
@@ -42,7 +42,7 @@
                 }
             ],
             "description": "Core utilities provided by In the Loft Studios",
-            "time": "2018-08-25T21:05:20+00:00"
+            "time": "2018-08-26T19:50:56+00:00"
         },
         {
             "name": "doctrine/inflector",
