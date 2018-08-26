@@ -373,7 +373,9 @@ function load_config() {
     local_db_port=${settings[4]};
   fi
 
+  # Define and ensure the mysql credentials.
   local_db_cnf=$config_dir/cache/local.cnf
+  test -f $local_db_cnf || generate_db_cnf
 
   if [[ ! $production_scp ]]; then
     production_scp=$production_root
@@ -1624,6 +1626,14 @@ function do_clearcache() {
         exit
     fi
     load_config
+    generate_db_cnf
+    complete "`tty -s && tput setaf $color_green`Caches were cleared.`tty -s && tput op`"
+}
+
+##
+ # Generate the local.cnf with db creds.
+ #
+function generate_db_cnf() {
 
     # Create the .cnf file
     test -f $local_db_cnf && chmod 600 $local_db_cnf
@@ -1634,5 +1644,4 @@ function do_clearcache() {
     echo "user=$local_db_user" >> $local_db_cnf
     echo "password=$local_db_pass" >> $local_db_cnf
     chmod 400 $local_db_cnf
-    complete "`tty -s && tput setaf $color_green`Caches were cleared.`tty -s && tput op`"
 }
