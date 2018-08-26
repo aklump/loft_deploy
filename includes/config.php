@@ -29,7 +29,7 @@ try {
     exit(0);
   }
 
-  $bash = new ConfigBash($config_dir . '/cache', 'config.yml.sh');
+  $bash = new ConfigBash($config_dir . '/cache', 'config.yml.sh', array('install' => TRUE));
 
   $config = Yaml::parse($config_file->load()->get());
   $validator = new Validator;

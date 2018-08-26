@@ -224,7 +224,7 @@ function init() {
     cp "$root/install/config/$1.yml" "$config_dir/config.yml"
     cd "$start_dir"
     complete
-    end "Please configure and save $config_dir/config.yml"
+    end "Please configure and save $config_dir/config.yml.  Then run: clearcache"
   else
     end "Invalid argument: $1"
   fi

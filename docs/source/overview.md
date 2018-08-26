@@ -50,6 +50,7 @@ User files (i.e. _sites/default/files_), which are too dynamic to include in ver
 For more information see [user files](user_files.html).
 
 ## Fetch/reset/pull from staging
+
 By default `fetch`, `reset` and `pull` will grab from _production_. In order to perform these functions using staging as the source you will need to **pass the `--staging` flag** like this:
 
     loft_deploy pull --staging
@@ -64,6 +65,7 @@ The command `push` is always directed at the staging server.
 
 
 ## Requirements
+
 The following assumptions are made about your project:
 
 1. Your project's codebase is maintained using source control (git, svn, etc).
@@ -93,9 +95,11 @@ _If these assumptions are not true then this package may be less useful to you._
           $ loft_deploy configtest
 
 ## SQL configuration
+
 **GOTCHA!!!** It is crucial to realize that the configuration for these needs to be created on the same environmnet as the database.  Meaning, if you are wanting to exclude files from the production database, when pulling from a local dev environment, the files described below MUST be created on the production server config files.
 
 ### Exclude data from some tables: `sql/db_tables_no_data`
+
 **Scenario**: You are working on a Drupal site and you do not want to export the contents of the `cache` or `cache_bootstrap` tables.  Here's how to configure Loft Deploy to do this:
 
 1. Create a file as _.loft_deploy/sql/db_tables_no_data.txt_
@@ -107,6 +111,7 @@ _If these assumptions are not true then this package may be less useful to you._
 1. Now only the table structure and not the data will be exported.
 
 #### But how about all `cache` tables?
+
 Yes this is supported and is done like this:
 
 1. Create a file as _.loft_deploy/sql/db_tables_no_data.sql_; notice the extension is now `.sql`.
@@ -125,4 +130,5 @@ Here are the dynamic component(s) available:
 
 
 ## Usage:
+
 After installed and configured type: `loft_deploy help` for available commands; you may also access the help by simply typing `loft_develop`

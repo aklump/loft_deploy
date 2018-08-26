@@ -12,6 +12,11 @@
         ln -s /opt/loft_deploy/loft_deploy.sh loft_deploy;
         chmod u+x loft_deploy;
 
+1. Install dependencies using composer.
+
+        cd /usr/local/bin/loft_deploy
+        composer install
+        
 1. Open up and modify _~/.bash_profile_ or _~/.profile_ (whichever you use).
 
         alias ldp="loft_deploy"

@@ -13,12 +13,12 @@ local:
     settings: web/sites/default/settings.php
     database: default
 production:
-  config: /var/www/sef_application/.loft_deploy
+  config: /var/www/some-site/.loft_deploy
   script: /usr/local/bin/loft_deploy
   user: 398e
   ip: NNN.NNN.NNN.NNN
 staging:
-  config: /var/www/sef_application/.loft_deploy
+  config: /var/www/some-site/.loft_deploy
   script: /usr/local/bin/loft_deploy
   user: 398e
   ip: NNN.NNN.NNN.NNN
