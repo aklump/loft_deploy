@@ -343,17 +343,22 @@ function load_config() {
   production_root=''
   staging_pass=''
 
-  ld_php=$(type php >/dev/null 2>&1 && which php)
+  if [[ "$LOFT_DEPLOY_PHP" ]]; then
+    ld_php=$LOFT_DEPLOY_PHP
+  else
+    ld_php=$(type php >/dev/null 2>&1 && which php)
+  fi
+
   ld_mysql=$(type mysql >/dev/null 2>&1 && which mysql)
   ld_mysqldump=$(type mysqldump >/dev/null 2>&1 && which mysqldump)
   ld_gzip=$(type gzip >/dev/null 2>&1 && which gzip)
   ld_gunzip=$(type gunzip >/dev/null 2>&1 && which gunzip)
-  # For Pantheon support we need to find terminus
+
+  # For Pantheon support we need to find terminus.
   ld_terminus=$(type terminus >/dev/null 2>&1 && which terminus)
 
   # Legacy Support.
   test -f "$config_dir/config" && source $config_dir/config
-  test -f "$config_dir/config.sh" && source $config_dir/config.sh
 
   # As of v 0.14 we have yaml support, which is the defacto.
   test -f "$config_dir/cache/config.yml.sh" && source $config_dir/cache/config.yml.sh
