@@ -29,7 +29,7 @@ try {
   $config = Yaml::parse($config_file->load()->get());
   $validator = new Validator;
   $_config = json_decode(json_encode($config));
-  $validator->validate($_config, (object) ['$ref' => 'file://' . realpath($schema)]);
+  $validator->validate($_config, (object) array('$ref' => 'file://' . realpath($schema)));
   if (!$validator->isValid()) {
     $error_items = array_map(function ($error) {
       return sprintf("[%s] %s", $error['property'], $error['message']);
@@ -38,11 +38,13 @@ try {
   }
 
   $local_path = function ($path) use ($config) {
-    return substr($path, 0, 1) === '/' ? $path : rtrim($config['local']['basepath'] ?? '', '/') . '/' . rtrim($path, '/');
+    return substr($path, 0, 1) === '/' ? $path : rtrim($config['local']['basepath'], '/') . '/' . rtrim($path, '/');
   };
 
-  foreach ($config['bin'] ?? [] as $key => $item) {
-    $data['ld_' . $key] = $local_path($item);
+  if (isset($config['bin'])) {
+    foreach ($config['bin'] as $key => $item) {
+      $data['ld_' . $key] = $local_path($item);
+    }
   }
 
   foreach ($config['local'] as $key => $item) {
@@ -52,7 +54,10 @@ try {
         break;
 
       case 'url':
-        $data['local_title'][] = $config['local']['location'] ?? '';
+        $title = array();
+        if (isset($config['local']['location'])) {
+          $title[] = $config['local']['location'];
+        }
         $data['local_title'][] = preg_replace('/https?:\/\//i', '', $item);
         $data['local_title'] = implode(' ~ ', $data['local_title']);
         break;
@@ -104,11 +109,19 @@ try {
 
   foreach (array('production', 'staging') as $server) {
 
+    if (!isset($config[$server])) {
+      continue;
+    }
     $full_path = function ($path) use ($config, $server) {
-      return substr($path, 0, 1) === '/' ? $path : rtrim($config[$server]['basepath'] ?? '', '/') . '/' . rtrim($path, '/');
+      $path = rtrim($path, '/');
+      if (!isset($config[$server]['basepath'])) {
+        return $path;
+      }
+
+      return substr($path, 0, 1) === '/' ? $path : rtrim($config[$server]['basepath'], '/') . '/' . $path;
     };
 
-    foreach ($config[$server] ?? [] as $key => $item) {
+    foreach ($config[$server] as $key => $item) {
       switch ($key) {
         case 'config':
           $data[$server . '_root'] = dirname($item);
@@ -182,7 +195,7 @@ try {
 catch (\Exception $exception) {
   print Color::wrap('black on red', 'Configuration Problem in: ' . $config_file->getBasename()) . PHP_EOL;
   if (!isset($error_items)) {
-    $error_items = [$exception->getMessage()];
+    $error_items = array($exception->getMessage());
   }
   print Output::list($error_items) . PHP_EOL;
   exit(1);
