@@ -202,6 +202,6 @@ catch (\Exception $exception) {
   if (!isset($error_items)) {
     $error_items = array($exception->getMessage());
   }
-  print Output::list($error_items) . PHP_EOL;
+  print Output::tree($error_items) . PHP_EOL;
   exit(1);
 }
