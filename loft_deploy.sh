@@ -124,6 +124,8 @@ color_prod=$color_red
 
 ld_remote_rsync_cmd="rsync -azP"
 
+ld_php=$(type php >/dev/null &2>&1 && which php)
+
 lobster_user=$(whoami)
 
 # Import functions
@@ -186,9 +188,6 @@ if [ $op == "get" ]; then
   get_var $2
   exit
 fi
-
-# Make sure we have a cnf file for the db creds.
-source "$INCLUDES/cnf.sh"
 
 print_header
 update_needed
@@ -324,6 +323,10 @@ case $op in
   'terminus')
     cmd="auth:login --machine-token=$terminus_machine_token"
     $ld_terminus $cmd
+    end
+    ;;
+  'clearcache')
+    do_clearcache
     end
     ;;
 esac

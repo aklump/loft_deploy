@@ -2,5 +2,4 @@
 /dev
 /staging
 /config
-/local.cnf
 /cache*
