@@ -1,0 +1,240 @@
+{
+    "definitions": {
+        "basepath": {
+            "type": "string",
+            "pattern": "\/.+"
+        },
+        "files": {
+            "type": "array",
+            "maxItems": 3,
+            "uniqueItems": true
+        },
+        "local": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string",
+                    "pattern": "^http"
+                },
+                "basepath": {
+                    "$ref": "#/definitions/basepath"
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "dev",
+                        "prod",
+                        "staging"
+                    ]
+                },
+                "files": {
+                    "$ref": "#/definitions/files"
+                }
+            }
+        },
+        "remote": {
+            "oneOf": [
+                {
+                    "$id": "To support SSH connections.",
+                    "type": "object",
+                    "properties": {
+                        "config": {
+                            "type": "string",
+                            "pattern": "\\/\\.loft_deploy$"
+                        },
+                        "script": {
+                            "type": "string",
+                            "pattern": "\\/loft_deploy$"
+                        },
+                        "user": {
+                            "type": "string"
+                        },
+                        "ip": {
+                            "type": "string"
+                        },
+                        "port": {
+                            "type": "integer"
+                        },
+                        "password": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "config",
+                        "script",
+                        "user",
+                        "ip"
+                    ]
+                },
+                {
+                    "$id": "To support Pantheon servers.",
+                    "type": "object",
+                    "properties": {
+                        "files": {
+                            "$ref": "#/definitions/files"
+                        },
+                        "pantheon": {
+                            "type": "object",
+                            "properties": {
+                                "uuid": {
+                                    "type": "string"
+                                },
+                                "site": {
+                                    "type": "string"
+                                },
+                                "machine_token": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "uuid",
+                                "site",
+                                "machine_token"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "files",
+                        "pantheon"
+                    ]
+                }
+            ]
+        }
+    },
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "local": {
+            "type": "object",
+            "allOf": [
+                {
+                    "$ref": "#/definitions/local"
+                },
+                {
+                    "oneOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "database": {
+                                    "type": "object",
+                                    "properties": {
+                                        "backups": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "backups"
+                                    ]
+                                },
+                                "drupal": {
+                                    "type": "object",
+                                    "properties": {
+                                        "root": {
+                                            "type": "string"
+                                        },
+                                        "settings": {
+                                            "type": "string",
+                                            "pattern": "settings\\.php$"
+                                        },
+                                        "database": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "root",
+                                        "settings"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "database",
+                                "drupal"
+                            ]
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "database": {
+                                    "type": "object",
+                                    "properties": {
+                                        "backups": {
+                                            "type": "string"
+                                        },
+                                        "host": {
+                                            "type": "string"
+                                        },
+                                        "port": {
+                                            "type": "string"
+                                        },
+                                        "user": {
+                                            "type": "string"
+                                        },
+                                        "password": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "backups",
+                                        "host",
+                                        "user",
+                                        "password",
+                                        "name"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "database"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "required": [
+                "url",
+                "role",
+                "basepath"
+            ]
+        },
+        "production": {
+            "$ref": "#/definitions/remote"
+        },
+        "staging": {
+            "$ref": "#/definitions/remote"
+        },
+        "bin": {
+            "type": "object",
+            "properties": {
+                "mysql": {
+                    "type": "string",
+                    "pattern": "^/"
+                },
+                "mysqldump": {
+                    "type": "string",
+                    "pattern": "^/"
+                },
+                "gzip": {
+                    "type": "string",
+                    "pattern": "^/"
+                },
+                "gunzip": {
+                    "type": "string",
+                    "pattern": "^/"
+                },
+                "terminus": {
+                    "type": "string",
+                    "pattern": "^/"
+                }
+            }
+        }
+    },
+    "required": [
+        "local"
+    ],
+    "additionalProperties": false
+}

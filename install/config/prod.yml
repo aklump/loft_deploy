@@ -1,0 +1,14 @@
+local:
+  url: https://some-site.com
+  location: Acquia
+  basepath: /path/to/prod/branch
+  role: prod
+  files:
+    - web/sites/default/files
+    - private/default/files
+  database:
+    backups: private/default/db/purgeable
+  drupal:
+    root: web
+    settings: web/sites/default/settings.php
+    database: default
