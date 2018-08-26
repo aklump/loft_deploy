@@ -1087,7 +1087,6 @@ function show_switch() {
   echo "`tty -s && tput setaf 6`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`tty -s && tput op`"
 }
 
-
 ##
  # Display help for this script
  #

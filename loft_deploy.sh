@@ -183,8 +183,8 @@ if [[ "$target" == 'staging' ]]; then
 fi
 
 if [ $op == "get" ]; then
-  get_var $2
-  exit
+  get_var $2 && exit 0
+  exit 1
 fi
 
 print_header
@@ -253,13 +253,13 @@ case $op in
     end
     ;;
   'push')
-    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset database; then
       push_db
-      echo_green 'Database pushed to staging'
+      echo_green 'Database pushed to staging.'
     fi
-    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset files; then
       push_files
-      echo_green 'Files pushed to staging'
+      echo_green 'Files pushed to staging.'
     fi
     handle_post_hook $op
     end
@@ -269,11 +269,11 @@ case $op in
     if [[ "$source_server" != 'prod' ]]; then
       suffix=" --$source_server"
     fi
-    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset database; then
       fetch_db
       echo_green "The database has been fetched; use 'loft_deploy reset -d$suffix' when ready."
     fi
-    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset files; then
       fetch_files
       echo_green "Files have been fetched; use 'loft_deploy reset -f$suffix' when ready."
     fi
@@ -281,11 +281,11 @@ case $op in
     end
     ;;
   'reset')
-    if has_flag d || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset database; then
       reset_db
       echo_green 'Local database has been reset with production.'
     fi
-    if has_flag f || [ ${#flags[@]} -eq 0 ]; then
+    if has_asset files; then
       reset_files
       echo_green 'Local files have been reset with production.'
     fi
