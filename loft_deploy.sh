@@ -124,8 +124,6 @@ color_prod=$color_red
 
 ld_remote_rsync_cmd="rsync -azP"
 
-ld_php=$(type php >/dev/null &2>&1 && which php)
-
 lobster_user=$(whoami)
 
 # Import functions
