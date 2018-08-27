@@ -12,6 +12,15 @@
         "local": {
             "type": "object",
             "properties": {
+                "copy_source": {
+                    "type": "array"
+                },
+                "copy_production_to": {
+                    "type": "array"
+                },
+                "copy_staging_to": {
+                    "type": "array"
+                },
                 "location": {
                     "type": "string"
                 },
@@ -62,6 +71,7 @@
                             "type": "string"
                         }
                     },
+                    "additionalProperties": false,
                     "required": [
                         "config",
                         "script",
@@ -96,6 +106,7 @@
                             ]
                         }
                     },
+                    "additionalProperties": false,
                     "required": [
                         "files",
                         "pantheon"
@@ -230,7 +241,8 @@
                     "type": "string",
                     "pattern": "^/"
                 }
-            }
+            },
+            "additionalProperties": false
         }
     },
     "required": [

@@ -106,6 +106,14 @@ try {
         }
         break;
 
+      case 'copy_source':
+      case 'copy_production_to':
+      case 'copy_staging_to':
+        $data['local_' . $key] = array_map(function ($path) use ($local_path) {
+          return $local_path($path);
+        }, $item);
+        break;
+
       default:
         $data['local_' . $key] = $item;
         break;

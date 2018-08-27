@@ -3,9 +3,13 @@ local:
   location: ITLS
   basepath: /path/to/dev/branch/site
   role: dev
+  copy_production_to:
+  - install/.htaccess.prod
+  copy_staging_to:
+  - install/.htaccess.stage
   files:
-    - web/sites/default/files
-    - private/default/files
+  - web/sites/default/files
+  - private/default/files
   database:
     backups: private/default/db/purgeable
   drupal:

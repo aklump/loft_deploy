@@ -3,6 +3,8 @@ local:
   location: Acquia
   basepath: /path/to/staging/branch
   role: staging
+  copy_source:
+  - web/.htaccess
   files:
     - web/sites/default/files
     - private/default/files
