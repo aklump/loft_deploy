@@ -13,13 +13,16 @@
             "type": "object",
             "properties": {
                 "copy_source": {
-                    "type": "array"
+                    "type": "array",
+                    "uniqueItems": true
                 },
                 "copy_production_to": {
-                    "type": "array"
+                    "type": "array",
+                    "uniqueItems": true
                 },
                 "copy_staging_to": {
-                    "type": "array"
+                    "type": "array",
+                    "uniqueItems": true
                 },
                 "location": {
                     "type": "string"

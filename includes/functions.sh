@@ -440,7 +440,7 @@ function load_config() {
  #
 function load_production_config() {
   if [ "$production_server" ] && [ "$production_script" ]; then
-    production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_files2; $production_script get local_files3; $production_script get local_db_port;"))
+    production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_files2; $production_script get local_files3; $production_script get local_db_port; $production_script get local_copy_source;"))
     production_db_host="${production[0]}";
     production_db_name="${production[1]}";
     production_db_user="${production[2]}";
@@ -450,6 +450,7 @@ function load_production_config() {
     production_files2="${production[6]}";
     production_files3="${production[7]}";
     production_db_port="${production[8]}";
+    production_copy_source="${production[9]}";
   elif [ "$pantheon_live_uuid" ]; then
     production_remote_db_host="dbserver.live.$pantheon_live_uuid.drush.in";
     production_db_name="pantheon";
