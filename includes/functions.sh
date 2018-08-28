@@ -752,8 +752,7 @@ function _fetch_db_production() {
 
     $ld_terminus auth:login --machine-token=$terminus_machine_token --quiet
 
-    confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?" "noend"
-    if [[ $confirm_result != 'true' ]]; then
+    if ! confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?"; then
       echo "Creating new backup using Terminus..."
       $ld_terminus backup:create $terminus_site.live --element=db
     fi
@@ -844,7 +843,8 @@ function reset_db() {
         end "Please fetch_db first"
     fi
 
-    export_db "reset_backup_$now" '' 'Creating a backup of the local db...'
+
+    has_param nobu || export_db "reset_backup_$now" '' 'Creating a backup of the local db...'
 
     import_db_silent=true
     import_db "$_file"
@@ -956,8 +956,7 @@ function export_db() {
   if [ -f "$file" ] && [ "$2" != '-f' ]; then
     if ! has_flag f; then
       confirm_result=false
-      confirm "File $file exists, replace" noend
-      if [ $confirm_result == false ]; then
+      if ! confirm "File $file exists, replace"; then
         echo_red "Cancelled."
         return 1
       fi
@@ -967,8 +966,7 @@ function export_db() {
   if [ -f "$file_gz" ] && [ "$2" != '-f' ]; then
     if ! has_flag f; then
       confirm_result=false
-      confirm "File $file_gz exists, replace" noend
-      if [ $confirm_result == false ]; then
+      if ! confirm "File $file_gz exists, replace"; then
         echo_red "Cancelled."
         return 1
       fi
@@ -1056,14 +1054,20 @@ function import_db() {
  # Drop all local db tables
  #
 function _drop_tables() {
+  local status=true
   tables=$($ld_mysql --defaults-file=$local_db_cnf $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
-  echo_yellow "├── Dropping all tables from the $local_db_name database..."
   for t in $tables; do
     has_flag 'v' && echo "├── $t"
-    $ld_mysql --defaults-file=$local_db_cnf $local_db_name -e "drop table $t"
+    $ld_mysql --defaults-file=$local_db_cnf $local_db_name -e "DROP TABLE $t" || status=false
   done
 
-  return $?
+  if [[ "$status" == true ]]; then
+    echo_green "├── All tables dropped from $local_db_name."
+    return 0
+  fi
+
+  echo_red "├── Could not drop all tables."
+  return 1
 }
 
 ##
@@ -1088,25 +1092,23 @@ function did_not_complete() {
  # Accept a y/n confirmation message or end
  #
  # @param string $1
- #   A question to ask
- # @param string $2
- #   A flag, e.g. noend; which means a n will not exit
+ #   A question to ask ending with a '?' mark.  Leave blank for default.
  #
  # @return bool
  #   Sets the value of confirm_result
  #
 function confirm() {
-  echo
-  echo "$1 (y/n)?"
-  read -n 1 a
-  confirm_result=true
-  if [ "$a" != 'y' ]; then
-    confirm_result=false
-    if [ "$2" != 'noend' ]; then
-      end 'CANCELLED!'
-    fi
-  fi
-  echo
+
+ while true; do
+    read -r -n 1 -p "${1:-Continue?} [y/n]: " REPLY
+    case $REPLY in
+      [yY]) echo ; return 0 ;;
+      [nN]) echo ; end 'CANCELLED' ;;
+      # @todo convert this to use the return value.
+#      [nN]) echo ; return 1 ;;
+      *) printf " \033[31m %s \n\033[0m" "invalid input"
+    esac
+  done
 }
 
 ##
