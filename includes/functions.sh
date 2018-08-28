@@ -1593,7 +1593,7 @@ function _handle_hook() {
     for hook_stub in "${hooks[@]}"; do
         local hook="$config_dir/hooks/$hook_stub.sh"
         local basename=$(basename $hook)
-        declare -a hook_args=("$hook_stub" "$production_server" "$staging_server" "" "" "" "" "" "" "" "" "" "$config_dir/hooks/");
+        declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "" "" "" "" "" "" "$config_dir/hooks/");
         test -e "$hook" && echo "`tty -s && tput setaf 2`Calling ${2}-hook: $basename`tty -s && tput op`" && source "$hook" "${hook_args[@]}"
     done
 }

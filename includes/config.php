@@ -55,7 +55,6 @@ try {
   foreach ($config['local'] as $key => $item) {
     switch ($key) {
       case 'location':
-      case 'basepath':
         break;
 
       case 'url':
