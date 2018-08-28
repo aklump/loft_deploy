@@ -263,18 +263,19 @@ case $op in
     ;;
   'fetch')
     suffix=''
+    status=true
     if [[ "$source_server" != 'prod' ]]; then
       suffix=" --$source_server"
     fi
     if has_asset database; then
-      fetch_db
-      echo "The database has been fetched; use 'reset -d$suffix' when ready."
+      fetch_db && ( echo "The database has been fetched; use 'reset -d$suffix' when ready." || status=false )
     fi
     if has_asset files; then
-      fetch_files
+      fetch_files || status=false
     fi
-    handle_post_hook $op && complete "Fetch complete."
-    exit
+    [[ "$status" == true ]] && handle_post_hook $op || status=false
+    [[ "$status" == true ]] && complete "Fetch complete." && end
+    did_not_complete "Fetch failed." && end
     ;;
   'reset')
     if has_asset database; then

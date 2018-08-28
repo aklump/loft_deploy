@@ -178,8 +178,8 @@ function update_needed() {
 function update() {
   _update_0_7_6
   _update_0_7_0
-  echo "`tty -s && tput setaf 2`All updates have been processed.`tty -s && tput op`"
-  end
+  complete 'Updates complete.' && end
+  did_not_complete 'Updates failed' && end
 }
 
 ##
@@ -524,12 +524,13 @@ function _fetch_dir() {
   fi
 
   if has_flag 'v'; then
-    echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+    echo $cmd
     eval $cmd
-  else
-    eval $cmd >/dev/null 2>&1
+    return $?
   fi
-  return 0
+
+  eval $cmd >/dev/null 2>&1
+  return $?
 }
 
 ##
@@ -545,6 +546,11 @@ function _fetch_copy() {
     local server=$2
     oldIFS="$IFS"
     IFS=':'
+
+    echo "Fetching distinct files from $title to local cache..."
+
+    [[ "$3" == null ]] && return 1
+    [[ "$4" == null ]] && return 1
     read -r -a source <<< "$3"
     read -r -a destination <<< "$4"
     IFS="$oldIFS"
@@ -554,7 +560,6 @@ function _fetch_copy() {
     (test ! -d "$config_dir/$source_server/copy" || rm -r "$config_dir/$source_server/copy") && mkdir -p "$config_dir/$source_server/copy"
     local output=''
     local error=''
-    echo "Fetching distinct files from $title to local cache..."
     for from in "${source[@]}"; do
         [[ "$output" ]] && echo_green "├── $output"
         [[ "$error" ]] && echo_green "├── $error"
@@ -564,7 +569,7 @@ function _fetch_copy() {
             output=''
         else
             local verbose=''
-            has_flag v && verbose=' -p -v'
+            has_flag v && verbose=' -p -v' && echo_yellow "$server:$from $to"
             $($ld_scp $verbose "$server:$from" "$to")
             test -f "$to" && output="${from##*/}"
         fi
@@ -579,24 +584,28 @@ function _fetch_copy() {
  # Fetch files from the appropriate server
  #
 function fetch_files() {
+    local result=false
     case $source_server in
         'prod' )
+            result=true
             load_production_config
-            [ "$local_copy_production_to" ] && _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to"
-            [ "$local_files" ] && _fetch_dir 'Production:files' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done."
-            [ "$local_files2" ] && _fetch_dir 'Production:files2' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done."
-            [ "$local_files3" ] && _fetch_dir 'Production:files3' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done."
-            echo $now > "$config_dir/$source_server/cached_files"
+            [ "$local_copy_production_to" ] && (_fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || (echo_red "└── failed." && result=false))
+            [ "$local_files" ] && (_fetch_dir 'Production:files' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
+            [ "$local_files2" ] && (_fetch_dir 'Production:files2' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
+            [ "$local_files3" ] && (_fetch_dir 'Production:files3' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
         ;;
         'staging' )
+            result=true
             load_staging_config
-            [ "$local_copy_staging_to" ] && _fetch_copy "Staging" "$staging_server" "$staging_copy_source" "$local_copy_staging_to"
-            [ "$local_files" ] && _fetch_dir 'Staging:files' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$config_dir/staging/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done."
-            [ "$local_files2" ] && _fetch_dir 'Staging:files2' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$config_dir/staging/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done."
-            [ "$local_files3" ] && _fetch_dir 'Staging:files3' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$config_dir/staging/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done."
-            echo $now > "$config_dir/$source_server/cached_files"
+            [ "$local_copy_staging_to" ] && (_fetch_copy "Staging" "$staging_server" "$staging_copy_source" "$local_copy_staging_to" || echo_red "└── failed.")
+            [ "$local_files" ] && (_fetch_dir 'Staging:files' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$config_dir/staging/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
+            [ "$local_files2" ] && (_fetch_dir 'Staging:files2' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$config_dir/staging/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
+            [ "$local_files3" ] && (_fetch_dir 'Staging:files3' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$config_dir/staging/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
         ;;
     esac
+
+    [[ "$result" == true ]] && echo $now > "$config_dir/$source_server/cached_files" && return 0
+    return 1
 }
 
 ##
@@ -1064,7 +1073,7 @@ function complete() {
  # Echo an operation did not complete successfully.
  #
 function did_not_complete() {
-    echo_red $1
+    echo_red "🔥🔥🔥 $1"
 }
 
 ##
@@ -1323,6 +1332,15 @@ function configtest() {
 
   if [ "$production_server" ]; then
     load_production_config
+  fi
+
+  # Test that production has copy source when local wants it
+  if [[ "$local_copy_production_to" ]]; then
+    if [[ ! "$production_copy_source" ]]; then
+        configtest_return=false
+        warning "Local:local.copy_production_to is expecting to copy individual files from production, however production:local.copy_source is not defined"
+    fi
+
   fi
 
   # Test that local prod connects to a remote environment with a prod role
