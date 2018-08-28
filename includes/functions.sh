@@ -1929,3 +1929,47 @@ function generate_db_cnf() {
     echo "password=$local_db_pass" >> $local_db_cnf
     chmod 400 $local_db_cnf
 }
+
+##
+ # Remove the value of a $conf variable as found in a Drupal settings file.
+ #
+ # @param string $1
+ #   The filepath to the PHP settings file.
+ # @param string $2
+ #   The key of the $conf variable to empty.
+ #
+ # @return int
+ #   - 0 success
+ #   - 1 file not found
+ #   - 2 replacement in file failed
+ #
+function hooks_empty_drupal_conf () {
+    local file=$1
+    test -f $file || return 1
+    local key=$2
+    sed -i '' "s/[\"']$key[\"'].*$/'$key'] = NULL;/g" $file || return 2
+    echo_green "├── $key removed."
+    return 0
+}
+
+##
+ # Remove the value of a key in an associative array..
+ #
+ # @param string $1
+ #   The filepath to the PHP file.
+ # @param string $2
+ #   The key of the array variable to empty.
+ #
+ # @return int
+ #   - 0 success
+ #   - 1 file not found
+ #   - 2 replacement in file failed
+ #
+function hooks_empty_array_key () {
+    local file=$1
+    test -f $file || return 1
+    local key=$2
+    sed -i '' "s/^.*$key.*$/'$key' => NULL,/g" $file || return 2
+    echo_green "├── $key removed."
+    return 0
+}

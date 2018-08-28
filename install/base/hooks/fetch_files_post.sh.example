@@ -1,20 +1,19 @@
 #!/usr/bin/env bash
 
 #
-# This file shows how you would remove the password from certain files when
-# fetching.
+# This file shows how to remove sensitive info from files.
 #
 
-# Define which files contain sensitive password.
-declare -a  files=("$5/1~settings.local.php");
+file="$5/1~settings.local.prod.php"
 
-output=''
+# Remove $database['password'].
+hooks_empty_array_key $file 'password' || return 1
 
-# Iterate over files and remove password.
-for file in "${files[@]}"; do
-    [[ "$output" ]] && echo_green "├── $output"
-    test -f $file || (echo_red "File not found: $file" && exit 1)
-    sed -i '' "s/^.*password.*$/'password' => '',/g" $file && output="Password removed from: ${file##*/}"
-done
-echo_green "└── $output"
-exit 0
+# Empty out some $conf values, which are sensitive.
+hooks_empty_drupal_conf $file 'gop_amplitude_api_key' || return 1
+hooks_empty_drupal_conf $file 'mailchimp_api_key' || return 1
+hooks_empty_drupal_conf $file 'loft_core_testing_key' || return 1
+
+echo_green "└── Sensitive data removed from: ${file##*/}"
+return 0
+
