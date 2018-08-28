@@ -210,8 +210,7 @@ case $op in
   'mysql')
     loft_deploy_mysql "$2"
     handle_post_hook $op
-    echo_green 'Your mysql session has ended.'
-    end
+    complete 'Your mysql session has ended.' && end
     ;;
   'scp')
     echo_green "scp $production_scp_port$production_server:$production_scp"
@@ -233,9 +232,8 @@ case $op in
     echo_red 'Test complete with failure(s).' && end
     ;;
   'export')
-    export_db $2
-    handle_post_hook $op && complete 'Export complete.'
-    end
+    export_db $2 && handle_post_hook $op && complete 'Export complete.' && end
+    did_not_complete 'Export failed.' && end
     ;;
   'pull')
     if has_asset database; then
@@ -316,8 +314,8 @@ case $op in
     end
     ;;
   'clearcache')
-    do_clearcache
-    end
+    do_clearcache && complete "Caches cleared." && end
+    did_not_complete "Caches failed to clear." && end
     ;;
 esac
 

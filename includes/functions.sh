@@ -649,9 +649,9 @@ function reset_files() {
         [ "$source_server" == 'prod' ] && [ "$local_copy_production_to" ] && _reset_copy "$local_copy_production_to"
         [ "$source_server" == 'staging' ] && [ "$local_copy_staging_to" ] && _reset_copy "$local_copy_staging_to"
 
-        [ "$local_files" ] && _reset_files "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex"
-        [ "$local_files2" ] && _reset_files "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2"
-        [ "$local_files3" ] && _reset_files "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3"
+        [ "$local_files" ] && _reset_files "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done."
+        [ "$local_files2" ] && _reset_files "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done."
+        [ "$local_files3" ] && _reset_files "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done."
     fi
 }
 
@@ -811,26 +811,26 @@ function _fetch_db_staging() {
  # Reset the local database with a previously fetched copy
  #
 function reset_db() {
-  echo "This process will reset your local db to match the most recently fetched"
-  echo "$source_server db, first backing up your local db. To absolutely match $source_server,"
-  echo "consider fetching the database first, however it is slower."
-  echo
-  echo "`tty -s && tput setaf 3`End result: Your local database will match the $source_server database.`tty -s && tput op`"
+    if has_flag v; then
+        echo "This process will reset your local db to match the most recently fetched"
+        echo "$source_server db, first backing up your local db. To absolutely match $source_server,"
+        echo "consider fetching the database first, however it is slower."
+        echo
+        echo "`tty -s && tput setaf 3`End result: Your local database will match the $source_server database.`tty -s && tput op`"
+    fi
+    has_flag 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source_server db"
 
-  has_flag 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source_server db"
+    local _file=($(find $config_dir/$source_server/db -name fetched.sql*))
+    if [[ ${#_file[@]} -gt 1 ]]; then
+        end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/$source_server/db"
+    elif [[ ${#_file[@]} -eq 0 ]]; then
+        end "Please fetch_db first"
+    fi
 
-  local _file=($(find $config_dir/$source_server/db -name fetched.sql*))
-  if [[ ${#_file[@]} -gt 1 ]]; then
-    end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/$source_server/db"
-  elif [[ ${#_file[@]} -eq 0 ]]; then
-    end "Please fetch_db first"
-  fi
+    export_db "reset_backup_$now" '' 'Creating a backup of the local db...'
 
-  export_db "reset_backup_$now"
-
-  echo "Importing $_file"
-  import_db_silent=true
-  import_db "$_file"
+    import_db_silent=true
+    import_db "$_file"
 }
 
 ##
@@ -927,6 +927,8 @@ function _current_db_paths() {
  #   Anything to add as a suffix
  # @param string $2
  #   If this is -f then we will just do it.
+ # @param string $3
+ #   A title to use instead of 'Exporting database...'
  #
 function export_db() {
   _current_db_paths $1
@@ -964,7 +966,7 @@ function export_db() {
     local_db_host="localhost"
   fi
 
-  echo "Exporting database as $file_gz..."
+  ([[ "$3" ]] && echo $3) || echo "Exporting database..."
 
   # Do we need to process a db_tables_no_data file?
   handle_sql_files
@@ -973,18 +975,27 @@ function export_db() {
   # from some tables or not
   data=$(get_sql_ready_db_tables_data)
   if [[ "$data" ]]; then
-    echo "`tty -s && tput setaf 3`Omitting data from some tables.`tty -s && tput op`"
+    echo_yellow "├── Omitting data from some tables..."
+    # @todo Why are there two dumps?
     $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name --no-data > "$file"
     $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name $data --no-create-info >> "$file"
   else
     $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name -r "$file"
   fi
+  local status=$?
 
-  if [ "$2" == '-f' ]; then
-    $ld_gzip -f "$file"
-  else
-    $ld_gzip "$file"
+  if [[ $status -eq 0 ]]; then
+      if [ "$2" == '-f' ]; then
+        $ld_gzip -f "$file"
+      else
+        $ld_gzip "$file"
+      fi
+      status=$?
   fi
+
+  [[ $status -eq 0 ]] && echo_green "└── Created file: ${file_gz##*/}"
+
+  return $status
 }
 
 ##
@@ -1013,14 +1024,15 @@ function import_db() {
   fi
 
   has_flag 'y' || [ $import_db_silent = true ] || confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure"
+  echo "Importing data into $local_db_host:$local_db_name..."
   _drop_tables
-  echo_green "Importing $file to $local_db_host $local_db_name database..."
 
   if [[ ${file##*.} == 'gz' ]]; then
     $ld_gunzip "$file"
     file=${file%.*}
   fi
-  $ld_mysql --defaults-file=$local_db_cnf $local_db_name < $file
+  $ld_mysql --defaults-file=$local_db_cnf $local_db_name < $file && echo_green "└── ${file##*/} has been imported."
+  return $?
 }
 
 ##
@@ -1028,11 +1040,13 @@ function import_db() {
  #
 function _drop_tables() {
   tables=$($ld_mysql --defaults-file=$local_db_cnf $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
-  echo_yellow "Dropping all tables from the $local_db_name database..."
-  for t	in $tables; do
+  echo_yellow "├── Dropping all tables from the $local_db_name database..."
+  for t in $tables; do
     has_flag 'v' && echo "├── $t"
     $ld_mysql --defaults-file=$local_db_cnf $local_db_name -e "drop table $t"
   done
+
+  return $?
 }
 
 ##
@@ -1042,9 +1056,15 @@ function _drop_tables() {
  #   The message to delive
  #
 function complete() {
-  if [ $# -ne 0 ]; then
-    echo "`tty -s && tput setaf 45`$1`tty -s && tput op`"
-  fi
+    echo
+    echo "👍 `tty -s && tput setaf 4`$1`tty -s && tput op`"
+}
+
+##
+ # Echo an operation did not complete successfully.
+ #
+function did_not_complete() {
+    echo_red $1
 }
 
 ##
@@ -1168,10 +1188,19 @@ function theme_header() {
   echo "`tty -s && tput setaf $color`~~$1~~`tty -s && tput op`"
 }
 
+show_switch_state='remote'
 function show_switch() {
-  echo "`tty -s && tput setaf 6`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`tty -s && tput op`"
-  echo "`tty -s && tput setaf 6`!!              CHANGING SERVERS                !!!`tty -s && tput op`"
-  echo "`tty -s && tput setaf 6`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`tty -s && tput op`"
+    local title="Connecting to remote..."
+    if [[ "$show_switch_state" == 'local' ]]; then
+        title="Remote connection closed."
+        show_switch_state='return'
+    else
+        show_switch_state='local'
+    fi
+    echo
+    echo_yellow "🌎 $title"
+    echo
+    return 0
 }
 
 ##
@@ -1782,7 +1811,6 @@ function do_clearcache() {
     fi
     load_config
     generate_db_cnf
-    complete "`tty -s && tput setaf $color_green`Caches were cleared.`tty -s && tput op`"
 }
 
 ##
