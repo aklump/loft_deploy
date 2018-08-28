@@ -618,6 +618,7 @@ function fetch_files() {
  #   The local file list separated by colons.
  #
 function _reset_copy() {
+    local status=true
     oldIFS="$IFS"
     IFS=':'
     read -r -a destination <<< "$1"
@@ -632,6 +633,7 @@ function _reset_copy() {
     echo "Resetting individual files to match $source_server..."
     for from in "${destination[@]}"; do
         [[ "$output" ]] && echo_green "├── $output"
+        [[ "$error" ]] && echo_red "├── $error"
         from="$config_dir/$source_server/copy/"$i~${from##*/}
         to=${destination[$i]}
         local verbose=''
@@ -641,18 +643,26 @@ function _reset_copy() {
         # Create the parent directories of the destination if necessary
         test -d "$to_dir" || mkdir -p "$to_dir"
 
-        cp -p$verbose "$from" "$to"
-        test -f "$to" && output=${to[@]##*/}
+        cp -f -p$verbose "$from" "$to" || status=false
+        if [[ "$status" == true ]]; then
+            output=${to[@]##*/}
+        else
+            error=${to[@]##*/}
+        fi
         ((++i))
     done
-    echo_green "└── $output"
-    return 0
+    [[ "$output" ]] && echo_green "└── $output"
+    [[ "$error" ]] && echo_red "└── $error"
+
+    [[ "$status" == true ]] && return 0
+    return 1
 }
 
 ##
  # Reset the local files with fetched prod files
  #
 function reset_files() {
+    local status=true
     if [ "$local_copy_production_to" ] || [ "$local_copy_staging_to" ] || [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
         if has_flag 'v'; then
             echo "This process will reset your local files to match the most recently fetched"
@@ -663,13 +673,44 @@ function reset_files() {
             echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
         fi
 
-        [ "$source_server" == 'prod' ] && [ "$local_copy_production_to" ] && _reset_copy "$local_copy_production_to"
-        [ "$source_server" == 'staging' ] && [ "$local_copy_staging_to" ] && _reset_copy "$local_copy_staging_to"
+        if [ "$status" == true ] && [ "$source_server" == 'prod' ] && [ "$local_copy_production_to" ]; then
+            _reset_copy "$local_copy_production_to" || status=false
+        fi
 
-        [ "$local_files" ] && _reset_files "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done."
-        [ "$local_files2" ] && _reset_files "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done."
-        [ "$local_files3" ] && _reset_files "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done."
+        if [ "$status" == true ] && [ "$source_server" == 'staging' ] && [ "$local_copy_staging_to" ]; then
+            _reset_copy "$local_copy_staging_to" || status=false
+        fi
+
+        if [ "$status" == true ] && [ "$local_files" ]; then
+            _reset_files "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
+            if [[ "$status" == true ]]; then
+                echo_green "└── done."
+            else
+                echo_red "└── failed." && status=false
+            fi
+        fi
+
+        if [ "$status" == true ] && [ "$local_files2" ]; then
+            _reset_files "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
+            if [[ "$status" == true ]]; then
+                echo_green "└── done."
+            else
+                echo_red "└── failed." && status=false
+            fi
+        fi
+
+        if [ "$status" == true ] && [ "$local_files3" ]; then
+            _reset_files "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
+            if [[ "$status" == true ]]; then
+                echo_green "└── done."
+            else
+                echo_red "└── failed." && status=false
+            fi
+        fi
     fi
+
+    [[ "$status" == true ]] && return 0
+    return 1
 }
 
 ##
@@ -709,6 +750,8 @@ function _reset_files() {
 
     has_flag 'v' && echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
     eval $cmd
+
+    return $?
 }
 
 ##
