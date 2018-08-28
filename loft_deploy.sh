@@ -61,9 +61,8 @@ while [ -h "$source" ]; do # resolve $source until the file is no longer a symli
   source="$(readlink "$source")"
   [[ $source != /* ]] && source="$dir/$source" # if $source was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
-root="$( cd -P "$( dirname "$source" )" && pwd )"
-ROOT="$root"
-INCLUDES="$root/includes"
+ROOT="$( cd -P "$( dirname "$source" )" && pwd )"
+INCLUDES="$ROOT/includes"
 
 ##
  # Bootstrap
@@ -230,27 +229,26 @@ case $op in
     end
     ;;
   'configtest')
-    configtest
-    handle_post_hook $op
-    end
+    configtest && handle_post_hook $op && complete 'Test complete.' && end
+    echo_red 'Test complete with failure(s).' && end
     ;;
   'export')
-    export_db $2 &&  echo_green "Export complete."
-    handle_post_hook $op
+    export_db $2
+    handle_post_hook $op && complete 'Export complete.'
     end
     ;;
   'pull')
-    if has_asset files; then
+    if has_asset database; then
       fetch_db
       reset_db
-      echo_green 'Database fetched and reset.'
+      echo 'Database fetched and reset.'
     fi
-    if has_asset database; then
+    if has_asset files; then
       fetch_files
       reset_files
-      echo_green 'Files fetched and reset.'
+      echo 'Files fetched and reset.'
     fi
-    handle_post_hook $op
+    handle_post_hook $op && complete "Pull complete."
     end
     ;;
   'push')
@@ -272,30 +270,29 @@ case $op in
     fi
     if has_asset database; then
       fetch_db
-      echo_green "The database has been fetched; use 'loft_deploy reset -d$suffix' when ready."
+      echo "The database has been fetched; use 'reset -d$suffix' when ready."
     fi
     if has_asset files; then
       fetch_files
-      echo_green "Files have been fetched; use 'loft_deploy reset -f$suffix' when ready."
     fi
-    handle_post_hook $op
-    end
+    handle_post_hook $op && complete "Fetch complete."
+    exit
     ;;
   'reset')
     if has_asset database; then
       reset_db
-      echo_green 'Local database has been reset with production.'
+      echo "Local database has been reset to match $source_server."
     fi
     if has_asset files; then
       reset_files
-      echo_green 'Local files have been reset with production.'
+      echo "Local files reset to match $source_server."
     fi
-    handle_post_hook $op
+    handle_post_hook $op && complete "Reset complete."
     end
     ;;
   'import')
-    import_db $2  && echo_green "Import complete."
-    handle_post_hook $op
+    import_db $2
+    handle_post_hook $op && complete "Import complete."
     end
     ;;
   'help')
