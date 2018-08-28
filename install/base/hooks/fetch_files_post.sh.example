@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 #
-# This example is for fetch_files_post.sh.  It shows how you would remove the
-# password from certain files when fetching.
+# This file shows how you would remove the password from certain files when
+# fetching.
 #
 
 # Define which files contain sensitive password.

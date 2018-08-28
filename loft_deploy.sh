@@ -224,7 +224,7 @@ case $op in
       suffix=" --$source_server"
     fi
     if [[ "$status" == true ]] && has_asset database; then
-      fetch_db && echo "The database has been fetched; use 'reset -d$suffix' when ready." || status=false
+      fetch_db || status=false
     fi
     if [[ "$status" == true ]] && has_asset files; then
       fetch_files || status=false

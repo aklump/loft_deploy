@@ -489,6 +489,7 @@ function _upsearch () {
  # Helper function to fetch remote files to local.
  #
 function _fetch_dir() {
+  local status=true
   local title="$1"
   local server_remote="$2"
   local port_remote="$3"
@@ -508,7 +509,7 @@ function _fetch_dir() {
     end "\$path_remote and \$path_local should not be the same path."
   fi
 
-  echo "Fetching files from $title to local cache..."
+  echo "Fetching $title directory contents to local cache..."
 
   # Excludes message...
   if has_flag 'v' && test -e "$exclude_file"; then
@@ -526,12 +527,13 @@ function _fetch_dir() {
   if has_flag 'v'; then
     echo $cmd
     echo
-    eval $cmd
-    return $?
   fi
 
   eval $cmd >/dev/null 2>&1
-  return $?
+  [[ $? -ne 0 ]] && status=false
+
+  [[ $status == 'true' ]] && echo_green "└── complete." && return 0
+  echo_red "└── failed to fetch." && return 1;
 }
 
 ##
@@ -548,7 +550,7 @@ function _fetch_copy() {
     oldIFS="$IFS"
     IFS=':'
 
-    echo "Fetching distinct files from $title to local cache..."
+    echo "Fetching distinct files from $source_server to local cache..."
 
     [[ "$3" == null ]] && return 1
     [[ "$4" == null ]] && return 1
@@ -577,7 +579,7 @@ function _fetch_copy() {
         ((++i))
     done
     [[ "$output" ]] && echo_green "└── $output"
-    [[ "$error" ]] && echo_red "└── $error"
+    [[ "$error" ]] && echo_red "└── $error failed"
     return 0
 }
 
@@ -585,27 +587,35 @@ function _fetch_copy() {
  # Fetch files from the appropriate server
  #
 function fetch_files() {
-    local result=false
+    local status=false
     case $source_server in
         'prod' )
-            result=true
+            status=true
             load_production_config
-            [ "$local_copy_production_to" ] && (_fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || (echo_red "└── failed." && result=false))
-            [ "$local_files" ] && (_fetch_dir 'Production:files' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
-            [ "$local_files2" ] && (_fetch_dir 'Production:files2' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
-            [ "$local_files3" ] && (_fetch_dir 'Production:files3' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
+            if [ "$local_copy_production_to" ]; then
+                _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || result=false
+            fi
+            if [[ "status" ]] && [ "$local_files" ]; then
+                _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || result=false
+            fi
+            if [[ "status" ]] && [ "$local_files2" ]; then
+                _fetch_dir 'files2/*' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || result=false
+            fi
+            if [[ "status" ]] && [ "$local_files3" ]; then
+                _fetch_dir 'files3/*' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || result=false
+            fi
         ;;
-        'staging' )
-            result=true
-            load_staging_config
-            [ "$local_copy_staging_to" ] && (_fetch_copy "Staging" "$staging_server" "$staging_copy_source" "$local_copy_staging_to" || echo_red "└── failed.")
-            [ "$local_files" ] && (_fetch_dir 'Staging:files' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$config_dir/staging/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
-            [ "$local_files2" ] && (_fetch_dir 'Staging:files2' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$config_dir/staging/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
-            [ "$local_files3" ] && (_fetch_dir 'Staging:files3' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$config_dir/staging/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done." || (echo_red "└── failed." && result=false ))
-        ;;
+#        'staging' )
+#            result=true
+#            load_staging_config
+#            [ "$local_copy_staging_to" ] && _fetch_copy "Staging" "$staging_server" "$staging_copy_source" "$local_copy_staging_to" || echo_red "└── failed.")
+#            [ "$local_files" ] && _fetch_dir 'Staging:files' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$config_dir/staging/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done." || echo_red "└── failed." && result=false ))
+#            [ "$local_files2" ] && _fetch_dir 'Staging:files2' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$config_dir/staging/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done." || echo_red "└── failed." && result=false ))
+#            [ "$local_files3" ] && _fetch_dir 'Staging:files3' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$config_dir/staging/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done." || echo_red "└── failed." && result=false ))
+#        ;;
     esac
 
-    [[ "$result" == true ]] && echo $now > "$config_dir/$source_server/cached_files" && return 0
+    [[ "$status" == true ]] && echo $now > "$config_dir/$source_server/cached_files" && return 0
     return 1
 }
 
@@ -773,6 +783,8 @@ function fetch_db() {
  #
 function _fetch_db_production() {
 
+  # @todo Add status var here with return value.
+
   if [[ ! -d "$config_dir/prod/db" ]]; then
     mkdir "$config_dir/prod/db"
   fi
@@ -811,17 +823,29 @@ function _fetch_db_production() {
     fi
 
     show_switch
-    ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix"
+    if has_flag v; then
+        ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix"
+    else
+        ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix" > /dev/null
+    fi
     wait
+    [[ $? -eq 0 ]] && echo_green "├── Database exported and ready to download." || echo_red "Remote export failed."
 
-    echo "Downloading from production..."
     local _remote_file="$production_db_dir/${production_db_name}-$_export_suffix.sql.gz"
-    scp $production_scp_port"$production_server:$_remote_file" "$_local_file"
+    if has_flag v; then
+        scp $production_scp_port"$production_server:$_remote_file" "$_local_file"
+    else
+        scp $production_scp_port"$production_server:$_remote_file" "$_local_file" > /dev/null
+    fi
+    [[ $? -eq 0 ]] && echo_green "└── Database downloaded from production." || echo_red "Download failed."
 
 
     # delete it from remote
-    echo "Deleting the production copy..."
-    ssh $production_server$production_ssh_port "rm $_remote_file"
+    if has_flag v; then
+        ssh $production_server$production_ssh_port "rm $_remote_file"
+    else
+        ssh $production_server$production_ssh_port "rm $_remote_file" > /dev/null
+    fi
     show_switch
 
   fi
@@ -1131,7 +1155,11 @@ function complete() {
  # Echo an operation did not complete successfully.
  #
 function did_not_complete() {
+    echo
     echo_red "🔥🔥🔥 $1"
+    echo
+
+    return 0
 }
 
 ##
@@ -1262,9 +1290,7 @@ function show_switch() {
     else
         show_switch_state='local'
     fi
-    echo
     echo_yellow "🌎 $title"
-    echo
     return 0
 }
 
@@ -1786,7 +1812,7 @@ function _handle_hook() {
         local basename=$(basename $hook)
         declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "" "" "" "" "" "" "$config_dir/hooks/");
         if test -e "$hook"; then
-          echo "Calling ${2}-hook: $basename"
+          echo "📦 Calling ${2}-hook: $basename"
           source "$hook" "${hook_args[@]}"
           [[ $? -ne 0 ]] && echo_red "└── Hook failed." && status=false
         fi
