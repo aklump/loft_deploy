@@ -2,17 +2,17 @@
 
 <html>
 <head>
-  <title>Motd</title>
+  <title>Update</title>
   <link href="search/tipuesearch.css" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
 
-<body class="page--motd">
+<body class="page--update">
 <header>
   <div class="pager">
-  <a href="hooks.html" class="prev hooks">&laquo;Hooks</a>
+  <a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon websites</a>
   <a href="index.html" class="index">Index</a>
-  <a href="mysql.html" class="next mysql">MYSQL&raquo;</a>
+  <a href="user_files.html" class="next user_files">User (non-versioned) files component&raquo;</a>
 </div>
 </header>
 
@@ -22,14 +22,22 @@
   </form>
 </div>
 
-  <h1>Motd</h1>
+  <h1>Update</h1>
   <div class="breadcrumb"><a href="index.html">Index</a></div>
 
-<section><h2>Message of the Day MOTD</h2>
+<section>
 
-<p>MOTD will print a reminder each time a Loft Deploy action is executed; use it to keep track of reminders about your project.  Here's how:</p>
+<h2>Manual Update to 0.14</h2>
 
-<p>Create a file in your project, <code>.loft_deploy/motd</code>, the contents of which is echoed when you run any loft_deploy command.  This is a way to store reminders per project.</p>
+<p>This update converts the old config style into YAML:</p>
+
+<ol>
+<li>Copy one of <em>install/config/*.yml</em> files to <em>.loft_deploy/config.yml</em>; based on the role of the local.</li>
+<li>Hand copy/paste config values from <em>.loft_deploy/config</em> into <em>.loft_deploy/config.yml</em>.</li>
+<li>Delete <em>.loft_deploy/config</em>.</li>
+<li>Run <code>ldp clearcache</code>.</li>
+<li>Run <code>ldp configtest</code> and adjust as necessary.</li>
+</ol>
 </section>
 
 <div class="search__results">
@@ -38,13 +46,13 @@
 
 <footer>
   <div class="pager">
-  <a href="hooks.html" class="prev hooks">&laquo;Hooks</a>
+  <a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon websites</a>
   <a href="index.html" class="index">Index</a>
-  <a href="mysql.html" class="next mysql">MYSQL&raquo;</a>
+  <a href="user_files.html" class="next user_files">User (non-versioned) files component&raquo;</a>
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Tue, 28 Aug 2018 09:39:36 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Tue, 28 Aug 2018 09:39:37 -0700</p>
   </div>
 </footer>
 

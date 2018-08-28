@@ -39,10 +39,16 @@ lynx = $(which lynx)
 ##
  # The file path to an extra README.txt file; when README.md is compiled and
  # this variable is set, the .txt version will be copied to this location.
- # 
+ #
  # This should be a relative directory, relative to the source directory.
  #
 README = '../README.md'
+
+##
+ # The file path to an extra CHANGELOG.txt file; when CHANGELOG.md is compiled and
+ # this variable is set, the .txt version will be copied to this location.
+ #
+CHANGELOG = '../CHANGELOG.md'
 
 # This would also copy README.md as well as README.txt to the directory one
 # level above /source
@@ -52,7 +58,7 @@ README = '../README.md'
 
 #
 # Defines pre/post hooks, shell or php scripts to call, space separated.
-# 
+#
 #pre_hooks = "pre_compile.sh pre_compile.php"
 #post_hooks = "post_compile.sh post_compile.php"
 
