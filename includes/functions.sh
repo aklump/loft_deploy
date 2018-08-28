@@ -1323,7 +1323,7 @@ function show_help() {
   fi
 
   theme_help_topic fetch 'pl' 'Fetch production assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations'
+  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup'
   theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations'
 
   if [ "$local_role" != 'staging' ]; then
@@ -1333,7 +1333,7 @@ function show_help() {
   theme_help_topic push 'lst' 'A push all shortcut' '-f files only' '-d database only'
 
   theme_help_topic fetch 'pl' 'Use `staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f staging' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations'
+  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup'
   theme_help_topic pull 'pl' 'Use `staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations'
 
 }
@@ -1369,12 +1369,13 @@ function mysql_check_local() {
  #
  #
 function print_header() {
-  echo "~ $local_title ~ $local_role ~" | tr "[:lower:]" "[:upper:]"
-  if [[ "$motd" ]]; then
     echo
-    echo "`tty -s && tput setaf 5`$motd`tty -s && tput op`"
-  fi
-  echo
+    echo "⭐ ⭐ ⭐  $local_title ⭐  $local_role"
+    if [[ "$motd" ]]; then
+        echo
+        echo "`tty -s && tput setaf 5`$motd`tty -s && tput op`"
+    fi
+    echo
 }
 
 ##
@@ -1812,7 +1813,7 @@ function _handle_hook() {
         local basename=$(basename $hook)
         declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "" "" "" "" "" "" "$config_dir/hooks/");
         if test -e "$hook"; then
-          echo "📦 Calling ${2}-hook: $basename"
+          echo "🔶 Calling hook: $basename"
           source "$hook" "${hook_args[@]}"
           [[ $? -ne 0 ]] && echo_red "└── Hook failed." && status=false
         fi
