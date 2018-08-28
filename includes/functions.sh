@@ -720,11 +720,11 @@ function _fetch_db_production() {
   # Cleanup local
   rm $config_dir/prod/db/fetched.sql* >/dev/null 2>&1
 
-  echo_green "Exporting production db..."
+  echo "Exporting production db..."
   local _export_suffix='fetch_db'
   local _local_file="$config_dir/prod/db/fetched.sql.gz"
 
-  ### Support for Pantheon
+  # Support for Pantheon.
   if  [ "$terminus_site" ]; then
     if [ ! "$ld_terminus" ]; then
       end "Missing dependency terminus; please install per https://github.com/pantheon-systems/terminus/blob/master/README.md#installation"
@@ -744,7 +744,7 @@ function _fetch_db_production() {
     $ld_terminus backup:get $terminus_site.live --element=db --to="$_local_file"
     $ld_terminus auth:logout
 
-  ### Default using SSH and SCP
+  # Default using SSH and SCP.
   else
     load_production_config
     if [ ! "$production_script" ] || [ ! "$production_db_dir" ] || [ ! "$production_server" ] || [ ! "$production_db_name" ]; then
@@ -1457,15 +1457,15 @@ function configtest() {
   fi
 
   # Connection test to production/config test for production
-  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_root}/.loft_deploy/config' ]"; then
+  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_root}/.loft_deploy/config.yml' ]"; then
     configtest_return=false
-    warning "production_root: ${production_root}/.loft_deploy/config does not exist"
+    warning "production config.yml not found in  ${production_root}/.loft_deploy"
   fi
 
   # Connection test to staging/config test for staging
-  if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_root}/.loft_deploy/config' ]"; then
+  if [ "$staging_root" ] && ! ssh $staging_server$staging_ssh_port "[ -f '${staging_root}/.loft_deploy/config.yml' ]"; then
     configtest_return=false
-    warning "staging_root: ${staging_root}/.loft_deploy/config does not exist"
+    warning "staging config.yml not found in  ${staging_root}/.loft_deploy"
   fi
 
   # Connection test to staging script test for staging
