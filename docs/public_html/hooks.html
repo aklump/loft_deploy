@@ -95,6 +95,33 @@ loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 
 <h2>Hook vars</h2>
 
+<ul>
+<li>Be sure to use <code>echo_green</code>, <code>echo_yello</code>, and <code>echo_red</code>.</li>
+<li>Always <code>return</code> 0, or a non-zero if the hook fails.</li>
+<li>Never <code>exit</code> in a hook file.</li>
+<li>Give feedback as to what happened, rather that what is about to happen, e.g. Files downloaded. instead of "Downloading files..." when echoing bullet points.</li>
+<li>See <em>install/base/hooks/example.sh</em> for a code example.</li>
+</ul>
+
+<table>
+<thead>
+<tr>
+  <th>var</th>
+  <th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>$ROOT</td>
+  <td>Path to the directory containing loft_deploy.sh</td>
+</tr>
+<tr>
+  <td>$INCLUDES</td>
+  <td>Path to the loft deploy includes directory</td>
+</tr>
+</tbody>
+</table>
+
 <table>
 <thead>
 <tr>
@@ -112,12 +139,27 @@ loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 <tr>
   <td>$2</td>
   <td>production server</td>
-  <td></td>
+  <td>user@192.168.1.100</td>
 </tr>
 <tr>
   <td>$3</td>
   <td>staging server</td>
+  <td>user@192.168.1.100</td>
+</tr>
+<tr>
+  <td>$4</td>
+  <td>local basepath as defined in config.yml</td>
   <td></td>
+</tr>
+<tr>
+  <td>$5</td>
+  <td>path to the copy stage directory</td>
+  <td></td>
+</tr>
+<tr>
+  <td>$6</td>
+  <td>source server</td>
+  <td>prod, staging</td>
 </tr>
 <tr>
   <td>${13}</td>
@@ -140,7 +182,7 @@ loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sun, 26 Aug 2018 13:01:51 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Tue, 28 Aug 2018 16:04:31 -0700</p>
   </div>
 </footer>
 

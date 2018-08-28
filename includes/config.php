@@ -55,7 +55,6 @@ try {
   foreach ($config['local'] as $key => $item) {
     switch ($key) {
       case 'location':
-      case 'basepath':
         break;
 
       case 'url':
@@ -104,6 +103,14 @@ try {
           }
           $data[$k] = $local_path($v);
         }
+        break;
+
+      case 'copy_source':
+      case 'copy_production_to':
+      case 'copy_staging_to':
+        $data['local_' . $key] = implode(':', array_map(function ($path) use ($local_path) {
+          return $local_path($path);
+        }, $item));
         break;
 
       default:

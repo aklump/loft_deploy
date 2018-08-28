@@ -63,9 +63,24 @@ You can add mysql commands against the local environment in a hook using `loft_d
 
 ## Hook vars
 
+* Be sure to use `echo_green`, `echo_yello`, and `echo_red`.
+* Always `return` 0, or a non-zero if the hook fails.
+* Never `exit` in a hook file.
+* Give feedback as to what happened, rather that what is about to happen, e.g. Files downloaded. instead of "Downloading files..." when echoing bullet points.
+* See _install/base/hooks/example.sh_ for a code example.
+
+| var | description |
+|----------|----------|
+| $ROOT | Path to the directory containing loft_deploy.sh |
+| $INCLUDES | Path to the loft deploy includes directory |
+
 | arg | definition | example |
 |----------|----------|----------|
 | $1 | operation  | push |
-| $2 | production server |   |
-| $3 | staging server |   |
+| $2 | production server | user@192.168.1.100  |
+| $3 | staging server | user@192.168.1.100 |
+| $4 | local basepath as defined in config.yml  |
+| $5 | path to the copy stage directory |
+| $6 | source server | prod, staging |
 | ${13} | path to hooks dir | /do/re/hooks  |
+

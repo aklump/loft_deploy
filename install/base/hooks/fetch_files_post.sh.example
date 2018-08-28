@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+#
+# This file shows how to remove sensitive info from files.
+#
+
+file="$5/1~settings.local.prod.php"
+
+# Remove $database['password'].
+hooks_empty_array_key $file 'password' || return 1
+
+# Empty out some $conf values, which are sensitive.
+hooks_empty_drupal_conf $file 'gop_amplitude_api_key' || return 1
+hooks_empty_drupal_conf $file 'mailchimp_api_key' || return 1
+hooks_empty_drupal_conf $file 'loft_core_testing_key' || return 1
+
+echo_green "└── Sensitive data removed from: ${file##*/}"
+return 0
+

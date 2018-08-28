@@ -61,8 +61,8 @@ while [ -h "$source" ]; do # resolve $source until the file is no longer a symli
   source="$(readlink "$source")"
   [[ $source != /* ]] && source="$dir/$source" # if $source was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
-root="$( cd -P "$( dirname "$source" )" && pwd )"
-INCLUDES="$root/includes"
+ROOT="$( cd -P "$( dirname "$source" )" && pwd )"
+INCLUDES="$ROOT/includes"
 
 ##
  # Bootstrap
@@ -108,7 +108,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.14.6
+ld_version=0.14.7
 
 # theme color definitions
 color_red=1
@@ -190,9 +190,86 @@ fi
 print_header
 update_needed
 
-handle_pre_hook $op
+#
+# status will go to false at any time that an operation fails, e.g. hook, or step, etc.
+#
+status=true
+handle_pre_hook $op || status=false
 
 case $op in
+  'init')
+    [[ "$status" == true ]] && init $2 && handle_post_hook $op && exit 0
+    exit 1
+    ;;
+
+  'configtest')
+    [[ "$status" == true ]] && configtest && handle_post_hook $op && complete 'Test complete.' && exit 0
+    did_not_complete 'Test complete with failure(s).' && exit 1
+    ;;
+
+  'import')
+    [[ "$status" == true ]] && import_db $2 && handle_post_hook $op && complete "Import complete." && exit 0
+    did_not_complete "Import failed." && exit 1
+    ;;
+
+  'export')
+    [[ "$status" == true ]] && export_db $2 && handle_post_hook $op && complete 'Export complete.' && exit 0
+    did_not_complete 'Export failed.' && exit 1
+    ;;
+
+  'fetch')
+    suffix=''
+    status=true
+    if [[ "$source_server" != 'prod' ]]; then
+      suffix=" --$source_server"
+    fi
+    if [[ "$status" == true ]] && has_asset database; then
+      fetch_db || status=false
+    fi
+    if [[ "$status" == true ]] && has_asset files; then
+      fetch_files || status=false
+    fi
+    [[ "$status" == true ]] && handle_post_hook $op && complete "Fetch complete." && exit 0
+    did_not_complete "Fetch failed." && exit 1
+    ;;
+
+  'reset')
+    if [[ "$status" == true ]] && has_asset database; then
+        reset_db && echo "Local database has been reset to match $source_server." || status=false
+    fi
+    if [[ "$status" == true ]] && has_asset files; then
+        reset_files && echo "Local files has been reset to match $source_server." || status=false
+    fi
+    [[ "$status" == true ]] && handle_post_hook $op && complete "Reset complete." && exit 0
+    did_not_complete "Reset failed." && exit 1
+    ;;
+
+  'pull')
+    if [[ "$status" == true ]]; then handle_pre_hook fetch || status=false; fi
+    if [[ "$status" == true ]] && has_asset database; then fetch_db || status=false; fi
+    if [[ "$status" == true ]] && has_asset files; then fetch_files || status=false; fi
+    if [[ "$status" == true ]]; then handle_post_hook fetch || status=false; fi
+
+    if [[ "$status" == true ]]; then handle_pre_hook reset || status=false; fi
+    if [[ "$status" == true ]]; then has_asset database && reset_db || status=false; fi
+    if [[ "$status" == true ]]; then has_asset files && reset_files || status=false; fi
+    if [[ "$status" == true ]]; then handle_post_hook reset || status=false; fi
+
+    [[ "$status" == true ]] && handle_post_hook $op && complete "Pull complete." && exit 0
+    did_not_complete "Pull failed." && exit 1
+    ;;
+
+  'push')
+    if [[ "$status" == true ]] && has_asset database; then
+      push_db && echo_green 'Database pushed to staging.' || status=false
+    fi
+    if [[ "$status" == true ]] && has_asset files; then
+      push_files && echo_green 'Files pushed to staging.' || status=false
+    fi
+    [[ "$status" == true ]] && handle_post_hook $op && exit 0
+    did_not_complete "Push failed." && exit 1
+    ;;
+
   'hook')
     if [ "$2" ]; then
       handle_pre_hook "$2"
@@ -202,22 +279,20 @@ case $op in
     fi
     end
     ;;
-  'init')
-    init $2
-    handle_post_hook $op
-    end
-    ;;
+
   'mysql')
     loft_deploy_mysql "$2"
     handle_post_hook $op
-    echo_green 'Your mysql session has ended.'
-    end
+    complete 'Your mysql session has ended.'
+    exit 0
     ;;
+
   'scp')
     echo_green "scp $production_scp_port$production_server:$production_scp"
     handle_post_hook $op
     end
     ;;
+
   'ls')
     if has_flag d; then
       do_ls "$local_db_dir"
@@ -228,100 +303,37 @@ case $op in
     handle_post_hook $op
     end
     ;;
-  'configtest')
-    configtest
-    handle_post_hook $op
-    end
-    ;;
-  'export')
-    export_db $2 &&  echo_green "Export complete."
-    handle_post_hook $op
-    end
-    ;;
-  'pull')
-    if has_asset files; then
-      fetch_db
-      reset_db
-      echo_green 'Database fetched and reset.'
-    fi
-    if has_asset database; then
-      fetch_files
-      reset_files
-      echo_green 'Files fetched and reset.'
-    fi
-    handle_post_hook $op
-    end
-    ;;
-  'push')
-    if has_asset database; then
-      push_db
-      echo_green 'Database pushed to staging.'
-    fi
-    if has_asset files; then
-      push_files
-      echo_green 'Files pushed to staging.'
-    fi
-    handle_post_hook $op
-    end
-    ;;
-  'fetch')
-    suffix=''
-    if [[ "$source_server" != 'prod' ]]; then
-      suffix=" --$source_server"
-    fi
-    if has_asset database; then
-      fetch_db
-      echo_green "The database has been fetched; use 'loft_deploy reset -d$suffix' when ready."
-    fi
-    if has_asset files; then
-      fetch_files
-      echo_green "Files have been fetched; use 'loft_deploy reset -f$suffix' when ready."
-    fi
-    handle_post_hook $op
-    end
-    ;;
-  'reset')
-    if has_asset database; then
-      reset_db
-      echo_green 'Local database has been reset with production.'
-    fi
-    if has_asset files; then
-      reset_files
-      echo_green 'Local files have been reset with production.'
-    fi
-    handle_post_hook $op
-    end
-    ;;
-  'import')
-    import_db $2  && echo_green "Import complete."
-    handle_post_hook $op
-    end
-    ;;
+
   'help')
     show_help
     handle_post_hook $op
     end
     ;;
+
   'info')
     show_info
     handle_post_hook $op
     end
     ;;
+
   'pass')
     show_pass
     handle_post_hook $op
     end
     ;;
+
   'terminus')
     cmd="auth:login --machine-token=$terminus_machine_token"
     $ld_terminus $cmd
     end
     ;;
+
   'clearcache')
-    do_clearcache
-    end
+    do_clearcache && complete "Caches cleared." && end
+    did_not_complete "Caches failed to clear." && end
     ;;
+
 esac
 
-echo_red "loft_deploy $op is an unknown operation."
-end
+did_not_complete "\"$op\" is an unknown operation; please try something else."
+exit 1

@@ -178,8 +178,8 @@ function update_needed() {
 function update() {
   _update_0_7_6
   _update_0_7_0
-  echo "`tty -s && tput setaf 2`All updates have been processed.`tty -s && tput op`"
-  end
+  complete 'Updates complete.' && end
+  did_not_complete 'Updates failed' && end
 }
 
 ##
@@ -247,9 +247,9 @@ function init() {
   if [ $# -ne 1 ]; then
     end "Please specific one of: dev, staging or prod.  e.g. loft_deploy init dev"
   elif [ "$1" == 'dev' ] || [ "$1" == 'staging' ] || [ "$1" == 'prod' ]; then
-    mkdir $config_dir && rsync -a "$root/install/base/" "$config_dir/"
+    mkdir $config_dir && rsync -a "$ROOT/install/base/" "$config_dir/"
     chmod 0644 "$config_dir/.htaccess"
-    cp "$root/install/config/$1.yml" "$config_dir/config.yml"
+    cp "$ROOT/install/config/$1.yml" "$config_dir/config.yml"
     cd "$start_dir"
     complete
     end "Please configure and save $config_dir/config.yml.  Then run: clearcache"
@@ -381,6 +381,7 @@ function load_config() {
   ld_mysqldump=$(type mysqldump >/dev/null 2>&1 && which mysqldump)
   ld_gzip=$(type gzip >/dev/null 2>&1 && which gzip)
   ld_gunzip=$(type gunzip >/dev/null 2>&1 && which gunzip)
+  ld_scp=$(type scp >/dev/null 2>&1 && which scp)
 
   # For Pantheon support we need to find terminus.
   ld_terminus=$(type terminus >/dev/null 2>&1 && which terminus)
@@ -393,7 +394,7 @@ function load_config() {
 
   # Handle reading the drupal settings file if asked
   if [ "$local_drupal_settings" ]; then
-    read -r -a settings <<< $(php "$root/includes/drupal_settings.php" "$local_drupal_root" "$local_drupal_settings" "$local_drupal_db")
+    read -r -a settings <<< $(php "$ROOT/includes/drupal_settings.php" "$local_drupal_root" "$local_drupal_settings" "$local_drupal_db")
     local_db_host=${settings[0]};
     local_db_name=${settings[1]};
     local_db_user=${settings[2]};
@@ -440,7 +441,7 @@ function load_config() {
  #
 function load_production_config() {
   if [ "$production_server" ] && [ "$production_script" ]; then
-    production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_files2; $production_script get local_files3; $production_script get local_db_port;"))
+    production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_files2; $production_script get local_files3; $production_script get local_db_port; $production_script get local_copy_source;"))
     production_db_host="${production[0]}";
     production_db_name="${production[1]}";
     production_db_user="${production[2]}";
@@ -450,6 +451,7 @@ function load_production_config() {
     production_files2="${production[6]}";
     production_files3="${production[7]}";
     production_db_port="${production[8]}";
+    production_copy_source="${production[9]}";
   elif [ "$pantheon_live_uuid" ]; then
     production_remote_db_host="dbserver.live.$pantheon_live_uuid.drush.in";
     production_db_name="pantheon";
@@ -462,13 +464,17 @@ function load_production_config() {
  #
 function load_staging_config() {
   if [ "$staging_server" ] && [ "$staging_script" ]; then
-      staging=($(ssh $staging_server$staging_ssh_port "cd $staging_root && $staging_script get local_db_host; $staging_script get local_db_name; $staging_script get local_db_dir; $staging_script get local_files; $staging_script get local_files2; $staging_script get local_files3"))
+    staging=($(ssh $staging_server$staging_ssh_port "cd $staging_root && $staging_script get local_db_host; $staging_script get local_db_name; $staging_script get local_db_user; $staging_script get local_db_pass; $staging_script get local_db_dir; $staging_script get local_files; $staging_script get local_files2; $staging_script get local_files3; $staging_script get local_db_port; $staging_script get local_copy_source;"))
     staging_db_host="${staging[0]}";
     staging_db_name="${staging[1]}";
-    staging_db_dir="${staging[2]}";
-    staging_files="${staging[3]}";
-    staging_files2="${staging[4]}";
-    staging_files3="${staging[5]}";
+    staging_db_user="${staging[2]}";
+    staging_db_pass="${staging[3]}";
+    staging_db_dir="${staging[4]}";
+    staging_files="${staging[5]}";
+    staging_files2="${staging[6]}";
+    staging_files3="${staging[7]}";
+    staging_db_port="${staging[8]}";
+    staging_copy_source="${staging[9]}";
   fi
 }
 
@@ -482,7 +488,8 @@ function _upsearch () {
 ##
  # Helper function to fetch remote files to local.
  #
-function _fetch_files() {
+function _fetch_dir() {
+  local status=true
   local title="$1"
   local server_remote="$2"
   local port_remote="$3"
@@ -502,7 +509,7 @@ function _fetch_files() {
     end "\$path_remote and \$path_local should not be the same path."
   fi
 
-  echo "Downloading files to the stage: $title ..."
+  echo "Fetching $title directory contents to local cache..."
 
   # Excludes message...
   if has_flag 'v' && test -e "$exclude_file"; then
@@ -517,39 +524,156 @@ function _fetch_files() {
     cmd="$ld_remote_rsync_cmd \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
   fi
 
-  has_flag 'v' && echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
-  eval $cmd;
+  if has_flag 'v'; then
+    echo $cmd
+    echo
+  fi
+
+  eval $cmd >/dev/null 2>&1
+  [[ $? -ne 0 ]] && status=false
+
+  [[ $status == 'true' ]] && echo_green "└── complete." && return 0
+  echo_red "└── failed to fetch." && return 1;
+}
+
+##
+ # Handle the copy of a colon separted list of files from remote server to the config stage.
+ #
+ # @param string $1
+ #   The production file list separated by colons.
+ # @param string $2
+ #   The local file list separated by colons.
+ #
+function _fetch_copy() {
+    local title=$1
+    local server=$2
+    oldIFS="$IFS"
+    IFS=':'
+
+    echo "Fetching distinct files from $source_server to local cache..."
+
+    [[ "$3" == null ]] && return 1
+    [[ "$4" == null ]] && return 1
+    read -r -a source <<< "$3"
+    read -r -a destination <<< "$4"
+    IFS="$oldIFS"
+
+    local i=0
+    local to=''
+    (test ! -d "$config_dir/$source_server/copy" || rm -rf "$config_dir/$source_server/copy") && mkdir -p "$config_dir/$source_server/copy"
+    local output=''
+    local error=''
+    for from in "${source[@]}"; do
+        [[ "$output" ]] && echo_green "├── $output"
+        [[ "$error" ]] && echo_green "├── $error"
+        to=$config_dir/$source_server/copy/$i~${destination[$i]##*/}
+        if [[ ! "$to" ]]; then
+            error="No local path configured for: ${from##*/}"
+            output=''
+        else
+            local verbose=''
+            has_flag v && verbose=' -p -v' && echo_yellow "$server:$from $to"
+            $($ld_scp $verbose "$server:$from" "$to")
+            test -f "$to" && output="${from##*/}"
+        fi
+        ((++i))
+    done
+    [[ "$output" ]] && echo_green "└── $output"
+    [[ "$error" ]] && echo_red "└── $error failed"
+    return 0
 }
 
 ##
  # Fetch files from the appropriate server
  #
 function fetch_files() {
-    if [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
-        case $source_server in
-            'prod' )
-                load_production_config
-                [ "$local_files" ] && _fetch_files 'Production:files' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex"
-                [ "$local_files2" ] && _fetch_files 'Production:files2' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2"
-                [ "$local_files3" ] && _fetch_files 'Production:files3' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3"
-            ;;
-            'staging' )
-                load_staging_config
-                [ "$local_files" ] && _fetch_files 'Staging:files' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$config_dir/staging/files" "$ld_rsync_exclude_file" "$ld_rsync_ex"
-                [ "$local_files2" ] && _fetch_files 'Staging:files2' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$config_dir/staging/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2"
-                [ "$local_files3" ] && _fetch_files 'Staging:files3' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$config_dir/staging/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3"
-            ;;
-        esac
-        echo $now > "$config_dir/$source_server/cached_files"
-    fi
+    local status=false
+    case $source_server in
+        'prod' )
+            status=true
+            load_production_config
+            if [ "$local_copy_production_to" ]; then
+                _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || result=false
+            fi
+            if [[ "status" ]] && [ "$local_files" ]; then
+                _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || result=false
+            fi
+            if [[ "status" ]] && [ "$local_files2" ]; then
+                _fetch_dir 'files2/*' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || result=false
+            fi
+            if [[ "status" ]] && [ "$local_files3" ]; then
+                _fetch_dir 'files3/*' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || result=false
+            fi
+        ;;
+#        'staging' )
+#            result=true
+#            load_staging_config
+#            [ "$local_copy_staging_to" ] && _fetch_copy "Staging" "$staging_server" "$staging_copy_source" "$local_copy_staging_to" || echo_red "└── failed.")
+#            [ "$local_files" ] && _fetch_dir 'Staging:files' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$config_dir/staging/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done." || echo_red "└── failed." && result=false ))
+#            [ "$local_files2" ] && _fetch_dir 'Staging:files2' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$config_dir/staging/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done." || echo_red "└── failed." && result=false ))
+#            [ "$local_files3" ] && _fetch_dir 'Staging:files3' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$config_dir/staging/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done." || echo_red "└── failed." && result=false ))
+#        ;;
+    esac
+
+    [[ "$status" == true ]] && echo $now > "$config_dir/$source_server/cached_files" && return 0
+    return 1
+}
+
+##
+ # Copy files from the stage to the correct local location.
+ #
+ # @param string $1
+ #   The production file list separated by colons.
+ # @param string $2
+ #   The local file list separated by colons.
+ #
+function _reset_copy() {
+    local status=true
+    oldIFS="$IFS"
+    IFS=':'
+    read -r -a destination <<< "$1"
+    IFS="$oldIFS"
+
+    local i=0
+    local to=''
+    local output=''
+
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`"
+
+    echo "Resetting individual files to match $source_server..."
+    for from in "${destination[@]}"; do
+        [[ "$output" ]] && echo_green "├── $output"
+        [[ "$error" ]] && echo_red "├── $error"
+        from="$config_dir/$source_server/copy/"$i~${from##*/}
+        to=${destination[$i]}
+        local verbose=''
+        has_flag v && verbose=' -v'
+        local to_dir=$(dirname $to)
+
+        # Create the parent directories of the destination if necessary
+        test -d "$to_dir" || mkdir -p "$to_dir"
+
+        cp -f -p$verbose "$from" "$to" || status=false
+        if [[ "$status" == true ]]; then
+            output=${to[@]##*/}
+        else
+            error=${to[@]##*/}
+        fi
+        ((++i))
+    done
+    [[ "$output" ]] && echo_green "└── $output"
+    [[ "$error" ]] && echo_red "└── $error"
+
+    [[ "$status" == true ]] && return 0
+    return 1
 }
 
 ##
  # Reset the local files with fetched prod files
  #
 function reset_files() {
-    if [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
-
+    local status=true
+    if [ "$local_copy_production_to" ] || [ "$local_copy_staging_to" ] || [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
         if has_flag 'v'; then
             echo "This process will reset your local files to match the most recently fetched"
             echo "$source_server files, removing any local files that are not present in the fetched"
@@ -559,10 +683,44 @@ function reset_files() {
             echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
         fi
 
-        [ "$local_files" ] && _reset_files "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex"
-        [ "$local_files2" ] && _reset_files "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2"
-        [ "$local_files3" ] && _reset_files "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3"
+        if [ "$status" == true ] && [ "$source_server" == 'prod' ] && [ "$local_copy_production_to" ]; then
+            _reset_copy "$local_copy_production_to" || status=false
+        fi
+
+        if [ "$status" == true ] && [ "$source_server" == 'staging' ] && [ "$local_copy_staging_to" ]; then
+            _reset_copy "$local_copy_staging_to" || status=false
+        fi
+
+        if [ "$status" == true ] && [ "$local_files" ]; then
+            _reset_files "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
+            if [[ "$status" == true ]]; then
+                echo_green "└── done."
+            else
+                echo_red "└── failed." && status=false
+            fi
+        fi
+
+        if [ "$status" == true ] && [ "$local_files2" ]; then
+            _reset_files "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
+            if [[ "$status" == true ]]; then
+                echo_green "└── done."
+            else
+                echo_red "└── failed." && status=false
+            fi
+        fi
+
+        if [ "$status" == true ] && [ "$local_files3" ]; then
+            _reset_files "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
+            if [[ "$status" == true ]]; then
+                echo_green "└── done."
+            else
+                echo_red "└── failed." && status=false
+            fi
+        fi
     fi
+
+    [[ "$status" == true ]] && return 0
+    return 1
 }
 
 ##
@@ -602,6 +760,8 @@ function _reset_files() {
 
     has_flag 'v' && echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
     eval $cmd
+
+    return $?
 }
 
 ##
@@ -623,6 +783,8 @@ function fetch_db() {
  #
 function _fetch_db_production() {
 
+  # @todo Add status var here with return value.
+
   if [[ ! -d "$config_dir/prod/db" ]]; then
     mkdir "$config_dir/prod/db"
   fi
@@ -630,11 +792,11 @@ function _fetch_db_production() {
   # Cleanup local
   rm $config_dir/prod/db/fetched.sql* >/dev/null 2>&1
 
-  echo_green "Exporting production db..."
+  echo "Exporting production db..."
   local _export_suffix='fetch_db'
   local _local_file="$config_dir/prod/db/fetched.sql.gz"
 
-  ### Support for Pantheon
+  # Support for Pantheon.
   if  [ "$terminus_site" ]; then
     if [ ! "$ld_terminus" ]; then
       end "Missing dependency terminus; please install per https://github.com/pantheon-systems/terminus/blob/master/README.md#installation"
@@ -645,8 +807,7 @@ function _fetch_db_production() {
 
     $ld_terminus auth:login --machine-token=$terminus_machine_token --quiet
 
-    confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?" "noend"
-    if [[ $confirm_result != 'true' ]]; then
+    if ! confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?"; then
       echo "Creating new backup using Terminus..."
       $ld_terminus backup:create $terminus_site.live --element=db
     fi
@@ -654,7 +815,7 @@ function _fetch_db_production() {
     $ld_terminus backup:get $terminus_site.live --element=db --to="$_local_file"
     $ld_terminus auth:logout
 
-  ### Default using SSH and SCP
+  # Default using SSH and SCP.
   else
     load_production_config
     if [ ! "$production_script" ] || [ ! "$production_db_dir" ] || [ ! "$production_server" ] || [ ! "$production_db_name" ]; then
@@ -662,17 +823,29 @@ function _fetch_db_production() {
     fi
 
     show_switch
-    ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix"
+    if has_flag v; then
+        ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix"
+    else
+        ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix" > /dev/null
+    fi
     wait
+    [[ $? -eq 0 ]] && echo_green "├── Database exported and ready to download." || echo_red "Remote export failed."
 
-    echo "Downloading from production..."
     local _remote_file="$production_db_dir/${production_db_name}-$_export_suffix.sql.gz"
-    scp $production_scp_port"$production_server:$_remote_file" "$_local_file"
+    if has_flag v; then
+        scp $production_scp_port"$production_server:$_remote_file" "$_local_file"
+    else
+        scp $production_scp_port"$production_server:$_remote_file" "$_local_file" > /dev/null
+    fi
+    [[ $? -eq 0 ]] && echo_green "└── Database downloaded from production." || echo_red "Download failed."
 
 
     # delete it from remote
-    echo "Deleting the production copy..."
-    ssh $production_server$production_ssh_port "rm $_remote_file"
+    if has_flag v; then
+        ssh $production_server$production_ssh_port "rm $_remote_file"
+    else
+        ssh $production_server$production_ssh_port "rm $_remote_file" > /dev/null
+    fi
     show_switch
 
   fi
@@ -721,26 +894,27 @@ function _fetch_db_staging() {
  # Reset the local database with a previously fetched copy
  #
 function reset_db() {
-  echo "This process will reset your local db to match the most recently fetched"
-  echo "$source_server db, first backing up your local db. To absolutely match $source_server,"
-  echo "consider fetching the database first, however it is slower."
-  echo
-  echo "`tty -s && tput setaf 3`End result: Your local database will match the $source_server database.`tty -s && tput op`"
+    if has_flag v; then
+        echo "This process will reset your local db to match the most recently fetched"
+        echo "$source_server db, first backing up your local db. To absolutely match $source_server,"
+        echo "consider fetching the database first, however it is slower."
+        echo
+        echo "`tty -s && tput setaf 3`End result: Your local database will match the $source_server database.`tty -s && tput op`"
+    fi
+    has_flag 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source_server db"
 
-  has_flag 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source_server db"
+    local _file=($(find $config_dir/$source_server/db -name fetched.sql*))
+    if [[ ${#_file[@]} -gt 1 ]]; then
+        end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/$source_server/db"
+    elif [[ ${#_file[@]} -eq 0 ]]; then
+        end "Please fetch_db first"
+    fi
 
-  local _file=($(find $config_dir/$source_server/db -name fetched.sql*))
-  if [[ ${#_file[@]} -gt 1 ]]; then
-    end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/$source_server/db"
-  elif [[ ${#_file[@]} -eq 0 ]]; then
-    end "Please fetch_db first"
-  fi
 
-  export_db "reset_backup_$now"
+    has_param nobu || export_db "reset_backup_$now" '' 'Creating a backup of the local db...'
 
-  echo "Importing $_file"
-  import_db_silent=true
-  import_db "$_file"
+    import_db_silent=true
+    import_db "$_file"
 }
 
 ##
@@ -837,6 +1011,8 @@ function _current_db_paths() {
  #   Anything to add as a suffix
  # @param string $2
  #   If this is -f then we will just do it.
+ # @param string $3
+ #   A title to use instead of 'Exporting database...'
  #
 function export_db() {
   _current_db_paths $1
@@ -847,8 +1023,7 @@ function export_db() {
   if [ -f "$file" ] && [ "$2" != '-f' ]; then
     if ! has_flag f; then
       confirm_result=false
-      confirm "File $file exists, replace" noend
-      if [ $confirm_result == false ]; then
+      if ! confirm "File $file exists, replace"; then
         echo_red "Cancelled."
         return 1
       fi
@@ -858,8 +1033,7 @@ function export_db() {
   if [ -f "$file_gz" ] && [ "$2" != '-f' ]; then
     if ! has_flag f; then
       confirm_result=false
-      confirm "File $file_gz exists, replace" noend
-      if [ $confirm_result == false ]; then
+      if ! confirm "File $file_gz exists, replace"; then
         echo_red "Cancelled."
         return 1
       fi
@@ -874,7 +1048,7 @@ function export_db() {
     local_db_host="localhost"
   fi
 
-  echo "Exporting database as $file_gz..."
+  ([[ "$3" ]] && echo $3) || echo "Exporting database..."
 
   # Do we need to process a db_tables_no_data file?
   handle_sql_files
@@ -883,18 +1057,27 @@ function export_db() {
   # from some tables or not
   data=$(get_sql_ready_db_tables_data)
   if [[ "$data" ]]; then
-    echo "`tty -s && tput setaf 3`Omitting data from some tables.`tty -s && tput op`"
+    echo_yellow "├── Omitting data from some tables..."
+    # @todo Why are there two dumps?
     $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name --no-data > "$file"
     $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name $data --no-create-info >> "$file"
   else
     $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name -r "$file"
   fi
+  local status=$?
 
-  if [ "$2" == '-f' ]; then
-    $ld_gzip -f "$file"
-  else
-    $ld_gzip "$file"
+  if [[ $status -eq 0 ]]; then
+      if [ "$2" == '-f' ]; then
+        $ld_gzip -f "$file"
+      else
+        $ld_gzip "$file"
+      fi
+      status=$?
   fi
+
+  [[ $status -eq 0 ]] && echo_green "└── Created file: ${file_gz##*/}"
+
+  return $status
 }
 
 ##
@@ -923,66 +1106,83 @@ function import_db() {
   fi
 
   has_flag 'y' || [ $import_db_silent = true ] || confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure"
+  echo "Importing data into $local_db_host:$local_db_name..."
   _drop_tables
-  echo_green "Importing $file to $local_db_host $local_db_name database..."
 
   if [[ ${file##*.} == 'gz' ]]; then
     $ld_gunzip "$file"
     file=${file%.*}
   fi
-  $ld_mysql --defaults-file=$local_db_cnf $local_db_name < $file
+  $ld_mysql --defaults-file=$local_db_cnf $local_db_name < $file && echo_green "└── ${file##*/} has been imported."
+  return $?
 }
 
 ##
  # Drop all local db tables
  #
 function _drop_tables() {
+  local status=true
   tables=$($ld_mysql --defaults-file=$local_db_cnf $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
-  echo_yellow "Dropping all tables from the $local_db_name database..."
-  for t	in $tables; do
+  for t in $tables; do
     has_flag 'v' && echo "├── $t"
-    $ld_mysql --defaults-file=$local_db_cnf $local_db_name -e "drop table $t"
+    $ld_mysql --defaults-file=$local_db_cnf $local_db_name -e "DROP TABLE $t" || status=false
   done
+
+  if [[ "$status" == true ]]; then
+    echo_green "├── All tables dropped from $local_db_name."
+    return 0
+  fi
+
+  echo_red "├── Could not drop all tables."
+  return 1
 }
 
-###
- # Complete an operation and optional exit
+##
+ # Echo an operation complete message.
  #
  # @param string $1
  #   The message to delive
  #
- # @deprecated
- ##
 function complete() {
-  if [ $# -ne 0 ]; then
-    echo $1
-  fi
-  echo '----------------------------------------------------------'
+    echo
+    echo "👍 `tty -s && tput setaf 4`$1`tty -s && tput op`"
+    echo
+
+    return 0
+}
+
+##
+ # Echo an operation did not complete successfully.
+ #
+function did_not_complete() {
+    echo
+    echo_red "🔥🔥🔥 $1"
+    echo
+
+    return 0
 }
 
 ##
  # Accept a y/n confirmation message or end
  #
  # @param string $1
- #   A question to ask
- # @param string $2
- #   A flag, e.g. noend; which means a n will not exit
+ #   A question to ask ending with a '?' mark.  Leave blank for default.
  #
  # @return bool
  #   Sets the value of confirm_result
  #
 function confirm() {
-  echo
-  echo "$1 (y/n)?"
-  read -n 1 a
-  confirm_result=true
-  if [ "$a" != 'y' ]; then
-    confirm_result=false
-    if [ "$2" != 'noend' ]; then
-      end 'CANCELLED!'
-    fi
-  fi
-  echo
+
+ while true; do
+    read -r -n 1 -p "${1:-Continue?} [y/n]: " REPLY
+    case $REPLY in
+      [yY]) echo ; return 0 ;;
+      [nN]) echo ; end 'CANCELLED' ;;
+      # @todo convert this to use the return value.
+#      [nN]) echo ; return 1 ;;
+      *) printf " \033[31m %s \n\033[0m" "invalid input"
+    esac
+  done
 }
 
 ##
@@ -1081,10 +1281,17 @@ function theme_header() {
   echo "`tty -s && tput setaf $color`~~$1~~`tty -s && tput op`"
 }
 
+show_switch_state='remote'
 function show_switch() {
-  echo "`tty -s && tput setaf 6`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`tty -s && tput op`"
-  echo "`tty -s && tput setaf 6`!!              CHANGING SERVERS                !!!`tty -s && tput op`"
-  echo "`tty -s && tput setaf 6`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`tty -s && tput op`"
+    local title="Connecting to remote..."
+    if [[ "$show_switch_state" == 'local' ]]; then
+        title="Remote connection closed."
+        show_switch_state='return'
+    else
+        show_switch_state='local'
+    fi
+    echo_yellow "🌎 $title"
+    return 0
 }
 
 ##
@@ -1116,7 +1323,7 @@ function show_help() {
   fi
 
   theme_help_topic fetch 'pl' 'Fetch production assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations'
+  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup'
   theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations'
 
   if [ "$local_role" != 'staging' ]; then
@@ -1126,7 +1333,7 @@ function show_help() {
   theme_help_topic push 'lst' 'A push all shortcut' '-f files only' '-d database only'
 
   theme_help_topic fetch 'pl' 'Use `staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f staging' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations'
+  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup'
   theme_help_topic pull 'pl' 'Use `staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations'
 
 }
@@ -1162,12 +1369,13 @@ function mysql_check_local() {
  #
  #
 function print_header() {
-  echo "~ $local_title ~ $local_role ~" | tr "[:lower:]" "[:upper:]"
-  if [[ "$motd" ]]; then
     echo
-    echo "`tty -s && tput setaf 5`$motd`tty -s && tput op`"
-  fi
-  echo
+    echo "⭐ ⭐ ⭐  $local_title ⭐  $local_role"
+    if [[ "$motd" ]]; then
+        echo
+        echo "`tty -s && tput setaf 5`$motd`tty -s && tput op`"
+    fi
+    echo
 }
 
 ##
@@ -1207,6 +1415,15 @@ function configtest() {
 
   if [ "$production_server" ]; then
     load_production_config
+  fi
+
+  # Test that production has copy source when local wants it
+  if [[ "$local_copy_production_to" ]]; then
+    if [[ ! "$production_copy_source" ]]; then
+        configtest_return=false
+        warning "Local:local.copy_production_to is expecting to copy individual files from production, however production:local.copy_source is not defined"
+    fi
+
   fi
 
   # Test that local prod connects to a remote environment with a prod role
@@ -1341,15 +1558,15 @@ function configtest() {
   fi
 
   # Connection test to production/config test for production
-  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_root}/.loft_deploy/config' ]"; then
+  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_root}/.loft_deploy/config.yml' ]"; then
     configtest_return=false
-    warning "production_root: ${production_root}/.loft_deploy/config does not exist"
+    warning "production config.yml not found in  ${production_root}/.loft_deploy"
   fi
 
   # Connection test to staging/config test for staging
-  if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_root}/.loft_deploy/config' ]"; then
+  if [ "$staging_root" ] && ! ssh $staging_server$staging_ssh_port "[ -f '${staging_root}/.loft_deploy/config.yml' ]"; then
     configtest_return=false
-    warning "staging_root: ${staging_root}/.loft_deploy/config does not exist"
+    warning "staging config.yml not found in  ${staging_root}/.loft_deploy"
   fi
 
   # Connection test to staging script test for staging
@@ -1398,6 +1615,8 @@ function configtest() {
     echo "`tty -s && tput setaf $color_red`Some tests failed.`tty -s && tput op`"
   fi
 
+  [[ $configtest_return == false ]] && return 1
+  return 0
 }
 
 ##
@@ -1582,19 +1801,26 @@ function handle_post_hook() {
  #
 function _handle_hook() {
     refresh_operation_assets
+    local status=true
 
     for item in "${operation_assets[@]}"; do
         [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${1}_files_${2}")
         [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${1}_db_${2}")
     done
-    hooks=("${hooks[@]}" "${1}_${2}")
-
+    local hooks=("${hooks[@]}" "${1}_${2}")
     for hook_stub in "${hooks[@]}"; do
         local hook="$config_dir/hooks/$hook_stub.sh"
         local basename=$(basename $hook)
-        declare -a hook_args=("$hook_stub" "$production_server" "$staging_server" "" "" "" "" "" "" "" "" "" "$config_dir/hooks/");
-        test -e "$hook" && echo "`tty -s && tput setaf 2`Calling ${2}-hook: $basename`tty -s && tput op`" && source "$hook" "${hook_args[@]}"
+        declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "" "" "" "" "" "" "$config_dir/hooks/");
+        if test -e "$hook"; then
+          echo "🔶 Calling hook: $basename"
+          source "$hook" "${hook_args[@]}"
+          [[ $? -ne 0 ]] && echo_red "└── Hook failed." && status=false
+        fi
     done
+
+    [[ "$status" == true ]] && return 0
+    return 1
 }
 
 ##
@@ -1686,7 +1912,6 @@ function do_clearcache() {
     fi
     load_config
     generate_db_cnf
-    complete "`tty -s && tput setaf $color_green`Caches were cleared.`tty -s && tput op`"
 }
 
 ##
@@ -1703,4 +1928,48 @@ function generate_db_cnf() {
     echo "user=$local_db_user" >> $local_db_cnf
     echo "password=$local_db_pass" >> $local_db_cnf
     chmod 400 $local_db_cnf
+}
+
+##
+ # Remove the value of a $conf variable as found in a Drupal settings file.
+ #
+ # @param string $1
+ #   The filepath to the PHP settings file.
+ # @param string $2
+ #   The key of the $conf variable to empty.
+ #
+ # @return int
+ #   - 0 success
+ #   - 1 file not found
+ #   - 2 replacement in file failed
+ #
+function hooks_empty_drupal_conf () {
+    local file=$1
+    test -f $file || return 1
+    local key=$2
+    sed -i '' "s/[\"']$key[\"'].*$/'$key'] = NULL;/g" $file || return 2
+    echo_green "├── $key removed."
+    return 0
+}
+
+##
+ # Remove the value of a key in an associative array..
+ #
+ # @param string $1
+ #   The filepath to the PHP file.
+ # @param string $2
+ #   The key of the array variable to empty.
+ #
+ # @return int
+ #   - 0 success
+ #   - 1 file not found
+ #   - 2 replacement in file failed
+ #
+function hooks_empty_array_key () {
+    local file=$1
+    test -f $file || return 1
+    local key=$2
+    sed -i '' "s/^.*$key.*$/'$key' => NULL,/g" $file || return 2
+    echo_green "├── $key removed."
+    return 0
 }
