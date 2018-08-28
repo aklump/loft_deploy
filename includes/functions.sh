@@ -1079,6 +1079,9 @@ function _drop_tables() {
 function complete() {
     echo
     echo "👍 `tty -s && tput setaf 4`$1`tty -s && tput op`"
+    echo
+
+    return 0
 }
 
 ##
@@ -1728,13 +1731,13 @@ function handle_post_hook() {
  #
 function _handle_hook() {
     refresh_operation_assets
+    local status=true
 
     for item in "${operation_assets[@]}"; do
         [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${1}_files_${2}")
         [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${1}_db_${2}")
     done
-    hooks=("${hooks[@]}" "${1}_${2}")
-    status=0
+    local hooks=("${hooks[@]}" "${1}_${2}")
     for hook_stub in "${hooks[@]}"; do
         local hook="$config_dir/hooks/$hook_stub.sh"
         local basename=$(basename $hook)
@@ -1742,12 +1745,12 @@ function _handle_hook() {
         if test -e "$hook"; then
           echo "Calling ${2}-hook: $basename"
           source "$hook" "${hook_args[@]}"
-          status=$?
-          [[ $status -ne 0 ]] && echo_red "└── Hook failed."
+          [[ $? -ne 0 ]] && echo_red "└── Hook failed." && status=false
         fi
     done
 
-    return $status
+    [[ "$status" == true ]] && return 0
+    return 1
 }
 
 ##

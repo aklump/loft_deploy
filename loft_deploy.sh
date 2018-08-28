@@ -190,7 +190,11 @@ fi
 print_header
 update_needed
 
-handle_pre_hook $op
+#
+# status will go to false at any time that an operation fails, e.g. hook, or step, etc.
+#
+status=true
+handle_pre_hook $op || status=false
 
 case $op in
   'hook')
@@ -203,14 +207,14 @@ case $op in
     end
     ;;
   'init')
-    init $2
-    handle_post_hook $op
-    end
+    init $2 && handle_post_hook $op && exit 0
+    exit 1
     ;;
   'mysql')
     loft_deploy_mysql "$2"
     handle_post_hook $op
-    complete 'Your mysql session has ended.' && end
+    complete 'Your mysql session has ended.'
+    exit 0
     ;;
   'scp')
     echo_green "scp $production_scp_port$production_server:$production_scp"
@@ -228,26 +232,26 @@ case $op in
     end
     ;;
   'configtest')
-    configtest && handle_post_hook $op && complete 'Test complete.' && end
-    echo_red 'Test complete with failure(s).' && end
+    configtest && handle_post_hook $op && complete 'Test complete.' && exit 0
+    echo_red 'Test complete with failure(s).' && exit 1
     ;;
   'export')
-    export_db $2 && handle_post_hook $op && complete 'Export complete.' && end
-    did_not_complete 'Export failed.' && end
+    export_db $2 && handle_post_hook $op && complete 'Export complete.' && exit 0
+    did_not_complete 'Export failed.' && exit 1
     ;;
   'pull')
-    if has_asset database; then
-      fetch_db
-      reset_db
-      echo 'Database fetched and reset.'
-    fi
-    if has_asset files; then
-      fetch_files
-      reset_files
-      echo 'Files fetched and reset.'
-    fi
-    handle_post_hook $op && complete "Pull complete."
-    end
+    [[ "$status" == true ]] && ( handle_pre_hook fetch || status=false )
+    [[ "$status" == true ]] && ( has_asset database && fetch_db || status=false )
+    [[ "$status" == true ]] && ( has_asset files && fetch_files || status=false )
+    [[ "$status" == true ]] && ( handle_post_hook fetch || status=false )
+
+    [[ "$status" == true ]] && ( handle_pre_hook reset || status=false )
+    [[ "$status" == true ]] && ( has_asset database && reset_db || status=false )
+    [[ "$status" == true ]] && ( has_asset files && reset_files || status=false )
+    [[ "$status" == true ]] && ( handle_post_hook reset || status=false )
+
+    [[ "$status" == true ]] && ( handle_post_hook $op && complete "Pull complete." ) && exit 0
+    did_not_complete "Pull failed." && exit 1
     ;;
   'push')
     if has_asset database; then
@@ -273,26 +277,19 @@ case $op in
     if has_asset files; then
       fetch_files || status=false
     fi
-    [[ "$status" == true ]] && (handle_post_hook $op || status=false)
-    [[ "$status" == true ]] && complete "Fetch complete." && end
-    did_not_complete "Fetch failed." && end
+    [[ "$status" == true ]] && ( handle_post_hook $op || status=false )
+    [[ "$status" == true ]] && ( complete "Fetch complete." && exit 0 )
+    did_not_complete "Fetch failed." && exit 1
     ;;
   'reset')
-    if has_asset database; then
-      reset_db
-      echo "Local database has been reset to match $source_server."
-    fi
-    if has_asset files; then
-      reset_files
-      echo "Local files reset to match $source_server."
-    fi
-    handle_post_hook $op && complete "Reset complete."
-    end
+    [[ "$status" == true ]] && ( has_asset database && ( reset_db && echo "Local database has been reset to match $source_server." ) || status=false )
+    [[ "$status" == true ]] && ( has_asset files && ( reset_files && echo "Local files has been reset to match $source_server." ) || status=false )
+    [[ "$status" == true ]] && ( handle_post_hook $op && complete "Reset complete." ) && exit 0
+    did_not_complete "Reset failed." && exit 1
     ;;
   'import')
-    import_db $2
-    handle_post_hook $op && complete "Import complete."
-    end
+    [[ "$status" == true ]] && ( import_db $2 && handle_post_hook $op && complete "Import complete." ) && exit 0
+    did_not_complete "Import failed." && exit 1
     ;;
   'help')
     show_help
@@ -321,4 +318,4 @@ case $op in
 esac
 
 echo_red "loft_deploy $op is an unknown operation."
-end
+exit 1
