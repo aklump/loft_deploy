@@ -273,7 +273,7 @@ case $op in
     if has_asset files; then
       fetch_files || status=false
     fi
-    [[ "$status" == true ]] && handle_post_hook $op || status=false
+    [[ "$status" == true ]] && (handle_post_hook $op || status=false)
     [[ "$status" == true ]] && complete "Fetch complete." && end
     did_not_complete "Fetch failed." && end
     ;;

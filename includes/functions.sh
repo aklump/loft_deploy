@@ -525,6 +525,7 @@ function _fetch_dir() {
 
   if has_flag 'v'; then
     echo $cmd
+    echo
     eval $cmd
     return $?
   fi
@@ -557,7 +558,7 @@ function _fetch_copy() {
 
     local i=0
     local to=''
-    (test ! -d "$config_dir/$source_server/copy" || rm -r "$config_dir/$source_server/copy") && mkdir -p "$config_dir/$source_server/copy"
+    (test ! -d "$config_dir/$source_server/copy" || rm -rf "$config_dir/$source_server/copy") && mkdir -p "$config_dir/$source_server/copy"
     local output=''
     local error=''
     for from in "${source[@]}"; do
@@ -626,13 +627,20 @@ function _reset_copy() {
     local to=''
     local output=''
 
-    echo "Reseting files to match $source_server..."
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`"
+
+    echo "Resetting individual files to match $source_server..."
     for from in "${destination[@]}"; do
         [[ "$output" ]] && echo_green "├── $output"
         from="$config_dir/$source_server/copy/"$i~${from##*/}
         to=${destination[$i]}
         local verbose=''
         has_flag v && verbose=' -v'
+        local to_dir=$(dirname $to)
+
+        # Create the parent directories of the destination if necessary
+        test -d "$to_dir" || mkdir -p "$to_dir"
+
         cp -p$verbose "$from" "$to"
         test -f "$to" && output=${to[@]##*/}
         ((++i))
