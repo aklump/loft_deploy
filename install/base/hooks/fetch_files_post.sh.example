@@ -4,7 +4,7 @@
 # This file shows how to remove sensitive info from files.
 #
 
-file="$5/1~settings.local.prod.php"
+file="$5/1~settings.local.$6.php"
 
 # Remove $database['password'].
 hooks_empty_array_key $file 'password' || return 1

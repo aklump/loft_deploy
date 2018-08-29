@@ -1802,12 +1802,13 @@ function handle_post_hook() {
 function _handle_hook() {
     refresh_operation_assets
     local status=true
+    declare -a local hooks=();
 
     for item in "${operation_assets[@]}"; do
         [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${1}_files_${2}")
         [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${1}_db_${2}")
     done
-    local hooks=("${hooks[@]}" "${1}_${2}")
+
     for hook_stub in "${hooks[@]}"; do
         local hook="$config_dir/hooks/$hook_stub.sh"
         local basename=$(basename $hook)
