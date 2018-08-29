@@ -249,10 +249,9 @@ case $op in
     if [[ "$status" == true ]] && has_asset database; then fetch_db || status=false; fi
     if [[ "$status" == true ]] && has_asset files; then fetch_files || status=false; fi
     if [[ "$status" == true ]]; then handle_post_hook fetch || status=false; fi
-
     if [[ "$status" == true ]]; then handle_pre_hook reset || status=false; fi
-    if [[ "$status" == true ]]; then has_asset database && reset_db || status=false; fi
-    if [[ "$status" == true ]]; then has_asset files && reset_files || status=false; fi
+    if [[ "$status" == true ]] && has_asset database; then reset_db || status=false; fi
+    if [[ "$status" == true ]] && has_asset files ; then reset_files || status=false; fi
     if [[ "$status" == true ]]; then handle_post_hook reset || status=false; fi
 
     [[ "$status" == true ]] && handle_post_hook $op && complete "Pull complete." && exit 0
