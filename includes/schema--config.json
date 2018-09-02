@@ -16,6 +16,10 @@
                     "type": "array",
                     "uniqueItems": false
                 },
+                "copy_local_to": {
+                    "type": "array",
+                    "uniqueItems": true
+                },
                 "copy_production_to": {
                     "type": "array",
                     "uniqueItems": true
@@ -64,7 +68,7 @@
                         "user": {
                             "type": "string"
                         },
-                        "ip": {
+                        "host": {
                             "type": "string"
                         },
                         "port": {
@@ -79,7 +83,7 @@
                         "config",
                         "script",
                         "user",
-                        "ip"
+                        "host"
                     ]
                 },
                 {

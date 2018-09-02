@@ -106,6 +106,7 @@ try {
         break;
 
       case 'copy_source':
+      case 'copy_local_to':
       case 'copy_production_to':
       case 'copy_staging_to':
         $data['local_' . $key] = implode(':', array_map(function ($path) use ($local_path) {
@@ -140,10 +141,10 @@ try {
           break;
 
         case 'user':
-          $data[$server . '_server'] = $item . '@' . $config[$server]['ip'];
+          $data[$server . '_server'] = $item . '@' . $config[$server]['host'];
           break;
 
-        case 'ip':
+        case 'host':
           break;
 
         case 'files':
