@@ -623,9 +623,7 @@ function fetch_files() {
  # Copy files from the stage to the correct local location.
  #
  # @param string $1
- #   The production file list separated by colons.
- # @param string $2
- #   The local file list separated by colons.
+ #   The destination file list separated by colons.
  #
 function _reset_copy() {
     local status=true
@@ -668,12 +666,62 @@ function _reset_copy() {
     return 1
 }
 
+
+##
+ # Copy local from point a to point b
+ #
+ # @param string $1
+ #   The source file list separated by colons.
+ # @param string $1
+ #   The destination file list separated by colons.
+ #
+function _reset_local_copy() {
+    local status=true
+    oldIFS="$IFS"
+    IFS=':'
+    read -r -a source <<< "$1"
+    read -r -a destination <<< "$2"
+    IFS="$oldIFS"
+
+    local i=0
+    local to=''
+    local output=''
+
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`"
+
+    echo "Resetting individual files to match $source_server..."
+    for from in "${source[@]}"; do
+        [[ "$output" ]] && echo_green "├── $output"
+        [[ "$error" ]] && echo_red "├── $error"
+        to=${destination[$i]}
+        local verbose=''
+        has_flag v && verbose=' -v'
+        local to_dir=$(dirname $to)
+
+        # Create the parent directories of the destination if necessary
+        test -d "$to_dir" || mkdir -p "$to_dir"
+
+        cp -f -p$verbose "$from" "$to" || status=false
+        if [[ "$status" == true ]]; then
+            output=${to[@]##*/}
+        else
+            error=${to[@]##*/}
+        fi
+        ((++i))
+    done
+    [[ "$output" ]] && echo_green "└── $output"
+    [[ "$error" ]] && echo_red "└── $error"
+
+    [[ "$status" == true ]] && return 0
+    return 1
+}
+
 ##
  # Reset the local files with fetched prod files
  #
 function reset_files() {
     local status=true
-    if [ "$local_copy_production_to" ] || [ "$local_copy_staging_to" ] || [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
+    if [ "$local_copy_production_to" ] || [ "$local_copy_local_to" ] || [ "$local_copy_staging_to" ] || [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
         if has_flag 'v'; then
             echo "This process will reset your local files to match the most recently fetched"
             echo "$source_server files, removing any local files that are not present in the fetched"
@@ -682,6 +730,12 @@ function reset_files() {
             echo
             echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
         fi
+
+        if [ "$status" == true ] && [ "$local_copy_local_to" ]; then
+            _reset_local_copy "$local_copy_source" "$local_copy_local_to" || status=false
+        fi
+
+        has_param local && return 0
 
         if [ "$status" == true ] && [ "$source_server" == 'prod' ] && [ "$local_copy_production_to" ]; then
             _reset_copy "$local_copy_production_to" || status=false
@@ -1323,7 +1377,7 @@ function show_help() {
   fi
 
   theme_help_topic fetch 'pl' 'Fetch production assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup'
+  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup' '--local skip remote operations'
   theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations'
 
   if [ "$local_role" != 'staging' ]; then
@@ -1333,7 +1387,7 @@ function show_help() {
   theme_help_topic push 'lst' 'A push all shortcut' '-f files only' '-d database only'
 
   theme_help_topic fetch 'pl' 'Use `staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f staging' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup'
+  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup' '--local skip remote operations'
   theme_help_topic pull 'pl' 'Use `staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations'
 
 }
@@ -1802,12 +1856,13 @@ function handle_post_hook() {
 function _handle_hook() {
     refresh_operation_assets
     local status=true
+    declare -a local hooks=();
 
     for item in "${operation_assets[@]}"; do
         [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${1}_files_${2}")
         [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${1}_db_${2}")
     done
-    local hooks=("${hooks[@]}" "${1}_${2}")
+
     for hook_stub in "${hooks[@]}"; do
         local hook="$config_dir/hooks/$hook_stub.sh"
         local basename=$(basename $hook)
@@ -1964,6 +2019,14 @@ function hooks_empty_drupal_conf () {
  #   - 0 success
  #   - 1 file not found
  #   - 2 replacement in file failed
+ #
+ # To use this on an associative array such as:
+ #
+ #   $config['reroute_email.settings']['address'] = 'aklump@mbp-aaron.local';
+ #
+ # Call in this manner:
+ #
+ #   hooks_empty_drupal_conf $file "reroute_email.settings'\]\['address" || return 1
  #
 function hooks_empty_array_key () {
     local file=$1

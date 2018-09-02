@@ -3,10 +3,22 @@ local:
   location: ITLS
   basepath: /path/to/dev/branch/site
   role: dev
+  copy_source:
+  - web/.htaccess
+  - web/sites/default/files/settings.local.php
+  - web/sites/default/files/settings.local.php
+  copy_local_to:
+  - install/default/.htaccess.dev
+  - install/default/settings.local.dev.php
+  - private/default/secrets.dev.php
   copy_production_to:
-  - install/.htaccess.prod
+  - install/default/.htaccess.prod
+  - install/default/settings.local.prod.php
+  - private/default/secrets.prod.php
   copy_staging_to:
-  - install/.htaccess.stage
+  - install/default/.htaccess.stage
+  - install/default/settings.local.stage.php
+  - private/default/secrets.stage.php
   files:
   - web/sites/default/files
   - private/default/files
@@ -25,5 +37,5 @@ staging:
   config: /var/www/some-site/.loft_deploy
   script: /usr/local/bin/loft_deploy
   user: 398e
-  ip: NNN.NNN.NNN.NNN
+  host: NNN.NNN.NNN.NNN
 

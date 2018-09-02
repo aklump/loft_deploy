@@ -108,7 +108,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.14.7
+ld_version=0.14.8
 
 # theme color definitions
 color_red=1
@@ -249,10 +249,9 @@ case $op in
     if [[ "$status" == true ]] && has_asset database; then fetch_db || status=false; fi
     if [[ "$status" == true ]] && has_asset files; then fetch_files || status=false; fi
     if [[ "$status" == true ]]; then handle_post_hook fetch || status=false; fi
-
     if [[ "$status" == true ]]; then handle_pre_hook reset || status=false; fi
-    if [[ "$status" == true ]]; then has_asset database && reset_db || status=false; fi
-    if [[ "$status" == true ]]; then has_asset files && reset_files || status=false; fi
+    if [[ "$status" == true ]] && has_asset database; then reset_db || status=false; fi
+    if [[ "$status" == true ]] && has_asset files ; then reset_files || status=false; fi
     if [[ "$status" == true ]]; then handle_post_hook reset || status=false; fi
 
     [[ "$status" == true ]] && handle_post_hook $op && complete "Pull complete." && exit 0
