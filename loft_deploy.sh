@@ -198,22 +198,29 @@ handle_pre_hook $op || status=false
 
 case $op in
   'init')
-    [[ "$status" == true ]] && init ${SCRIPT_ARGS[1]} && handle_post_hook $op && exit 0
+    [[ "$status" == true ]] && init ${SCRIPT_ARGS[1]} || status=false
+    handle_post_hook $op $status && exit 0
     exit 1
     ;;
 
   'configtest')
-    [[ "$status" == true ]] && configtest && handle_post_hook $op && complete 'Test complete.' && exit 0
+    [[ "$status" == true ]] && configtest || status=false
+    handle_post_hook $op $status || status=false
+    [[ "$status" == true ]] && complete 'Test complete.' && exit 0
     did_not_complete 'Test complete with failure(s).' && exit 1
     ;;
 
   'import')
-    [[ "$status" == true ]] && import_db ${SCRIPT_ARGS[1]} && handle_post_hook $op && complete "Import complete." && exit 0
+    [[ "$status" == true ]] && import_db ${SCRIPT_ARGS[1]} || status=false
+    handle_post_hook $op $status || status=false
+    [[ "$status" == true ]] && complete "Import complete." && exit 0
     did_not_complete "Import failed." && exit 1
     ;;
 
   'export')
-    [[ "$status" == true ]] && export_db ${SCRIPT_ARGS[1]} && handle_post_hook $op && complete 'Export complete.' && exit 0
+    [[ "$status" == true ]] && export_db ${SCRIPT_ARGS[1]} || status=false
+    handle_post_hook $op $status || status=false
+    [[ "$status" == true ]] && complete 'Export complete.' && exit 0
     did_not_complete 'Export failed.' && exit 1
     ;;
 
@@ -229,7 +236,8 @@ case $op in
     if [[ "$status" == true ]] && has_asset files; then
       fetch_files || status=false
     fi
-    [[ "$status" == true ]] && handle_post_hook $op && complete "Fetch complete." && exit 0
+    handle_post_hook $op $status || status=false
+    [[ "$status" == true ]] && complete "Fetch complete." && exit 0
     did_not_complete "Fetch failed." && exit 1
     ;;
 
@@ -240,12 +248,15 @@ case $op in
     if [[ "$status" == true ]] && has_asset files; then
         reset_files && echo "Local files has been reset to match $source_server." || status=false
     fi
-    [[ "$status" == true ]] && handle_post_hook $op && complete "Reset complete." && exit 0
+    handle_post_hook $op $status || status=false
+    [[ "$status" == true ]] && complete "Reset complete." && exit 0
     did_not_complete "Reset failed." && exit 1
     ;;
 
   'pull')
-    [[ "$status" == true ]] && do_pull && handle_post_hook $op && complete "Pull complete." && exit 0
+    [[ "$status" == true ]] && do_pull || status=false
+    handle_post_hook $op $status || status=false
+    [[ "$status" == true ]] && complete "Pull complete." && exit 0
     did_not_complete "Pull failed." && exit 1
     ;;
 
@@ -256,23 +267,25 @@ case $op in
     if [[ "$status" == true ]] && has_asset files; then
       push_files || status=false
     fi
-    [[ "$status" == true ]] && handle_post_hook $op && complete "Push complete." && exit 0
+
+    handle_post_hook $op $status || status=false
+    [[ "$status" == true ]] && complete "Push complete." && exit 0
     did_not_complete "Push failed." && exit 1
     ;;
 
   'hook')
     if [ "${SCRIPT_ARGS[1]}" ]; then
-      handle_pre_hook "${SCRIPT_ARGS[1]}"
-      handle_post_hook "${SCRIPT_ARGS[1]}"
+      handle_pre_hook "${SCRIPT_ARGS[1]}" $status || status=false
+      handle_post_hook "${SCRIPT_ARGS[1]}" $status || status=false
     else
-      echo "`tty -s && tput setaf 1`What type of hook? e.g. ldp hook reset`tty -s && tput op`"
+        echo_red "What type of hook? e.g. ldp hook reset"
     fi
     end
     ;;
 
   'mysql')
-    loft_deploy_mysql "${SCRIPT_ARGS[1]}"
-    handle_post_hook $op
+    loft_deploy_mysql "${SCRIPT_ARGS[1]}" || status=false
+    handle_post_hook $op || status=false
     complete 'Your mysql session has ended.'
     exit 0
     ;;

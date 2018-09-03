@@ -82,5 +82,6 @@ You can add mysql commands against the local environment in a hook using `loft_d
 | $4 | local basepath as defined in config.yml  |
 | $5 | path to the copy stage directory |
 | $6 | source server | prod, staging |
+| $7 | operation status | true or false |
 | ${13} | path to hooks dir | /do/re/hooks  |
 

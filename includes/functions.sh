@@ -1916,10 +1916,13 @@ function echo_red() {
 ##
  # Handle a pre hook for an op.
  #
- # @param string $1 The operation being called, e.g. reset, fetch, pull
+ # @param string $1
+ #   The operation being called, e.g. reset, fetch, pull
+ # @param bool $2
+ #   The return status of the operation.
  #
 function handle_pre_hook() {
-    _handle_hook $1 pre
+    _handle_hook $1 pre $2
 }
 
 ##
@@ -1928,7 +1931,7 @@ function handle_pre_hook() {
  # @param string $1 The operation being called, e.g. reset, fetch, pull
  #
 function handle_post_hook() {
-    _handle_hook $1 post
+    _handle_hook $1 post $2
 }
 
 ##
@@ -1939,18 +1942,21 @@ function handle_post_hook() {
  #
 function _handle_hook() {
     refresh_operation_assets
+    local op=$1
+    local op_status=$3
+    local timing=$2
     local status=true
     declare -a local hooks=();
 
     for item in "${operation_assets[@]}"; do
-        [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${1}_files_${2}")
-        [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${1}_db_${2}")
+        [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${op}_files_${timing}")
+        [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${op}_db_${timing}")
     done
 
     for hook_stub in "${hooks[@]}"; do
         local hook="$config_dir/hooks/$hook_stub.sh"
         local basename=$(basename $hook)
-        declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "" "" "" "" "" "" "$config_dir/hooks/");
+        declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "$op_status" "" "" "" "" "" "$config_dir/hooks/");
         if test -e "$hook"; then
           echo "🔶 Calling hook: $basename"
           source "$hook" "${hook_args[@]}"
