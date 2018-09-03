@@ -486,6 +486,30 @@ function _upsearch () {
 }
 
 ##
+ # Process the pull operation.
+ #
+function do_pull() {
+    local status=true
+    load_production_config
+
+    if [ ! "$production_server" ]; then
+        echo_red "You cannot pull unless you define a production environment." && return 1
+    fi
+
+    if [[ "$status" == true ]]; then handle_pre_hook fetch || status=false; fi
+    if [[ "$status" == true ]] && has_asset database; then fetch_db || status=false; fi
+    if [[ "$status" == true ]] && has_asset files; then fetch_files || status=false; fi
+    if [[ "$status" == true ]]; then handle_post_hook fetch || status=false; fi
+    if [[ "$status" == true ]]; then handle_pre_hook reset || status=false; fi
+    if [[ "$status" == true ]] && has_asset database; then reset_db || status=false; fi
+    if [[ "$status" == true ]] && has_asset files ; then reset_files || status=false; fi
+    if [[ "$status" == true ]]; then handle_post_hook reset || status=false; fi
+
+    [[ "$status" == true ]] || return 1
+    return 0
+}
+
+##
  # Helper function to fetch remote files to local.
  #
 function _fetch_dir() {
