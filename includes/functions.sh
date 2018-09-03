@@ -1219,16 +1219,23 @@ function export_db() {
  #
 import_db_silent=false
 function import_db() {
-  _current_db_paths $1
 
   if [[ ! "$1" ]]; then
-    echo "`tty -s && tput setaf 1`Filename of db dump required.`tty -s && tput op`"
-    end
+    echo_red "Filename of db dump required." || return 1
   fi
 
-  if file=$1 && check1=$file && [ ! -f $1 ] && file=$current_db_dir$current_db_filename && check2=$file && [ ! -f $file ] && file=$file.gz && check3=$file && [ ! -f $file ]; then
+  _current_db_paths $1
 
-    echo "File not found as:"
+  local check1=$1
+  local check2=$current_db_dir$current_db_filename
+  local check3=$current_db_dir$current_db_filename.gz
+
+  [[ ! "$file" ]] && [ -f $check1 ] && file=$check1
+  [[ ! "$file" ]] && [ -f $check2 ] && file=$check2
+  [[ ! "$file" ]] && [ -f $check3 ] && file=$check3
+
+  if [[ ! "$file" ]]; then
+    echo "File not found as one of:"
     echo $check1;
     echo $check2;
     echo $check3;
@@ -1237,10 +1244,10 @@ function import_db() {
 
   has_flag 'y' || [ $import_db_silent = true ] || confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure"
   echo "Importing data into $local_db_host:$local_db_name..."
-  _drop_tables
+  _drop_tables || return 1
 
-  if [[ ${file##*.} == 'gz' ]]; then
-    $ld_gunzip "$file"
+  if [[ "${file##*.}" == 'gz' ]]; then
+    $ld_gunzip "$file" || return 1
     file=${file%.*}
   fi
   $ld_mysql --defaults-file=$local_db_cnf $local_db_name < $file && echo_green "└── ${file##*/} has been imported."
