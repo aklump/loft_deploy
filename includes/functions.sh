@@ -510,334 +510,6 @@ function do_pull() {
 }
 
 ##
- # Helper function to fetch remote files to local.
- #
-function _fetch_dir() {
-  local status=true
-  local title="$1"
-  local server_remote="$2"
-  local port_remote="$3"
-  local path_remote="$4"
-  local path_local="$5"
-  local path_stash="$6"
-  local exclude_file="$7"
-  local exclude="$8"
-
-  if [ ! "$path_remote" ]; then
-    end "\$path_remote cannot be blank, try '.' instead."
-  fi
-  if [ ! "$path_local" ]; then
-    end "\local_files cannot be blank, try '.' instead."
-  fi
-  if [ "$path_remote" != '.' ] && [ "$path_remote" == "$path_local" ]; then
-    end "\$path_remote and \$path_local should not be the same path."
-  fi
-
-  echo "Fetching $title directory contents to local cache..."
-
-  # rsync exclude file indication to user....
-  if has_flag v && test -e "$exclude_file"; then
-    excludes="$(cat $exclude_file)"
-    echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
-    echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
-  fi
-
-  if [[ "$port_remote" ]]; then
-    cmd="$ld_remote_rsync_cmd -e \"ssh -p $port_remote\" \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
-  else
-    cmd="$ld_remote_rsync_cmd \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
-  fi
-
-  has_flag v && echo $cmd && echo
-
-  eval $cmd >/dev/null 2>&1
-  [[ $? -ne 0 ]] && status=false
-
-  [[ $status == 'true' ]] && echo_green "└── complete." && return 0
-  echo_red "└── failed to fetch." && return 1;
-}
-
-##
- # Handle the copy of a colon separted list of files from remote server to the config stage.
- #
- # @param string $1
- #   The production file list separated by colons.
- # @param string $2
- #   The local file list separated by colons.
- #
-function _fetch_copy() {
-    local title=$1
-    local server=$2
-    oldIFS="$IFS"
-    IFS=':'
-
-    echo "Fetching distinct files from $source_server to local cache..."
-
-    [[ "$3" == null ]] && return 1
-    [[ "$4" == null ]] && return 1
-    read -r -a source <<< "$3"
-    read -r -a destination <<< "$4"
-    IFS="$oldIFS"
-
-    local i=0
-    local to=''
-    (test ! -d "$config_dir/$source_server/copy" || rm -rf "$config_dir/$source_server/copy") && mkdir -p "$config_dir/$source_server/copy"
-    local output=''
-    local error=''
-    for from in "${source[@]}"; do
-        [[ "$output" ]] && echo_green "├── $output"
-        [[ "$error" ]] && echo_green "├── $error"
-        to=$config_dir/$source_server/copy/$i~${destination[$i]##*/}
-        if [[ ! "$to" ]]; then
-            error="No local path configured for: ${from##*/}"
-            output=''
-        else
-            local verbose=''
-            has_flag v && verbose=' -p -v' && echo_yellow "$server:$from $to"
-            $($ld_scp $verbose "$server:$from" "$to")
-            test -f "$to" && output="${from##*/}"
-        fi
-        ((++i))
-    done
-    [[ "$output" ]] && echo_green "└── $output"
-    [[ "$error" ]] && echo_red "└── $error failed"
-    return 0
-}
-
-##
- # Fetch files from the appropriate server
- #
-function fetch_files() {
-    local status=false
-    case $source_server in
-        'prod' )
-            status=true
-            load_production_config
-            if [ "$local_copy_production_to" ]; then
-                _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || status=false
-            fi
-            if [[ "$status" == true ]] && [ "$local_files" ]; then
-                _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
-            fi
-            if [[ "$status" == true ]] && [ "$local_files2" ]; then
-                _fetch_dir 'files2/*' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
-            fi
-            if [[ "$status" == true ]] && [ "$local_files3" ]; then
-                _fetch_dir 'files3/*' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
-            fi
-        ;;
-#        'staging' )
-#            result=true
-#            load_staging_config
-#            [ "$local_copy_staging_to" ] && _fetch_copy "Staging" "$staging_server" "$staging_copy_source" "$local_copy_staging_to" || echo_red "└── failed.")
-#            [ "$local_files" ] && _fetch_dir 'Staging:files' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$config_dir/staging/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done." || echo_red "└── failed." && result=false ))
-#            [ "$local_files2" ] && _fetch_dir 'Staging:files2' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$config_dir/staging/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done." || echo_red "└── failed." && result=false ))
-#            [ "$local_files3" ] && _fetch_dir 'Staging:files3' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$config_dir/staging/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done." || echo_red "└── failed." && result=false ))
-#        ;;
-    esac
-
-    [[ "$status" == true ]] && echo $now > "$config_dir/$source_server/cached_files" && return 0
-    return 1
-}
-
-##
- # Copy files from the stage to the correct local location.
- #
- # @param string $1
- #   The destination file list separated by colons.
- #
-function _reset_copy() {
-    local status=true
-    oldIFS="$IFS"
-    IFS=':'
-    read -r -a destination <<< "$1"
-    IFS="$oldIFS"
-
-    local i=0
-    local to=''
-    local output=''
-
-    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`"
-
-    echo "Resetting individual files to match $source_server..."
-    for from in "${destination[@]}"; do
-        [[ "$output" ]] && echo_green "├── $output"
-        [[ "$error" ]] && echo_red "├── $error"
-        from="$config_dir/$source_server/copy/"$i~${from##*/}
-        to=${destination[$i]}
-        local verbose=''
-        has_flag v && verbose=' -v'
-        local to_dir=$(dirname $to)
-
-        # Create the parent directories of the destination if necessary
-        test -d "$to_dir" || mkdir -p "$to_dir"
-
-        cp -f -p$verbose "$from" "$to" || status=false
-        if [[ "$status" == true ]]; then
-            output=${to[@]##*/}
-        else
-            error=${to[@]##*/}
-        fi
-        ((++i))
-    done
-    [[ "$output" ]] && echo_green "└── $output"
-    [[ "$error" ]] && echo_red "└── $error"
-
-    [[ "$status" == true ]] && return 0
-    return 1
-}
-
-
-##
- # Copy local from point a to point b
- #
- # @param string $1
- #   The source file list separated by colons.
- # @param string $1
- #   The destination file list separated by colons.
- #
-function _reset_local_copy() {
-    local status=true
-    oldIFS="$IFS"
-    IFS=':'
-    read -r -a source <<< "$1"
-    read -r -a destination <<< "$2"
-    IFS="$oldIFS"
-
-    local i=0
-    local to=''
-    local output=''
-
-    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`"
-
-    echo "Resetting individual files to match $source_server..."
-    for from in "${source[@]}"; do
-        [[ "$output" ]] && echo_green "├── $output"
-        [[ "$error" ]] && echo_red "├── $error"
-        to=${destination[$i]}
-        local verbose=''
-        has_flag v && verbose=' -v'
-        local to_dir=$(dirname $to)
-
-        # Create the parent directories of the destination if necessary
-        test -d "$to_dir" || mkdir -p "$to_dir"
-
-        cp -f -p$verbose "$from" "$to" || status=false
-        if [[ "$status" == true ]]; then
-            output=${to[@]##*/}
-        else
-            error=${to[@]##*/}
-        fi
-        ((++i))
-    done
-    [[ "$output" ]] && echo_green "└── $output"
-    [[ "$error" ]] && echo_red "└── $error"
-
-    [[ "$status" == true ]] && return 0
-    return 1
-}
-
-##
- # Reset the local files with fetched prod files
- #
-function reset_files() {
-    local status=true
-    if [ "$local_copy_production_to" ] || [ "$local_copy_local_to" ] || [ "$local_copy_staging_to" ] || [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
-        if has_flag v; then
-            echo "This process will reset your local files to match the most recently fetched"
-            echo "$source_server files, removing any local files that are not present in the fetched"
-            echo "set. You will be given a preview of what will happen first. To absolutely"
-            echo "match $source_server as of this moment in time, consider fetching first, however it is slower."
-            echo
-            echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
-        fi
-
-        if [ "$status" == true ] && [ "$local_copy_local_to" ]; then
-            _reset_local_copy "$local_copy_source" "$local_copy_local_to" || status=false
-        fi
-
-        has_param local && return 0
-
-        if [ "$status" == true ] && [ "$source_server" == 'prod' ] && [ "$local_copy_production_to" ]; then
-            _reset_copy "$local_copy_production_to" || status=false
-        fi
-
-        if [ "$status" == true ] && [ "$source_server" == 'staging' ] && [ "$local_copy_staging_to" ]; then
-            _reset_copy "$local_copy_staging_to" || status=false
-        fi
-
-        if [ "$status" == true ] && [ "$local_files" ]; then
-            _reset_dir "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
-            if [[ "$status" == true ]]; then
-                echo_green "└── done."
-            else
-                echo_red "└── failed." && status=false
-            fi
-        fi
-
-        if [ "$status" == true ] && [ "$local_files2" ]; then
-            _reset_dir "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
-            if [[ "$status" == true ]]; then
-                echo_green "└── done."
-            else
-                echo_red "└── failed." && status=false
-            fi
-        fi
-
-        if [ "$status" == true ] && [ "$local_files3" ]; then
-            _reset_dir "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
-            if [[ "$status" == true ]]; then
-                echo_green "└── done."
-            else
-                echo_red "└── failed." && status=false
-            fi
-        fi
-    fi
-
-    [[ "$status" == true ]] && return 0
-    return 1
-}
-
-##
- # Helper function to reset a single files directory.
- #
-function _reset_dir() {
-    local title="$1"
-    local path_stash="$2"
-    local path_local="$3"
-    local exclude_file="$4"
-    local exclude="$5"
-
-    if [ ! -d $path_stash ]; then
-        echo_red "Please fetch files first." && return 1
-    fi
-
-    echo "Reset local files pulling from stage: $title..."
-
-    # rsync exclude file indication to user....
-    if has_flag v && test -e "$exclude_file"; then
-        excludes="$(cat $exclude_file)"
-        echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
-        echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
-        echo
-        echo "`tty -s && tput setaf 2`Here is a preview:`tty -s && tput op`"
-        cmd="rsync -av $path_stash/ $path_local/ --delete $exclude"
-        eval "$cmd --dry-run"
-    else
-        cmd="rsync -a $path_stash/ $path_local/ --delete $exclude"
-    fi
-
-    # Have to exclude here because there might be some lingering files in the cache
-    # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
-    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local \"$title\", are you sure?`tty -s && tput op`"
-
-    has_flag v && echo $cmd && echo
-    eval $cmd
-
-    return $?
-}
-
-##
  # Fetch the remote db and import it to local
  #
 function fetch_db() {
@@ -964,6 +636,334 @@ function _fetch_db_staging() {
 }
 
 ##
+ # Fetch files from the appropriate server
+ #
+function fetch_files() {
+    local status=false
+    case $source_server in
+        'prod' )
+            status=true
+            load_production_config
+            if [ "$local_copy_production_to" ]; then
+                _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || status=false
+            fi
+            if [[ "$status" == true ]] && [ "$local_files" ]; then
+                _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
+            fi
+            if [[ "$status" == true ]] && [ "$local_files2" ]; then
+                _fetch_dir 'files2/*' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
+            fi
+            if [[ "$status" == true ]] && [ "$local_files3" ]; then
+                _fetch_dir 'files3/*' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
+            fi
+        ;;
+#        'staging' )
+#            result=true
+#            load_staging_config
+#            [ "$local_copy_staging_to" ] && _fetch_copy "Staging" "$staging_server" "$staging_copy_source" "$local_copy_staging_to" || echo_red "└── failed.")
+#            [ "$local_files" ] && _fetch_dir 'Staging:files' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$config_dir/staging/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done." || echo_red "└── failed." && result=false ))
+#            [ "$local_files2" ] && _fetch_dir 'Staging:files2' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$config_dir/staging/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done." || echo_red "└── failed." && result=false ))
+#            [ "$local_files3" ] && _fetch_dir 'Staging:files3' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$config_dir/staging/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done." || echo_red "└── failed." && result=false ))
+#        ;;
+    esac
+
+    [[ "$status" == true ]] && echo $now > "$config_dir/$source_server/cached_files" && return 0
+    return 1
+}
+
+##
+ # Handle the copy of a colon separted list of files from remote server to the config stage.
+ #
+ # @param string $1
+ #   The production file list separated by colons.
+ # @param string $2
+ #   The local file list separated by colons.
+ #
+function _fetch_copy() {
+    local title=$1
+    local server=$2
+    oldIFS="$IFS"
+    IFS=':'
+
+    echo "Fetching distinct files from $source_server to local cache..."
+
+    [[ "$3" == null ]] && return 1
+    [[ "$4" == null ]] && return 1
+    read -r -a source <<< "$3"
+    read -r -a destination <<< "$4"
+    IFS="$oldIFS"
+
+    local i=0
+    local to=''
+    (test ! -d "$config_dir/$source_server/copy" || rm -rf "$config_dir/$source_server/copy") && mkdir -p "$config_dir/$source_server/copy"
+    local output=''
+    local error=''
+    for from in "${source[@]}"; do
+        [[ "$output" ]] && echo_green "├── $output"
+        [[ "$error" ]] && echo_green "├── $error"
+        to=$config_dir/$source_server/copy/$i~${destination[$i]##*/}
+        if [[ ! "$to" ]]; then
+            error="No local path configured for: ${from##*/}"
+            output=''
+        else
+            local verbose=''
+            has_flag v && verbose=' -p -v' && echo_yellow "$server:$from $to"
+            $($ld_scp $verbose "$server:$from" "$to")
+            test -f "$to" && output="${from##*/}"
+        fi
+        ((++i))
+    done
+    [[ "$output" ]] && echo_green "└── $output"
+    [[ "$error" ]] && echo_red "└── $error failed"
+    return 0
+}
+
+##
+ # Helper function to fetch remote files to local.
+ #
+function _fetch_dir() {
+  local status=true
+  local title="$1"
+  local server_remote="$2"
+  local port_remote="$3"
+  local path_remote="$4"
+  local path_local="$5"
+  local path_stash="$6"
+  local exclude_file="$7"
+  local exclude="$8"
+
+  if [ ! "$path_remote" ]; then
+    end "\$path_remote cannot be blank, try '.' instead."
+  fi
+  if [ ! "$path_local" ]; then
+    end "\local_files cannot be blank, try '.' instead."
+  fi
+  if [ "$path_remote" != '.' ] && [ "$path_remote" == "$path_local" ]; then
+    end "\$path_remote and \$path_local should not be the same path."
+  fi
+
+  echo "Fetching $title directory contents to local cache..."
+
+  # rsync exclude file indication to user....
+  if has_flag v && test -e "$exclude_file"; then
+    excludes="$(cat $exclude_file)"
+    echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
+    echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
+  fi
+
+  if [[ "$port_remote" ]]; then
+    cmd="$ld_remote_rsync_cmd -e \"ssh -p $port_remote\" \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
+  else
+    cmd="$ld_remote_rsync_cmd \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
+  fi
+
+  has_flag v && echo $cmd && echo
+
+  eval $cmd >/dev/null 2>&1
+  [[ $? -ne 0 ]] && status=false
+
+  [[ $status == 'true' ]] && echo_green "└── complete." && return 0
+  echo_red "└── failed to fetch." && return 1;
+}
+
+##
+ # Reset the local files with fetched prod files
+ #
+function reset_files() {
+    local status=true
+    if [ "$local_copy_production_to" ] || [ "$local_copy_local_to" ] || [ "$local_copy_staging_to" ] || [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
+        if has_flag v; then
+            echo "This process will reset your local files to match the most recently fetched"
+            echo "$source_server files, removing any local files that are not present in the fetched"
+            echo "set. You will be given a preview of what will happen first. To absolutely"
+            echo "match $source_server as of this moment in time, consider fetching first, however it is slower."
+            echo
+            echo "`tty -s && tput setaf 3`End result: Your local files directory will match fetched $source_server files.`tty -s && tput op`"
+        fi
+
+        if [ "$status" == true ] && [ "$local_copy_local_to" ]; then
+            _reset_local_copy "$local_copy_source" "$local_copy_local_to" || status=false
+        fi
+
+        has_param local && return 0
+
+        if [ "$status" == true ] && [ "$source_server" == 'prod' ] && [ "$local_copy_production_to" ]; then
+            _reset_copy "$local_copy_production_to" || status=false
+        fi
+
+        if [ "$status" == true ] && [ "$source_server" == 'staging' ] && [ "$local_copy_staging_to" ]; then
+            _reset_copy "$local_copy_staging_to" || status=false
+        fi
+
+        if [ "$status" == true ] && [ "$local_files" ]; then
+            _reset_dir "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
+            if [[ "$status" == true ]]; then
+                echo_green "└── done."
+            else
+                echo_red "└── failed." && status=false
+            fi
+        fi
+
+        if [ "$status" == true ] && [ "$local_files2" ]; then
+            _reset_dir "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
+            if [[ "$status" == true ]]; then
+                echo_green "└── done."
+            else
+                echo_red "└── failed." && status=false
+            fi
+        fi
+
+        if [ "$status" == true ] && [ "$local_files3" ]; then
+            _reset_dir "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
+            if [[ "$status" == true ]]; then
+                echo_green "└── done."
+            else
+                echo_red "└── failed." && status=false
+            fi
+        fi
+    fi
+
+    [[ "$status" == true ]] && return 0
+    return 1
+}
+
+##
+ # Copy files from the stage to the correct local location.
+ #
+ # @param string $1
+ #   The destination file list separated by colons.
+ #
+function _reset_copy() {
+    local status=true
+    oldIFS="$IFS"
+    IFS=':'
+    read -r -a destination <<< "$1"
+    IFS="$oldIFS"
+
+    local i=0
+    local to=''
+    local output=''
+
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`"
+
+    echo "Resetting individual files to match $source_server..."
+    for from in "${destination[@]}"; do
+        [[ "$output" ]] && echo_green "├── $output"
+        [[ "$error" ]] && echo_red "├── $error"
+        from="$config_dir/$source_server/copy/"$i~${from##*/}
+        to=${destination[$i]}
+        local verbose=''
+        has_flag v && verbose=' -v'
+        local to_dir=$(dirname $to)
+
+        # Create the parent directories of the destination if necessary
+        test -d "$to_dir" || mkdir -p "$to_dir"
+
+        cp -f -p$verbose "$from" "$to" || status=false
+        if [[ "$status" == true ]]; then
+            output=${to[@]##*/}
+        else
+            error=${to[@]##*/}
+        fi
+        ((++i))
+    done
+    [[ "$output" ]] && echo_green "└── $output"
+    [[ "$error" ]] && echo_red "└── $error"
+
+    [[ "$status" == true ]] && return 0
+    return 1
+}
+
+
+##
+ # Copy local from point a to point b
+ #
+ # @param string $1
+ #   The source file list separated by colons.
+ # @param string $1
+ #   The destination file list separated by colons.
+ #
+function _reset_local_copy() {
+    local status=true
+    oldIFS="$IFS"
+    IFS=':'
+    read -r -a source <<< "$1"
+    read -r -a destination <<< "$2"
+    IFS="$oldIFS"
+
+    local i=0
+    local to=''
+    local output=''
+
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`"
+
+    echo "Resetting individual files to match $source_server..."
+    for from in "${source[@]}"; do
+        [[ "$output" ]] && echo_green "├── $output"
+        [[ "$error" ]] && echo_red "├── $error"
+        to=${destination[$i]}
+        local verbose=''
+        has_flag v && verbose=' -v'
+        local to_dir=$(dirname $to)
+
+        # Create the parent directories of the destination if necessary
+        test -d "$to_dir" || mkdir -p "$to_dir"
+
+        cp -f -p$verbose "$from" "$to" || status=false
+        if [[ "$status" == true ]]; then
+            output=${to[@]##*/}
+        else
+            error=${to[@]##*/}
+        fi
+        ((++i))
+    done
+    [[ "$output" ]] && echo_green "└── $output"
+    [[ "$error" ]] && echo_red "└── $error"
+
+    [[ "$status" == true ]] && return 0
+    return 1
+}
+
+##
+ # Helper function to reset a single files directory.
+ #
+function _reset_dir() {
+    local title="$1"
+    local path_stash="$2"
+    local path_local="$3"
+    local exclude_file="$4"
+    local exclude="$5"
+
+    if [ ! -d $path_stash ]; then
+        echo_red "Please fetch files first." && return 1
+    fi
+
+    echo "Reset local files pulling from stage: $title..."
+
+    # rsync exclude file indication to user....
+    if has_flag v && test -e "$exclude_file"; then
+        excludes="$(cat $exclude_file)"
+        echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
+        echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
+        echo
+        echo "`tty -s && tput setaf 2`Here is a preview:`tty -s && tput op`"
+        cmd="rsync -av $path_stash/ $path_local/ --delete $exclude"
+        eval "$cmd --dry-run"
+    else
+        cmd="rsync -a $path_stash/ $path_local/ --delete $exclude"
+    fi
+
+    # Have to exclude here because there might be some lingering files in the cache
+    # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local \"$title\", are you sure?`tty -s && tput op`"
+
+    has_flag v && echo $cmd && echo
+    eval $cmd
+
+    return $?
+}
+
+##
  # Reset the local database with a previously fetched copy
  #
 function reset_db() {
@@ -988,54 +988,6 @@ function reset_db() {
 
     import_db_silent=true
     import_db "$_file"
-}
-
-##
- # Push a single directory from local to staging.
- #
-function _push_dir() {
-  local status=true
-  local title="$1"
-  local server_remote="$2"
-  local port_remote="$3"
-  local path_remote="$4"
-  local path_local="$5"
-  local exclude_file="$7"
-  local exclude="$8"
-
-  if [ ! "$path_remote" ]; then
-    echo_red "\$path_remote cannot be blank, try '.' instead." && return 1
-  fi
-  if [ ! "$path_local" ]; then
-    echo_red "\local_files cannot be blank, try '.' instead." && return 1
-  fi
-  if [ "$path_remote" != '.' ] && [ "$path_remote" == "$path_local" ]; then
-    echo_red "\$path_remote and \$path_local should not be the same path." && return 1
-  fi
-
-  echo "Pushing $title directory contents to remote..."
-
-  # rsync exclude file indication to user....
-  if has_flag v && test -e "$exclude_file"; then
-    excludes="$(cat $exclude_file)"
-    echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
-    echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
-  fi
-
-  if [[ "$port_remote" ]]; then
-    cmd="$ld_remote_rsync_cmd -e \"ssh -p $port_remote\" \"$path_local/\" \"$server_remote:$path_remote/\" --delete $exclude"
-  else
-    cmd="$ld_remote_rsync_cmd \"$path_local/\" \"$server_remote:$path_remote/\" --delete $exclude"
-  fi
-
-  has_flag y || confirm "Bring staging \"$title\" into sync with local, are you sure?"
-  has_flag v &&  echo $cmd && echo
-
-  eval $cmd >/dev/null 2>&1
-  [[ $? -ne 0 ]] && status=false
-
-  [[ $status == 'true' ]] && echo_green "└── complete." && return 0
-  echo_red "└── failed to push." && return 1;
 }
 
 ##
@@ -1077,43 +1029,92 @@ function push_files() {
 }
 
 ##
+ # Push a single directory from local to staging.
+ #
+function _push_dir() {
+  local status=true
+  local title="$1"
+  local server_remote="$2"
+  local port_remote="$3"
+  local path_remote="$4"
+  local path_local="$5"
+  local exclude_file="$6"
+  local exclude="$7"
+
+  if [ ! "$path_remote" ]; then
+    echo_red "\$path_remote cannot be blank, try '.' instead." && return 1
+  fi
+  if [ ! "$path_local" ]; then
+    echo_red "\local_files cannot be blank, try '.' instead." && return 1
+  fi
+  if [ "$path_remote" != '.' ] && [ "$path_remote" == "$path_local" ]; then
+    echo_red "\$path_remote and \$path_local should not be the same path." && return 1
+  fi
+
+  # rsync exclude file indication to user....
+  if has_flag v && test -e "$exclude_file"; then
+    excludes="$(cat $exclude_file)"
+    echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
+    echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
+  fi
+
+  if [[ "$port_remote" ]]; then
+    cmd="$ld_remote_rsync_cmd -e \"ssh -p $port_remote\" \"$path_local/\" \"$server_remote:$path_remote/\" --delete $exclude"
+  else
+    cmd="$ld_remote_rsync_cmd \"$path_local/\" \"$server_remote:$path_remote/\" --delete $exclude"
+  fi
+
+  has_flag y || confirm "Bring staging \"$title\" into sync with local, are you sure?"
+  has_flag v &&  echo $cmd && echo
+
+  eval $cmd >/dev/null 2>&1
+  [[ $? -ne 0 ]] && status=false
+
+  [[ $status == 'true' ]] && echo_green "└── complete." && return 0
+  echo_red "└── failed to push." && return 1;
+}
+
+##
  # Push local db (with optional export) to staging
  #
 function push_db() {
-  load_staging_config
-  if [ ! "$staging_db_dir" ] || [ ! "$staging_server" ]; then
-    end "You cannot push your database unless you define a staging environment."
-  fi
+    local status=true
+    load_staging_config
+    if [ ! "$staging_db_dir" ] || [ ! "$staging_server" ]; then
+      echo_red "You cannot push your database unless you define a staging environment." && return 1
+    fi
 
-  echo "This process will push your local database to your staging server, "
-  echo "ERASING the staging database and REPLACING it with a copy from local."
-  echo
-  echo "`tty -s && tput setaf 3`End result: Your staging database will match your local.`tty -s && tput op`"
-  confirm "Are you sure you want to push your local db to staging"
+    if has_flag v; then
+        echo "This process will push your local database to your staging server, "
+        echo "ERASING the staging database and REPLACING it with a copy from local."
+        echo
+        echo "`tty -s && tput setaf 3`End result: Your staging database will match your local.`tty -s && tput op`"
+    fi
+    has_flag y || confirm "Are you sure you want to push your local db to staging"
 
-  suffix='push_db'
-  export_db $suffix -f
-  echo 'Pushing db to staging...'
-  filename="$current_db_filename.gz"
-  _remote_file="$staging_db_dir/$filename"
-  scp "$current_db_dir/$filename" "$staging_server:$_remote_file"
+    export_db push_db -f || return 1
 
-  # Log into staging and import the database.
-  show_switch
-  ssh $staging_server "cd $staging_root && . $staging_script import $staging_db_dir/$filename"
+    echo 'Pushing db to staging...'
+    filename="$current_db_filename.gz"
+    _remote_file="$staging_db_dir/$filename"
+    scp "$current_db_dir/$filename" "$staging_server:$_remote_file" || return 1
 
-  # delete it from remote
-  echo "Deleting the db copy from production..."
+    # Log into staging and import the database.
+    show_switch
+    ssh $staging_server "cd $staging_root && . $staging_script -y import $staging_db_dir/$filename" || status=false
 
-  # Strip off the gz suffix
-  _remote_file=${_remote_file%.*}
-  ssh $staging_server "rm $_remote_file"
-  show_switch
+    # Strip off the gz suffix then delete file from staging.  We pushed the
+    # gzipped file, but it was unzipped during import, leaveing a file without
+    # the .gz suffix orphaned on the remote server.
+    _remote_file=${_remote_file%.*}
+    ssh $staging_server "[ ! -e $_remote_file ] || rm $_remote_file" || status=false
+    show_switch
 
-  # Delete our local copy
-  rm "$current_db_dir/$filename"
+    # Delete our local copy
+    [ ! -e "$current_db_dir/$filename" ] || rm "$current_db_dir/$filename" || status=false
 
-  complete "Push db complete; please test your staging site."
+    [[ "$status" == true ]] && return 0
+    return 1
 }
 
 ##
