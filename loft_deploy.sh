@@ -67,7 +67,7 @@ INCLUDES="$ROOT/includes"
 ##
  # Bootstrap
  #
-declare -a args=()
+declare -a SCRIPT_ARGS=()
 declare -a flags=()
 declare -a params=()
 for arg in "$@"; do
@@ -76,7 +76,7 @@ for arg in "$@"; do
   elif [[ "$arg" =~ ^-(.*) ]]; then
     flags=("${flags[@]}" "${BASH_REMATCH[1]}")
   else
-    args=("${args[@]}" "$arg")
+    SCRIPT_ARGS=("${SCRIPT_ARGS[@]}" "$arg")
   fi
 done
 ##
@@ -84,10 +84,10 @@ done
  #
 
 # The user's operation
-op=${args[0]}
+op=${SCRIPT_ARGS[0]}
 
 # The target of the operation
-target=${args[1]}
+target=${SCRIPT_ARGS[1]}
 
 # Holds the starting directory
 start_dir=${PWD}
@@ -108,7 +108,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.14.8
+ld_version=0.14.9
 
 # theme color definitions
 color_red=1
@@ -198,7 +198,7 @@ handle_pre_hook $op || status=false
 
 case $op in
   'init')
-    [[ "$status" == true ]] && init $2 && handle_post_hook $op && exit 0
+    [[ "$status" == true ]] && init ${SCRIPT_ARGS[1]} && handle_post_hook $op && exit 0
     exit 1
     ;;
 
@@ -208,12 +208,12 @@ case $op in
     ;;
 
   'import')
-    [[ "$status" == true ]] && import_db $2 && handle_post_hook $op && complete "Import complete." && exit 0
+    [[ "$status" == true ]] && import_db ${SCRIPT_ARGS[1]} && handle_post_hook $op && complete "Import complete." && exit 0
     did_not_complete "Import failed." && exit 1
     ;;
 
   'export')
-    [[ "$status" == true ]] && export_db $2 && handle_post_hook $op && complete 'Export complete.' && exit 0
+    [[ "$status" == true ]] && export_db ${SCRIPT_ARGS[1]} && handle_post_hook $op && complete 'Export complete.' && exit 0
     did_not_complete 'Export failed.' && exit 1
     ;;
 
@@ -245,34 +245,25 @@ case $op in
     ;;
 
   'pull')
-    if [[ "$status" == true ]]; then handle_pre_hook fetch || status=false; fi
-    if [[ "$status" == true ]] && has_asset database; then fetch_db || status=false; fi
-    if [[ "$status" == true ]] && has_asset files; then fetch_files || status=false; fi
-    if [[ "$status" == true ]]; then handle_post_hook fetch || status=false; fi
-    if [[ "$status" == true ]]; then handle_pre_hook reset || status=false; fi
-    if [[ "$status" == true ]] && has_asset database; then reset_db || status=false; fi
-    if [[ "$status" == true ]] && has_asset files ; then reset_files || status=false; fi
-    if [[ "$status" == true ]]; then handle_post_hook reset || status=false; fi
-
-    [[ "$status" == true ]] && handle_post_hook $op && complete "Pull complete." && exit 0
+    [[ "$status" == true ]] && do_pull && handle_post_hook $op && complete "Pull complete." && exit 0
     did_not_complete "Pull failed." && exit 1
     ;;
 
   'push')
     if [[ "$status" == true ]] && has_asset database; then
-      push_db && echo_green 'Database pushed to staging.' || status=false
+      push_db || status=false
     fi
     if [[ "$status" == true ]] && has_asset files; then
-      push_files && echo_green 'Files pushed to staging.' || status=false
+      push_files || status=false
     fi
-    [[ "$status" == true ]] && handle_post_hook $op && exit 0
+    [[ "$status" == true ]] && handle_post_hook $op && complete "Push complete." && exit 0
     did_not_complete "Push failed." && exit 1
     ;;
 
   'hook')
-    if [ "$2" ]; then
-      handle_pre_hook "$2"
-      handle_post_hook "$2"
+    if [ "${SCRIPT_ARGS[1]}" ]; then
+      handle_pre_hook "${SCRIPT_ARGS[1]}"
+      handle_post_hook "${SCRIPT_ARGS[1]}"
     else
       echo "`tty -s && tput setaf 1`What type of hook? e.g. ldp hook reset`tty -s && tput op`"
     fi
@@ -280,7 +271,7 @@ case $op in
     ;;
 
   'mysql')
-    loft_deploy_mysql "$2"
+    loft_deploy_mysql "${SCRIPT_ARGS[1]}"
     handle_post_hook $op
     complete 'Your mysql session has ended.'
     exit 0
