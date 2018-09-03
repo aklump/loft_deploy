@@ -260,7 +260,7 @@ case $op in
 
   'push')
     if [[ "$status" == true ]] && has_asset database; then
-      push_db && echo_green 'Database pushed to staging.' || status=false
+      push_db || status=false
     fi
     if [[ "$status" == true ]] && has_asset files; then
       push_files || status=false

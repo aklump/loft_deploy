@@ -511,8 +511,8 @@ function _fetch_dir() {
 
   echo "Fetching $title directory contents to local cache..."
 
-  # Excludes message...
-  if has_flag 'v' && test -e "$exclude_file"; then
+  # rsync exclude file indication to user....
+  if has_flag v && test -e "$exclude_file"; then
     excludes="$(cat $exclude_file)"
     echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
     echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
@@ -524,10 +524,7 @@ function _fetch_dir() {
     cmd="$ld_remote_rsync_cmd \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
   fi
 
-  if has_flag 'v'; then
-    echo $cmd
-    echo
-  fi
+  has_flag v && echo $cmd && echo
 
   eval $cmd >/dev/null 2>&1
   [[ $? -ne 0 ]] && status=false
@@ -593,16 +590,16 @@ function fetch_files() {
             status=true
             load_production_config
             if [ "$local_copy_production_to" ]; then
-                _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || result=false
+                _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || status=false
             fi
-            if [[ "status" ]] && [ "$local_files" ]; then
-                _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || result=false
+            if [[ "$status" == true ]] && [ "$local_files" ]; then
+                _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
             fi
-            if [[ "status" ]] && [ "$local_files2" ]; then
-                _fetch_dir 'files2/*' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || result=false
+            if [[ "$status" == true ]] && [ "$local_files2" ]; then
+                _fetch_dir 'files2/*' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
             fi
-            if [[ "status" ]] && [ "$local_files3" ]; then
-                _fetch_dir 'files3/*' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || result=false
+            if [[ "$status" == true ]] && [ "$local_files3" ]; then
+                _fetch_dir 'files3/*' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
             fi
         ;;
 #        'staging' )
@@ -722,7 +719,7 @@ function _reset_local_copy() {
 function reset_files() {
     local status=true
     if [ "$local_copy_production_to" ] || [ "$local_copy_local_to" ] || [ "$local_copy_staging_to" ] || [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
-        if has_flag 'v'; then
+        if has_flag v; then
             echo "This process will reset your local files to match the most recently fetched"
             echo "$source_server files, removing any local files that are not present in the fetched"
             echo "set. You will be given a preview of what will happen first. To absolutely"
@@ -746,7 +743,7 @@ function reset_files() {
         fi
 
         if [ "$status" == true ] && [ "$local_files" ]; then
-            _reset_files "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
+            _reset_dir "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
             if [[ "$status" == true ]]; then
                 echo_green "└── done."
             else
@@ -755,7 +752,7 @@ function reset_files() {
         fi
 
         if [ "$status" == true ] && [ "$local_files2" ]; then
-            _reset_files "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
+            _reset_dir "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
             if [[ "$status" == true ]]; then
                 echo_green "└── done."
             else
@@ -764,7 +761,7 @@ function reset_files() {
         fi
 
         if [ "$status" == true ] && [ "$local_files3" ]; then
-            _reset_files "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
+            _reset_dir "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
             if [[ "$status" == true ]]; then
                 echo_green "└── done."
             else
@@ -780,23 +777,21 @@ function reset_files() {
 ##
  # Helper function to reset a single files directory.
  #
-function _reset_files() {
+function _reset_dir() {
     local title="$1"
     local path_stash="$2"
     local path_local="$3"
     local exclude_file="$4"
     local exclude="$5"
 
-
     if [ ! -d $path_stash ]; then
-        echo_red "Please fetch files first."
-        end
+        echo_red "Please fetch files first." && return 1
     fi
 
     echo "Reset local files pulling from stage: $title..."
 
-    # Excludes message...
-    if has_flag 'v' && test -e "$exclude_file"; then
+    # rsync exclude file indication to user....
+    if has_flag v && test -e "$exclude_file"; then
         excludes="$(cat $exclude_file)"
         echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
         echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
@@ -812,7 +807,7 @@ function _reset_files() {
     # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
     has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local \"$title\", are you sure?`tty -s && tput op`"
 
-    has_flag 'v' && echo "`tty -s && tput setaf 2`$cmd`tty -s && tput op`"
+    has_flag v && echo $cmd && echo
     eval $cmd
 
     return $?
@@ -909,7 +904,7 @@ function _fetch_db_production() {
 }
 
 ##
- # Fetch the staging db and import it to local
+ # Fetch the staging db and import it to local.
  #
 function _fetch_db_staging() {
   load_staging_config
@@ -971,7 +966,9 @@ function reset_db() {
     import_db "$_file"
 }
 
-
+##
+ # Push a single directory from local to staging.
+ #
 function _push_dir() {
   local status=true
   local title="$1"
@@ -1051,7 +1048,8 @@ function push_files() {
         fi
     fi
 
-  complete "Push files complete; please test your staging site."
+    [[ "$status" == true ]] && return 0
+    return 1
 }
 
 ##
@@ -1232,7 +1230,7 @@ function _drop_tables() {
   local status=true
   tables=$($ld_mysql --defaults-file=$local_db_cnf $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
   for t in $tables; do
-    has_flag 'v' && echo "├── $t"
+    has_flag v && echo "├── $t"
     $ld_mysql --defaults-file=$local_db_cnf $local_db_name -e "DROP TABLE $t" || status=false
   done
 
