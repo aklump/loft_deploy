@@ -971,31 +971,85 @@ function reset_db() {
     import_db "$_file"
 }
 
+
+function _push_dir() {
+  local status=true
+  local title="$1"
+  local server_remote="$2"
+  local port_remote="$3"
+  local path_remote="$4"
+  local path_local="$5"
+  local exclude_file="$7"
+  local exclude="$8"
+
+  if [ ! "$path_remote" ]; then
+    echo_red "\$path_remote cannot be blank, try '.' instead." && return 1
+  fi
+  if [ ! "$path_local" ]; then
+    echo_red "\local_files cannot be blank, try '.' instead." && return 1
+  fi
+  if [ "$path_remote" != '.' ] && [ "$path_remote" == "$path_local" ]; then
+    echo_red "\$path_remote and \$path_local should not be the same path." && return 1
+  fi
+
+  echo "Pushing $title directory contents to remote..."
+
+  # rsync exclude file indication to user....
+  if has_flag v && test -e "$exclude_file"; then
+    excludes="$(cat $exclude_file)"
+    echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
+    echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
+  fi
+
+  if [[ "$port_remote" ]]; then
+    cmd="$ld_remote_rsync_cmd -e \"ssh -p $port_remote\" \"$path_local/\" \"$server_remote:$path_remote/\" --delete $exclude"
+  else
+    cmd="$ld_remote_rsync_cmd \"$path_local/\" \"$server_remote:$path_remote/\" --delete $exclude"
+  fi
+
+  has_flag y || confirm "Bring staging \"$title\" into sync with local, are you sure?"
+  has_flag v &&  echo $cmd && echo
+
+  eval $cmd >/dev/null 2>&1
+  [[ $? -ne 0 ]] && status=false
+
+  [[ $status == 'true' ]] && echo_green "└── complete." && return 0
+  echo_red "└── failed to push." && return 1;
+}
+
 ##
  # Push local files to staging
  #
 function push_files() {
-  load_staging_config
-  if [ ! "$staging_files" ]; then
-    end "`tty -s && tput setaf 1`You cannot push your files unless you define a staging environment.`tty -s && tput op`"
-  fi
-  if [ ! "$local_files" ] || [ "$staging_files" == "$local_files" ]; then
-    end "`tty -s && tput setaf 1`BAD CONFIG`tty -s && tput op`"
-  fi
+    local status=true
+    load_staging_config
+    if [[ "$staging_files" ]] || [[ "$staging_files2" ]] || [[ "$staging_files3" ]]; then
+        if [ ! "$staging_files" ]; then
+            echo_red "You cannot push your files unless you define a staging environment" && return 1
+        fi
 
-  echo "This process will push your local files to your staging server, removing any"
-  echo "files on staging that are not present on local. You will be given"
-  echo "a preview of what will happen first."
-  echo
-  echo "`tty -s && tput setaf 3`End result: Your staging files directory will match your local.`tty -s && tput op`"
-  confirm 'Are you sure you want to push local files OVERWRITING STAGING files'
-  echo 'Previewing...'
-  if [[ "$ld_rsync_ex" ]]; then
-    echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file are being ignored.`tty -s && tput op`"
-  fi
-  rsync -av $local_files/ $staging_server:$staging_files/ --delete --dry-run $ld_rsync_ex
-  confirm 'That was a preview... do it for real?'
-  rsync -av $local_files/ $staging_server:$staging_files/ --delete $ld_rsync_ex
+        if has_flag v; then
+            echo "This process will push your local files to your staging server, removing any"
+            echo "files on staging that are not present on local. You will be given"
+            echo "a preview of what will happen first."
+            echo
+            echo "`tty -s && tput setaf 3`End result: Your staging files directory will match your local.`tty -s && tput op`"
+        fi
+
+        # Todo staging_copy_dev_to?
+
+        if [[ "$status" == true ]] && [[ "$local_files" ]]; then
+            _push_dir 'files/*' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
+        fi
+
+        if [[ "$status" == true ]] && [[ "$local_files2" ]]; then
+            _push_dir 'files2/*' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
+        fi
+
+        if [[ "$status" == true ]] && [[ "$local_files3" ]]; then
+            _push_dir 'files3/*' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
+        fi
+    fi
 
   complete "Push files complete; please test your staging site."
 }

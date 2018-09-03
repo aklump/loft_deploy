@@ -263,9 +263,9 @@ case $op in
       push_db && echo_green 'Database pushed to staging.' || status=false
     fi
     if [[ "$status" == true ]] && has_asset files; then
-      push_files && echo_green 'Files pushed to staging.' || status=false
+      push_files || status=false
     fi
-    [[ "$status" == true ]] && handle_post_hook $op && exit 0
+    [[ "$status" == true ]] && handle_post_hook $op && complete "Push complete." && exit 0
     did_not_complete "Push failed." && exit 1
     ;;
 
