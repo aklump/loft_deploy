@@ -290,12 +290,6 @@ case $op in
     exit 0
     ;;
 
-  'scp')
-    echo_green "scp $production_scp_port$production_server:$production_scp"
-    handle_post_hook $op
-    end
-    ;;
-
   'ls')
     if has_flag d; then
       do_ls "$local_db_dir"

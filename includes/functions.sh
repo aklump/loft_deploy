@@ -1097,7 +1097,7 @@ function push_db() {
     echo 'Pushing db to staging...'
     filename="$current_db_filename.gz"
     _remote_file="$staging_db_dir/$filename"
-    scp "$current_db_dir/$filename" "$staging_server:$_remote_file" || return 1
+    $ld_scp "$current_db_dir/$filename" "$staging_server:$_remote_file" || return 1
 
     # Log into staging and import the database.
     show_switch
@@ -1446,7 +1446,6 @@ function show_help() {
   theme_help_topic import 'l' 'Import a db export file overwriting local' 'import [suffix]'
   theme_help_topic 'mysql' 'l' 'Start mysql shell using local credentials'
   theme_help_topic 'mysql "SQL"' 'l' 'Execute a mysql statement using local credentials'
-  theme_help_topic 'scp' 'l' 'Display a scp stub using server values' 'see $production_scp for configuration'
   theme_help_topic help 'l' 'Show this help screen'
   theme_help_topic info 'l' 'Show info'
   theme_help_topic clearcache 'l' 'Import new configuration after editing config.yml' 'clearcache'
