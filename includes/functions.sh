@@ -844,9 +844,9 @@ function _reset_copy() {
     local to=''
     local output=''
 
-    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`"
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`" || return 2
 
-    echo "Resetting individual files to match $source_server..."
+    echo "Resetting individual $source_server files from cache..."
     for from in "${destination[@]}"; do
         [[ "$output" ]] && echo_green "├── $output"
         [[ "$error" ]] && echo_red "├── $error"
@@ -895,9 +895,9 @@ function _reset_local_copy() {
     local to=''
     local output=''
 
-    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`"
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`" || return 2
 
-    echo "Resetting individual files to match $source_server..."
+    echo "Copying individual local files..."
     for from in "${source[@]}"; do
         [[ "$output" ]] && echo_green "├── $output"
         [[ "$error" ]] && echo_red "├── $error"
@@ -938,7 +938,7 @@ function _reset_dir() {
         echo_red "Please fetch files first." && return 1
     fi
 
-    echo "Reset local files pulling from stage: $title..."
+    echo "Reset cached $source_server file directory: $title..."
 
     # rsync exclude file indication to user....
     if has_flag v && test -e "$exclude_file"; then
@@ -955,7 +955,7 @@ function _reset_dir() {
 
     # Have to exclude here because there might be some lingering files in the cache
     # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
-    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local \"$title\", are you sure?`tty -s && tput op`"
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local \"$title\", are you sure?`tty -s && tput op`" || return 2
 
     has_flag v && echo $cmd && echo
     eval $cmd
@@ -974,20 +974,20 @@ function reset_db() {
         echo
         echo "`tty -s && tput setaf 3`End result: Your local database will match the $source_server database.`tty -s && tput op`"
     fi
-    has_flag 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source_server db"
+    has_flag 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source_server db" || return 2
 
-    local _file=($(find $config_dir/$source_server/db -name fetched.sql*))
-    if [[ ${#_file[@]} -gt 1 ]]; then
+    local fetched_db_dump=($(find $config_dir/$source_server/db -name fetched.sql*))
+
+    if [[ ${#fetched_db_dump[@]} -gt 1 ]]; then
         end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/$source_server/db"
-    elif [[ ${#_file[@]} -eq 0 ]]; then
+    elif [[ ${#fetched_db_dump[@]} -eq 0 ]]; then
         end "Please fetch_db first"
     fi
-
 
     has_param nobu || export_db "reset_backup_$now" '' 'Creating a backup of the local db...'
 
     import_db_silent=true
-    import_db "$_file"
+    import_db "$fetched_db_dump"
 }
 
 ##
@@ -1064,7 +1064,7 @@ function _push_dir() {
     cmd="$ld_remote_rsync_cmd \"$path_local/\" \"$server_remote:$path_remote/\" --delete $exclude"
   fi
 
-  has_flag y || confirm "Bring staging \"$title\" into sync with local, are you sure?"
+  has_flag y || confirm "Bring staging \"$title\" into sync with local, are you sure?" || return 2
   has_flag v &&  echo $cmd && echo
 
   eval $cmd >/dev/null 2>&1
@@ -1090,14 +1090,14 @@ function push_db() {
         echo
         echo "`tty -s && tput setaf 3`End result: Your staging database will match your local.`tty -s && tput op`"
     fi
-    has_flag y || confirm "Are you sure you want to push your local db to staging"
+    has_flag y || confirm "Are you sure you want to push your local db to staging" || return 2
 
     export_db push_db -f || return 1
 
     echo 'Pushing db to staging...'
     filename="$current_db_filename.gz"
     _remote_file="$staging_db_dir/$filename"
-    scp "$current_db_dir/$filename" "$staging_server:$_remote_file" || return 1
+    $ld_scp "$current_db_dir/$filename" "$staging_server:$_remote_file" || return 1
 
     # Log into staging and import the database.
     show_switch
@@ -1128,11 +1128,11 @@ function _current_db_paths() {
   if [ "$local_db_dir" ]; then
     current_db_dir="$local_db_dir/"
   fi
-  local _suffix=''
+  local suffix=''
   if [ "$1" ]; then
-    _suffix="-$1"
+    suffix="-$1"
   fi
-  current_db_filename="$local_db_name$_suffix.sql"
+  current_db_filename="${local_db_name}${suffix}.sql"
 }
 
 ##
@@ -1156,7 +1156,7 @@ function export_db() {
       confirm_result=false
       if ! confirm "File $file exists, replace"; then
         echo_red "Cancelled."
-        return 1
+        return 2
       fi
     fi
     rm $file
@@ -1166,7 +1166,7 @@ function export_db() {
       confirm_result=false
       if ! confirm "File $file_gz exists, replace"; then
         echo_red "Cancelled."
-        return 1
+        return 2
       fi
     fi
     rm $file_gz
@@ -1220,38 +1220,40 @@ function export_db() {
  #
 import_db_silent=false
 function import_db() {
+  local filename_or_path=$1
 
-  if [[ ! "$1" ]]; then
+  if [[ ! "$filename_or_path" ]]; then
     echo_red "Filename of db dump required." || return 1
   fi
 
-  _current_db_paths $1
+  _current_db_paths $filename_or_path
 
-  local check1=$1
-  local check2=$current_db_dir$current_db_filename
-  local check3=$current_db_dir$current_db_filename.gz
+  declare -a local check=("$filename_or_path" "${current_db_dir}${current_db_filename}" "${current_db_dir}${current_db_filename}.gz")
 
-  [[ ! "$file" ]] && [ -f $check1 ] && file=$check1
-  [[ ! "$file" ]] && [ -f $check2 ] && file=$check2
-  [[ ! "$file" ]] && [ -f $check3 ] && file=$check3
+  local filepath=''
+  for check_filepath in "${check[@]}"; do
+    if [[ ! "$filepath" ]] && [ -f "$check_filepath" ]; then
+        filepath="$check_filepath"
+    fi
+  done
 
-  if [[ ! "$file" ]]; then
+  if [[ ! "$filepath" ]]; then
     echo "File not found as one of:"
-    echo $check1;
-    echo $check2;
-    echo $check3;
+    echo ${check[0]};
+    echo ${check[1]};
+    echo ${check[2]};
     end
   fi
 
-  has_flag 'y' || [ $import_db_silent = true ] || confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure"
+  has_flag 'y' || [ $import_db_silent = true ] || confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure" || return 2
   echo "Importing data into $local_db_host:$local_db_name..."
   _drop_tables || return 1
 
-  if [[ "${file##*.}" == 'gz' ]]; then
-    $ld_gunzip "$file" || return 1
-    file=${file%.*}
+  if [[ "${filepath##*.}" == 'gz' ]]; then
+    $ld_gunzip "$filepath" || return 1
+    filepath=${filepath%.*}
   fi
-  $ld_mysql --defaults-file=$local_db_cnf $local_db_name < $file && echo_green "└── ${file##*/} has been imported."
+  $ld_mysql --defaults-file=$local_db_cnf $local_db_name < $filepath && echo_green "└── ${filepath##*/} has been imported."
   return $?
 }
 
@@ -1315,9 +1317,7 @@ function confirm() {
     read -r -n 1 -p "${1:-Continue?} [y/n]: " REPLY
     case $REPLY in
       [yY]) echo ; return 0 ;;
-      [nN]) echo ; end 'CANCELLED' ;;
-      # @todo convert this to use the return value.
-#      [nN]) echo ; return 1 ;;
+      [nN]) echo ; return 1 ;;
       *) printf " \033[31m %s \n\033[0m" "invalid input"
     esac
   done
@@ -1446,7 +1446,6 @@ function show_help() {
   theme_help_topic import 'l' 'Import a db export file overwriting local' 'import [suffix]'
   theme_help_topic 'mysql' 'l' 'Start mysql shell using local credentials'
   theme_help_topic 'mysql "SQL"' 'l' 'Execute a mysql statement using local credentials'
-  theme_help_topic 'scp' 'l' 'Display a scp stub using server values' 'see $production_scp for configuration'
   theme_help_topic help 'l' 'Show this help screen'
   theme_help_topic info 'l' 'Show info'
   theme_help_topic clearcache 'l' 'Import new configuration after editing config.yml' 'clearcache'
@@ -1799,7 +1798,6 @@ function show_info() {
   clear
   print_header
 
-  #echo "Configuration..."
   theme_header 'LOCAL' $color_local
   echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config        : $config_dir"
@@ -1883,7 +1881,7 @@ function warning() {
   if [ "$2" ]; then
     echo_fix "$2"
   fi
-  confirm 'Disregard warning'
+  confirm 'Disregard warning' || return 2
 }
 
 ##
@@ -1916,10 +1914,13 @@ function echo_red() {
 ##
  # Handle a pre hook for an op.
  #
- # @param string $1 The operation being called, e.g. reset, fetch, pull
+ # @param string $1
+ #   The operation being called, e.g. reset, fetch, pull
+ # @param bool $2
+ #   The return status of the operation.
  #
 function handle_pre_hook() {
-    _handle_hook $1 pre
+    _handle_hook $1 pre $2
 }
 
 ##
@@ -1928,7 +1929,7 @@ function handle_pre_hook() {
  # @param string $1 The operation being called, e.g. reset, fetch, pull
  #
 function handle_post_hook() {
-    _handle_hook $1 post
+    _handle_hook $1 post $2
 }
 
 ##
@@ -1939,18 +1940,21 @@ function handle_post_hook() {
  #
 function _handle_hook() {
     refresh_operation_assets
+    local op=$1
+    local op_status=$3
+    local timing=$2
     local status=true
     declare -a local hooks=();
 
     for item in "${operation_assets[@]}"; do
-        [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${1}_files_${2}")
-        [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${1}_db_${2}")
+        [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${op}_files_${timing}")
+        [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${op}_db_${timing}")
     done
 
     for hook_stub in "${hooks[@]}"; do
         local hook="$config_dir/hooks/$hook_stub.sh"
         local basename=$(basename $hook)
-        declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "" "" "" "" "" "" "$config_dir/hooks/");
+        declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "$op_status" "" "" "" "" "" "$config_dir/hooks/");
         if test -e "$hook"; then
           echo "🔶 Calling hook: $basename"
           source "$hook" "${hook_args[@]}"
