@@ -122,12 +122,13 @@ color_staging=$color_green
 color_local=$color_yellow
 color_prod=$color_red
 
-ld_remote_rsync_cmd="rsync -azP"
-
 lobster_user=$(whoami)
 
 # Import functions
 source "$INCLUDES/functions.sh"
+
+ld_remote_rsync_cmd="rsync -azP"
+has_flag v && ld_remote_rsync_cmd="rsync -azPv"
 
 ##
  # Begin Controller
@@ -321,10 +322,13 @@ case $op in
 
   'terminus')
     cmd="auth:login --machine-token=$terminus_machine_token"
+
+    # Todo need to array_shift and then pass the entire bit to terminus to make
+    # this really work correctly.
     if [[ "${SCRIPT_ARGS[1]}" ]]; then
       cmd="${SCRIPT_ARGS[1]}"
     fi
-    $ld_terminus $cmd || did_not_complete
+    $ld_terminus $cmd && echo_green "└── $config_dir/vendor/bin/terminus" || did_not_complete
     end
     ;;
 

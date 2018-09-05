@@ -453,6 +453,8 @@ function load_production_config() {
     production_db_port="${production[8]}";
     production_copy_source="${production[9]}";
   elif [ "$pantheon_live_uuid" ]; then
+    production_server="live.${pantheon_live_uuid}@appserver.live.${pantheon_live_uuid}.drush.in"
+    production_port=2222
     production_remote_db_host="dbserver.live.$pantheon_live_uuid.drush.in";
     production_db_host="Pantheon via Terminus";
     production_db_name="$terminus_site";
@@ -552,11 +554,11 @@ function _fetch_db_production() {
 
     $ld_terminus auth:login --machine-token=$terminus_machine_token --quiet
 
-    if ! confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?"; then
+    if ! has_flag y && ! confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?"; then
       echo "Creating new backup using Terminus..."
       $ld_terminus backup:create $terminus_site.live --element=db
     fi
-    echo "Downloading backup..."
+    echo "Downloading latest backup from Pantheon..."
     $ld_terminus backup:get $terminus_site.live --element=db --to="$_local_file"
     $ld_terminus auth:logout
 
@@ -647,13 +649,13 @@ function fetch_files() {
             if [ "$local_copy_production_to" ]; then
                 _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || status=false
             fi
-            if [[ "$status" == true ]] && [ "$local_files" ]; then
+            if [[ "$status" == true ]] && [ "$local_files" ] && [ "$production_files" ]; then
                 _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
             fi
-            if [[ "$status" == true ]] && [ "$local_files2" ]; then
+            if [[ "$status" == true ]] && [ "$local_files2" ] && [ "$production_files2" ]; then
                 _fetch_dir 'files2/*' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
             fi
-            if [[ "$status" == true ]] && [ "$local_files3" ]; then
+            if [[ "$status" == true ]] && [ "$local_files3" ] && [ "$production_files3" ]; then
                 _fetch_dir 'files3/*' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
             fi
         ;;

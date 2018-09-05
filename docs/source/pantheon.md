@@ -14,12 +14,20 @@ You must have something like the following in _config.yml_ on your local dev mac
 
     production:
       files:
-      - files
-      - files/private
+      - code/sites/default/files
+      - code/sites/default/files/private
       pantheon:
         uuid: UUID-GOES-HERE
         site: SITE_NAME
         machine_token: 'MACHINE_TOKEN_HERE'
+
+### Configure exclude files
+
+Pantheon includes the private files directory inside of the public files directory.  You will want to exclude the private directory by adding the following lines to `files_exclude.txt`: 
+
+        private
+
+Then you should setup the second array element as `files/private` as shown above and then that will transfer your private directory, if you so desire.
 
 ### Configuration Hints
 
@@ -33,9 +41,12 @@ You must have something like the following in _config.yml_ on your local dev mac
 
 ## Usage
 
-1. You may use the installed version of terminus with Loft Deploy credentials by doing something like this:
-
+1. Authenticate using the Loft Deploy credentials with the following:
+        
         ldp terminus site:list
+        
+1. You will then see the absolute path to the terminus binary to use for further commands.        
+
 
 ---    
 ## Files
