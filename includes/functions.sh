@@ -384,7 +384,7 @@ function load_config() {
   ld_scp=$(type scp >/dev/null 2>&1 && which scp)
 
   # For Pantheon support we need to find terminus.
-  ld_terminus=$(type terminus >/dev/null 2>&1 && which terminus)
+  ld_terminus="$config_dir/vendor/bin/terminus"
 
   # Legacy Support.
   test -f "$config_dir/config" && source $config_dir/config
@@ -454,8 +454,8 @@ function load_production_config() {
     production_copy_source="${production[9]}";
   elif [ "$pantheon_live_uuid" ]; then
     production_remote_db_host="dbserver.live.$pantheon_live_uuid.drush.in";
-    production_db_name="pantheon";
-    production_db_user="pantheon";
+    production_db_host="Pantheon via Terminus";
+    production_db_name="$terminus_site";
   fi
 }
 
@@ -492,7 +492,7 @@ function do_pull() {
     local status=true
     load_production_config
 
-    if [ ! "$production_server" ]; then
+    if [[ ! "$production_server" ]] && [[ ! "$terminus_site" ]]; then
         echo_red "You cannot pull unless you define a production environment." && return 1
     fi
 
@@ -1508,9 +1508,11 @@ function mysql_check_local() {
 function print_header() {
     echo
     echo "⭐ ⭐ ⭐  $local_title ⭐  $local_role"
-    if [[ "$motd" ]]; then
-        echo
-        echo "`tty -s && tput setaf 5`$motd`tty -s && tput op`"
+    if [[ "$op" != 'terminus' ]]; then
+        if [[ "$motd" ]]; then
+            echo
+            echo "`tty -s && tput setaf 5`$motd`tty -s && tput op`"
+        fi
     fi
     echo
 }
@@ -1531,8 +1533,13 @@ function configtest() {
   # Test for Pantheon support
   if  [ "$terminus_site" ]; then
 
+    if [ ! -f "$ld_terminus" ]; then
+        warning "Terminus has not been installed; cd .loft_deploy && composer require terminus"
+        configtest_return=false
+    fi
+
     # assert can login
-    if ! $ld_terminus auth:login --machine-token=$terminus_machine_token; then
+    if ! $ld_terminus auth:login --machine-token="$terminus_machine_token"; then
         warning "Terminus cannot login; check variable terminus_machine_token."
         configtest_return=false
     fi
@@ -1881,7 +1888,8 @@ function warning() {
   if [ "$2" ]; then
     echo_fix "$2"
   fi
-  confirm 'Disregard warning' || return 2
+  confirm 'Disregard warning' && return 0
+  did_not_complete "Tests did not complete" && exit 2
 }
 
 ##
@@ -1950,9 +1958,11 @@ function _handle_hook() {
         [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${op}_files_${timing}")
         [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${op}_db_${timing}")
     done
+    hooks=("${hooks[@]}" "${op}_${timing}")
 
     for hook_stub in "${hooks[@]}"; do
         local hook="$config_dir/hooks/$hook_stub.sh"
+        has_flag v && echo "├──  Looking for hook: ${hook##*/}"
         local basename=$(basename $hook)
         declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "$op_status" "" "" "" "" "" "$config_dir/hooks/");
         if test -e "$hook"; then

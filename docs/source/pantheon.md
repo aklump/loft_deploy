@@ -1,25 +1,43 @@
-# Support for Pantheon websites
+# Support for Pantheon Websites
 
-Pantheon servers are supported (prod -> dev only at this time) via their CLi called Terminus.  **With this method, you should not install Loft Deploy on the remote server.**
+This guide will show you how to connect to Pantheon websites.  **Be aware that you do not install Loft Deploy on the remote server; you will use Pantheon's [Terminus](https://github.com/pantheon-systems/terminus) instead.**
 
-## Configuration
+## Install Terminus
+
+- Once your local _.loft_deploy_ exists you may install Terminus.
+- Descend into that directory, e.g. `cd .loft_deploy`
+- Install using composer `composer require pantheon-systems/terminus`
+
+## Configure Terminus
 
 You must have something like the following in _config.yml_ on your local dev machine for the `production` section:
 
     production:
       files:
       - files
+      - files/private
       pantheon:
         uuid: UUID-GOES-HERE
         site: SITE_NAME
         machine_token: 'MACHINE_TOKEN_HERE'
 
-## Databases
+### Configuration Hints
 
-1. You must have [Terminus installed](https://github.com/pantheon-systems/terminus#installation), e.g. `composer global require pantheon-systems/terminus`
-1. More info about [machine tokens](https://pantheon.io/docs/machine-tokens/)
-1. You can determine the site name by using `terminus sites list` after first authenticating.
-    
+1. To obtain or get more info about [machine tokens](https://pantheon.io/docs/machine-tokens/).
+1. You can determine the site name by using `ldp terminus site:list` after first authenticating.
+
+## Test installation
+
+1. Make sure to `clearcache`
+1. Then run `configtest` to see if _Terminus_ is installed correctly.
+
+## Usage
+
+1. You may use the installed version of terminus with Loft Deploy credentials by doing something like this:
+
+        ldp terminus site:list
+
+---    
 ## Files
 
 @todo This must be updated with the new YAML format:

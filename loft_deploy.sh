@@ -321,7 +321,10 @@ case $op in
 
   'terminus')
     cmd="auth:login --machine-token=$terminus_machine_token"
-    $ld_terminus $cmd
+    if [[ "${SCRIPT_ARGS[1]}" ]]; then
+      cmd="${SCRIPT_ARGS[1]}"
+    fi
+    $ld_terminus $cmd || did_not_complete
     end
     ;;
 
