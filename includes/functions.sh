@@ -1094,7 +1094,7 @@ function push_db() {
     fi
     has_flag y || confirm "Are you sure you want to push your local db to staging" || return 2
 
-    export_db push_db -f || return 1
+    export_db push_db -y || return 1
 
     echo 'Pushing db to staging...'
     filename="$current_db_filename.gz"
@@ -1153,8 +1153,8 @@ function export_db() {
   file="$current_db_dir$current_db_filename"
   file_gz="$file.gz"
 
-  if [ -f "$file" ] && [ "$2" != '-f' ]; then
-    if ! has_flag f; then
+  if [ -f "$file" ] && [ "$2" != '-y' ]; then
+    if ! has_flag y; then
       confirm_result=false
       if ! confirm "File $file exists, replace"; then
         echo_red "Cancelled."
@@ -1163,8 +1163,8 @@ function export_db() {
     fi
     rm $file
   fi
-  if [ -f "$file_gz" ] && [ "$2" != '-f' ]; then
-    if ! has_flag f; then
+  if [ -f "$file_gz" ] && [ "$2" != '-y' ]; then
+    if ! has_flag y; then
       confirm_result=false
       if ! confirm "File $file_gz exists, replace"; then
         echo_red "Cancelled."
@@ -1200,7 +1200,7 @@ function export_db() {
   local status=$?
 
   if [[ $status -eq 0 ]]; then
-      if [ "$2" == '-f' ]; then
+      if [ "$2" == '-y' ]; then
         $ld_gzip -f "$file"
       else
         $ld_gzip "$file"
