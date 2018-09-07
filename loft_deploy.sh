@@ -109,7 +109,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.14.12
+ld_version=0.14.13
 
 # theme color definitions
 color_red=1
