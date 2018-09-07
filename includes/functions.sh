@@ -400,7 +400,7 @@ function load_config() {
   # Test if the yaml file was modified and automatically rebuild config.yml.sh
   if [[ "$last_modified_cached" != "$last_modified" ]]; then
     $ld_php "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json" && echo_green "Changes detected in config.yml." || return 1
-    rm "$local_db_cnf"
+    rm -f "$local_db_cnf"
     echo "$last_modified" > "$mod_cached_path"
   fi
 
@@ -662,14 +662,16 @@ function fetch_files() {
             if [ "$local_copy_production_to" ]; then
                 _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || status=false
             fi
-            if [[ "$status" == true ]] && [ "$local_files" ] && [ "$production_files" ]; then
-                _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
-            fi
-            if [[ "$status" == true ]] && [ "$local_files2" ] && [ "$production_files2" ]; then
-                _fetch_dir 'files2/*' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
-            fi
-            if [[ "$status" == true ]] && [ "$local_files3" ] && [ "$production_files3" ]; then
-                _fetch_dir 'files3/*' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
+            if ! has_param ind; then
+                if [[ "$status" == true ]] && [ "$local_files" ] && [ "$production_files" ]; then
+                    _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
+                fi
+                if [[ "$status" == true ]] && [ "$local_files2" ] && [ "$production_files2" ]; then
+                    _fetch_dir 'files2/*' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
+                fi
+                if [[ "$status" == true ]] && [ "$local_files3" ] && [ "$production_files3" ]; then
+                    _fetch_dir 'files3/*' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
+                fi
             fi
         ;;
 #        'staging' )
@@ -700,7 +702,7 @@ function _fetch_copy() {
     oldIFS="$IFS"
     IFS=':'
 
-    echo "Fetching distinct files from $source_server to local cache..."
+    echo "Fetching individual files from $source_server to local cache..."
 
     [[ "$3" == null ]] && return 1
     [[ "$4" == null ]] && return 1
@@ -810,30 +812,32 @@ function reset_files() {
             _reset_copy "$local_copy_staging_to" || status=false
         fi
 
-        if [ "$status" == true ] && [ "$local_files" ]; then
-            _reset_dir "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
-            if [[ "$status" == true ]]; then
-                echo_green "└── done."
-            else
-                echo_red "└── failed." && status=false
+        if ! has_param ind; then
+            if [ "$status" == true ] && [ "$local_files" ]; then
+                _reset_dir "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
+                if [[ "$status" == true ]]; then
+                    echo_green "└── done."
+                else
+                    echo_red "└── failed." && status=false
+                fi
             fi
-        fi
 
-        if [ "$status" == true ] && [ "$local_files2" ]; then
-            _reset_dir "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
-            if [[ "$status" == true ]]; then
-                echo_green "└── done."
-            else
-                echo_red "└── failed." && status=false
+            if [ "$status" == true ] && [ "$local_files2" ]; then
+                _reset_dir "Files2" "$config_dir/$source_server/files2" "$local_files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
+                if [[ "$status" == true ]]; then
+                    echo_green "└── done."
+                else
+                    echo_red "└── failed." && status=false
+                fi
             fi
-        fi
 
-        if [ "$status" == true ] && [ "$local_files3" ]; then
-            _reset_dir "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
-            if [[ "$status" == true ]]; then
-                echo_green "└── done."
-            else
-                echo_red "└── failed." && status=false
+            if [ "$status" == true ] && [ "$local_files3" ]; then
+                _reset_dir "Files3" "$config_dir/$source_server/files3" "$local_files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
+                if [[ "$status" == true ]]; then
+                    echo_green "└── done."
+                else
+                    echo_red "└── failed." && status=false
+                fi
             fi
         fi
     fi
@@ -859,7 +863,7 @@ function _reset_copy() {
     local to=''
     local output=''
 
-    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`" || return 2
+    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset $source_server individual files, are you sure?`tty -s && tput op`" || return 2
 
     echo "Resetting individual $source_server files from cache..."
     for from in "${destination[@]}"; do
@@ -1474,9 +1478,9 @@ function show_help() {
     theme_header 'from prod' $color_prod
   fi
 
-  theme_help_topic fetch 'pl' 'Fetch production assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup' '--local skip remote operations'
-  theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations'
+  theme_help_topic fetch 'pl' 'Fetch production assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f' '-d to only fetch database' '--ind Only fetch individual files, skipping file directories'
+  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup' '--local skip remote operations' '--ind Only reset individual files, skipping file directories'
+  theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations' '--ind Only pull individual files, skipping file directories'
 
   if [ "$local_role" != 'staging' ]; then
     theme_header 'to/from staging' $color_staging
@@ -1484,9 +1488,9 @@ function show_help() {
 
   theme_help_topic push 'lst' 'A push all shortcut' '-f files only' '-d database only'
 
-  theme_help_topic fetch 'pl' 'Use `staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f staging' '-d to only fetch database'
-  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup' '--local skip remote operations'
-  theme_help_topic pull 'pl' 'Use `staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations'
+  theme_help_topic fetch 'pl' 'Use `staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f staging' '-d to only fetch database' '--ind Only fetch individual files, skipping file directories'
+  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup' '--local skip remote operations' '--ind Only reset individual files, skipping file directories'
+  theme_help_topic pull 'pl' 'Use `staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations' '--ind Only pull individual files, skipping file directories'
 
 }
 
