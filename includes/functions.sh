@@ -394,8 +394,8 @@ function load_config() {
   # As of v 0.14 we have yaml support, which is the defacto.
   local mod_cached_path="$config_dir/cache/config.yml.modified.txt"
   [ -f "$mod_cached_path" ] || touch "$mod_cached_path"
-  local last_modified_cached=$(cat $config_dir/cache/config.yml.modified.txt)
-  local last_modified=$(stat -f "%m" $config_dir/config.yml)
+  local last_modified_cached=$(cat "$config_dir/cache/config.yml.modified.txt")
+  local last_modified=$(date +%s -r "$config_dir/config.yml")
 
   # Test if the yaml file was modified and automatically rebuild config.yml.sh
   if [[ "$last_modified_cached" != "$last_modified" ]]; then
@@ -404,7 +404,7 @@ function load_config() {
     echo "$last_modified" > "$mod_cached_path"
   fi
 
-  test -f "$config_dir/cache/config.yml.sh" && source $config_dir/cache/config.yml.sh
+  test -f "$config_dir/cache/config.yml.sh" && source "$config_dir/cache/config.yml.sh"
 
   # Handle reading the drupal settings file if asked
   if [ "$local_drupal_settings" ]; then
