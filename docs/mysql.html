@@ -2,17 +2,17 @@
 
 <html>
 <head>
-  <title>Update</title>
+  <title>MYSQL</title>
   <link href="search/tipuesearch.css" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
 
-<body class="page--update">
+<body class="page--mysql">
 <header>
   <div class="pager">
-  <a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon websites</a>
+  <a href="motd.html" class="prev motd">&laquo;Motd</a>
   <a href="index.html" class="index">Index</a>
-  <a href="user_files.html" class="next user_files">User (non-versioned) files component&raquo;</a>
+  <a href="overview.html" class="next overview">Overview&raquo;</a>
 </div>
 </header>
 
@@ -22,22 +22,28 @@
   </form>
 </div>
 
-  <h1>Update</h1>
+  <h1>MYSQL</h1>
   <div class="breadcrumb"><a href="index.html">Index</a></div>
 
 <section>
 
-<h2>Manual Update to 0.14</h2>
+<h2>Local</h2>
 
-<p>This update converts the old config style into YAML:</p>
+<p>Local mysql can be entered using <code>ldp mysql</code>.</p>
 
-<ol>
-<li>Copy one of <em>install/config/*.yml</em> files to <em>.loft_deploy/config.yml</em>; based on the role of the local.</li>
-<li>Hand copy/paste config values from <em>.loft_deploy/config</em> into <em>.loft_deploy/config.yml</em>.</li>
-<li>Delete <em>.loft_deploy/config</em>.</li>
-<li>Run <code>ldp clearcache</code>.</li>
-<li>Run <code>ldp configtest</code> and adjust as necessary.</li>
-</ol>
+<h2>Remote</h2>
+
+<p>If your production server allows remote connections you can use <code>ldp mysql --prod</code> but that requires some extra configuration.  The following needs to be added to your dev config file:</p>
+
+<pre><code>production_remote_db_host=''
+</code></pre>
+
+<h3>Pantheon</h3>
+
+<p>If terminus is installed and your server is on Pantheon you only need to make sure this is present:</p>
+
+<pre><code>pantheon_live_uuid=''
+</code></pre>
 </section>
 
 <div class="search__results">
@@ -46,13 +52,13 @@
 
 <footer>
   <div class="pager">
-  <a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon websites</a>
+  <a href="motd.html" class="prev motd">&laquo;Motd</a>
   <a href="index.html" class="index">Index</a>
-  <a href="user_files.html" class="next user_files">User (non-versioned) files component&raquo;</a>
+  <a href="overview.html" class="next overview">Overview&raquo;</a>
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Tue, 04 Sep 2018 11:11:23 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 07 Sep 2018 07:22:49 -0700</p>
   </div>
 </footer>
 

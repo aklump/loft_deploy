@@ -108,7 +108,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.14.11
+ld_version=0.14.12
 
 # theme color definitions
 color_red=1
@@ -122,12 +122,13 @@ color_staging=$color_green
 color_local=$color_yellow
 color_prod=$color_red
 
-ld_remote_rsync_cmd="rsync -azP"
-
 lobster_user=$(whoami)
 
 # Import functions
 source "$INCLUDES/functions.sh"
+
+ld_remote_rsync_cmd="rsync -azP"
+has_flag v && ld_remote_rsync_cmd="rsync -azPv"
 
 ##
  # Begin Controller
@@ -321,7 +322,13 @@ case $op in
 
   'terminus')
     cmd="auth:login --machine-token=$terminus_machine_token"
-    $ld_terminus $cmd
+
+    # Todo need to array_shift and then pass the entire bit to terminus to make
+    # this really work correctly.
+    if [[ "${SCRIPT_ARGS[1]}" ]]; then
+      cmd="${SCRIPT_ARGS[1]}"
+    fi
+    $ld_terminus $cmd && echo_green "└── $config_dir/vendor/bin/terminus" || did_not_complete
     end
     ;;
 

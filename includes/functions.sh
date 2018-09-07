@@ -384,12 +384,26 @@ function load_config() {
   ld_scp=$(type scp >/dev/null 2>&1 && which scp)
 
   # For Pantheon support we need to find terminus.
-  ld_terminus=$(type terminus >/dev/null 2>&1 && which terminus)
+  ld_terminus="$config_dir/vendor/bin/terminus"
 
   # Legacy Support.
   test -f "$config_dir/config" && source $config_dir/config
 
+  local_db_cnf="$config_dir/cache/local.cnf"
+
   # As of v 0.14 we have yaml support, which is the defacto.
+  local mod_cached_path="$config_dir/cache/config.yml.modified.txt"
+  [ -f "$mod_cached_path" ] || touch "$mod_cached_path"
+  local last_modified_cached=$(cat $config_dir/cache/config.yml.modified.txt)
+  local last_modified=$(stat -f "%m" $config_dir/config.yml)
+
+  # Test if the yaml file was modified and automatically rebuild config.yml.sh
+  if [[ "$last_modified_cached" != "$last_modified" ]]; then
+    $ld_php "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json" && echo_green "Changes detected in config.yml." || return 1
+    rm "$local_db_cnf"
+    echo "$last_modified" > "$mod_cached_path"
+  fi
+
   test -f "$config_dir/cache/config.yml.sh" && source $config_dir/cache/config.yml.sh
 
   # Handle reading the drupal settings file if asked
@@ -403,7 +417,6 @@ function load_config() {
   fi
 
   # Define and ensure the mysql credentials.
-  local_db_cnf=$config_dir/cache/local.cnf
   test -f $local_db_cnf || generate_db_cnf
 
   if [[ ! $production_scp ]]; then
@@ -453,9 +466,11 @@ function load_production_config() {
     production_db_port="${production[8]}";
     production_copy_source="${production[9]}";
   elif [ "$pantheon_live_uuid" ]; then
+    production_server="live.${pantheon_live_uuid}@appserver.live.${pantheon_live_uuid}.drush.in"
+    production_port=2222
     production_remote_db_host="dbserver.live.$pantheon_live_uuid.drush.in";
-    production_db_name="pantheon";
-    production_db_user="pantheon";
+    production_db_host="Pantheon via Terminus";
+    production_db_name="$terminus_site";
   fi
 }
 
@@ -492,7 +507,7 @@ function do_pull() {
     local status=true
     load_production_config
 
-    if [ ! "$production_server" ]; then
+    if [[ ! "$production_server" ]] && [[ ! "$terminus_site" ]]; then
         echo_red "You cannot pull unless you define a production environment." && return 1
     fi
 
@@ -552,11 +567,11 @@ function _fetch_db_production() {
 
     $ld_terminus auth:login --machine-token=$terminus_machine_token --quiet
 
-    if ! confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?"; then
+    if ! has_flag y && ! confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?"; then
       echo "Creating new backup using Terminus..."
       $ld_terminus backup:create $terminus_site.live --element=db
     fi
-    echo "Downloading backup..."
+    echo "Downloading latest backup from Pantheon..."
     $ld_terminus backup:get $terminus_site.live --element=db --to="$_local_file"
     $ld_terminus auth:logout
 
@@ -647,13 +662,13 @@ function fetch_files() {
             if [ "$local_copy_production_to" ]; then
                 _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || status=false
             fi
-            if [[ "$status" == true ]] && [ "$local_files" ]; then
+            if [[ "$status" == true ]] && [ "$local_files" ] && [ "$production_files" ]; then
                 _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
             fi
-            if [[ "$status" == true ]] && [ "$local_files2" ]; then
+            if [[ "$status" == true ]] && [ "$local_files2" ] && [ "$production_files2" ]; then
                 _fetch_dir 'files2/*' "$production_server" "$production_port" "$production_files2" "$local_files2" "$config_dir/prod/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" || status=false
             fi
-            if [[ "$status" == true ]] && [ "$local_files3" ]; then
+            if [[ "$status" == true ]] && [ "$local_files3" ] && [ "$production_files3" ]; then
                 _fetch_dir 'files3/*' "$production_server" "$production_port" "$production_files3" "$local_files3" "$config_dir/prod/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" || status=false
             fi
         ;;
@@ -1092,7 +1107,7 @@ function push_db() {
     fi
     has_flag y || confirm "Are you sure you want to push your local db to staging" || return 2
 
-    export_db push_db -f || return 1
+    export_db push_db -y || return 1
 
     echo 'Pushing db to staging...'
     filename="$current_db_filename.gz"
@@ -1151,8 +1166,8 @@ function export_db() {
   file="$current_db_dir$current_db_filename"
   file_gz="$file.gz"
 
-  if [ -f "$file" ] && [ "$2" != '-f' ]; then
-    if ! has_flag f; then
+  if [ -f "$file" ] && [ "$2" != '-y' ]; then
+    if ! has_flag y; then
       confirm_result=false
       if ! confirm "File $file exists, replace"; then
         echo_red "Cancelled."
@@ -1161,8 +1176,8 @@ function export_db() {
     fi
     rm $file
   fi
-  if [ -f "$file_gz" ] && [ "$2" != '-f' ]; then
-    if ! has_flag f; then
+  if [ -f "$file_gz" ] && [ "$2" != '-y' ]; then
+    if ! has_flag y; then
       confirm_result=false
       if ! confirm "File $file_gz exists, replace"; then
         echo_red "Cancelled."
@@ -1198,7 +1213,7 @@ function export_db() {
   local status=$?
 
   if [[ $status -eq 0 ]]; then
-      if [ "$2" == '-f' ]; then
+      if [ "$2" == '-y' ]; then
         $ld_gzip -f "$file"
       else
         $ld_gzip "$file"
@@ -1508,9 +1523,11 @@ function mysql_check_local() {
 function print_header() {
     echo
     echo "⭐ ⭐ ⭐  $local_title ⭐  $local_role"
-    if [[ "$motd" ]]; then
-        echo
-        echo "`tty -s && tput setaf 5`$motd`tty -s && tput op`"
+    if [[ "$op" != 'terminus' ]]; then
+        if [[ "$motd" ]]; then
+            echo
+            echo "`tty -s && tput setaf 5`$motd`tty -s && tput op`"
+        fi
     fi
     echo
 }
@@ -1531,8 +1548,13 @@ function configtest() {
   # Test for Pantheon support
   if  [ "$terminus_site" ]; then
 
+    if [ ! -f "$ld_terminus" ]; then
+        warning "Terminus has not been installed; cd .loft_deploy && composer require terminus"
+        configtest_return=false
+    fi
+
     # assert can login
-    if ! $ld_terminus auth:login --machine-token=$terminus_machine_token; then
+    if ! $ld_terminus auth:login --machine-token="$terminus_machine_token"; then
         warning "Terminus cannot login; check variable terminus_machine_token."
         configtest_return=false
     fi
@@ -1795,9 +1817,6 @@ function get_var() {
  # Display configuation info
  #
 function show_info() {
-  clear
-  print_header
-
   theme_header 'LOCAL' $color_local
   echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config        : $config_dir"
@@ -1881,7 +1900,8 @@ function warning() {
   if [ "$2" ]; then
     echo_fix "$2"
   fi
-  confirm 'Disregard warning' || return 2
+  confirm 'Disregard warning' && return 0
+  did_not_complete "Tests did not complete" && exit 2
 }
 
 ##
@@ -1950,9 +1970,11 @@ function _handle_hook() {
         [[ 'files' == "$item" ]] && hooks=("${hooks[@]}" "${op}_files_${timing}")
         [[ 'database' == "$item" ]] && hooks=("${hooks[@]}" "${op}_db_${timing}")
     done
+    hooks=("${hooks[@]}" "${op}_${timing}")
 
     for hook_stub in "${hooks[@]}"; do
         local hook="$config_dir/hooks/$hook_stub.sh"
+        has_flag v && echo "├──  Looking for hook: ${hook##*/}"
         local basename=$(basename $hook)
         declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "$op_status" "" "" "" "" "" "$config_dir/hooks/");
         if test -e "$hook"; then
