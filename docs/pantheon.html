@@ -2,7 +2,7 @@
 
 <html>
 <head>
-  <title>Support for Pantheon websites</title>
+  <title>Support for Pantheon Websites</title>
   <link href="search/tipuesearch.css" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
@@ -22,33 +22,69 @@
   </form>
 </div>
 
-  <h1>Support for Pantheon websites</h1>
+  <h1>Support for Pantheon Websites</h1>
   <div class="breadcrumb"><a href="index.html">Index</a></div>
 
 <section>
 
-<p>Pantheon servers are supported (prod -> dev only at this time) via their CLi called Terminus.  <strong>With this method, you should not install Loft Deploy on the remote server.</strong></p>
+<p>This guide will show you how to connect to Pantheon websites.  <strong>Be aware that you do not install Loft Deploy on the remote server; you will use Pantheon's <a href="https://github.com/pantheon-systems/terminus">Terminus</a> instead.</strong></p>
 
-<h2>Configuration</h2>
+<h2>Install Terminus</h2>
+
+<ul>
+<li>Once your local <em>.loft_deploy</em> exists you may install Terminus.</li>
+<li>Descend into that directory, e.g. <code>cd .loft_deploy</code></li>
+<li>Install using composer <code>composer require pantheon-systems/terminus</code></li>
+</ul>
+
+<h2>Configure Terminus</h2>
 
 <p>You must have something like the following in <em>config.yml</em> on your local dev machine for the <code>production</code> section:</p>
 
 <pre><code>production:
   files:
-  - files
+  - code/sites/default/files
+  - code/sites/default/files/private
   pantheon:
     uuid: UUID-GOES-HERE
     site: SITE_NAME
     machine_token: 'MACHINE_TOKEN_HERE'
 </code></pre>
 
-<h2>Databases</h2>
+<h3>Configure exclude files</h3>
+
+<p>Pantheon includes the private files directory inside of the public files directory.  You will want to exclude the private directory by adding the following lines to <code>files_exclude.txt</code>:</p>
+
+<pre><code>    private
+</code></pre>
+
+<p>Then you should setup the second array element as <code>files/private</code> as shown above and then that will transfer your private directory, if you so desire.</p>
+
+<h3>Configuration Hints</h3>
 
 <ol>
-<li>You must have <a href="https://github.com/pantheon-systems/terminus#installation">Terminus installed</a>, e.g. <code>composer global require pantheon-systems/terminus</code></li>
-<li>More info about <a href="https://pantheon.io/docs/machine-tokens/">machine tokens</a></li>
-<li>You can determine the site name by using <code>terminus sites list</code> after first authenticating.</li>
+<li>To obtain or get more info about <a href="https://pantheon.io/docs/machine-tokens/">machine tokens</a>.</li>
+<li>You can determine the site name by using <code>ldp terminus site:list</code> after first authenticating.</li>
 </ol>
+
+<h2>Test installation</h2>
+
+<ol>
+<li>Then run <code>configtest</code> to see if <em>Terminus</em> is installed correctly.</li>
+<li>You may want to <code>clearcache</code> as a first step in debugging.</li>
+</ol>
+
+<h2>Usage</h2>
+
+<ol>
+<li><p>Authenticate using the Loft Deploy credentials with the following:</p>
+
+<pre><code>ldp terminus site:list
+</code></pre></li>
+<li><p>You will then see the absolute path to the terminus binary to use for further commands.</p></li>
+</ol>
+
+<hr />
 
 <h2>Files</h2>
 
@@ -81,7 +117,7 @@ pantheon_live_uuid=''
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Tue, 04 Sep 2018 11:11:22 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 07 Sep 2018 07:22:33 -0700</p>
   </div>
 </footer>
 

@@ -1,4 +1,4 @@
-<?php
+g co <?php
 /**
  * @file
  * Updates dynamic portions of loft_deploy.sh

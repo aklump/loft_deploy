@@ -2,17 +2,17 @@
 
 <html>
 <head>
-  <title></title>
+  <title>Update</title>
   <link href="search/tipuesearch.css" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
 
-<body class="">
+<body class="page--update">
 <header>
   <div class="pager">
-  <a href="javascript:void(0)" class="prev ">&laquo;</a>
+  <a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon Websites</a>
   <a href="index.html" class="index">Index</a>
-  <a href="javascript:void(0)" class="next ">&raquo;</a>
+  <a href="user_files.html" class="next user_files">User (non-versioned) files component&raquo;</a>
 </div>
 </header>
 
@@ -22,10 +22,22 @@
   </form>
 </div>
 
-  <h1></h1>
+  <h1>Update</h1>
   <div class="breadcrumb"><a href="index.html">Index</a></div>
 
 <section>
+
+<h2>Manual Update to 0.14</h2>
+
+<p>This update converts the old config style into YAML:</p>
+
+<ol>
+<li>Copy one of <em>install/config/*.yml</em> files to <em>.loft_deploy/config.yml</em>; based on the role of the local.</li>
+<li>Hand copy/paste config values from <em>.loft_deploy/config</em> into <em>.loft_deploy/config.yml</em>.</li>
+<li>Delete <em>.loft_deploy/config</em>.</li>
+<li>Run <code>ldp clearcache</code>.</li>
+<li>Run <code>ldp configtest</code> and adjust as necessary.</li>
+</ol>
 </section>
 
 <div class="search__results">
@@ -34,13 +46,13 @@
 
 <footer>
   <div class="pager">
-  <a href="javascript:void(0)" class="prev ">&laquo;</a>
+  <a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon Websites</a>
   <a href="index.html" class="index">Index</a>
-  <a href="javascript:void(0)" class="next ">&raquo;</a>
+  <a href="user_files.html" class="next user_files">User (non-versioned) files component&raquo;</a>
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Tue, 04 Sep 2018 11:11:23 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 07 Sep 2018 07:22:33 -0700</p>
   </div>
 </footer>
 

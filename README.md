@@ -29,7 +29,7 @@
 
 ## Documentation
 
-After downloading, open `docs/public_html/index.html` for documentation.
+After downloading, open `docs/index.html` for documentation.
 
 ## Contact
 
