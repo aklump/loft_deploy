@@ -389,7 +389,21 @@ function load_config() {
   # Legacy Support.
   test -f "$config_dir/config" && source $config_dir/config
 
+  local_db_cnf="$config_dir/cache/local.cnf"
+
   # As of v 0.14 we have yaml support, which is the defacto.
+  local mod_cached_path="$config_dir/cache/config.yml.modified.txt"
+  [ -f "$mod_cached_path" ] || touch "$mod_cached_path"
+  local last_modified_cached=$(cat $config_dir/cache/config.yml.modified.txt)
+  local last_modified=$(stat -f "%m" $config_dir/config.yml)
+
+  # Test if the yaml file was modified and automatically rebuild config.yml.sh
+  if [[ "$last_modified_cached" != "$last_modified" ]]; then
+    $ld_php "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json" && echo_green "Changes detected in config.yml." || return 1
+    rm "$local_db_cnf"
+    echo "$last_modified" > "$mod_cached_path"
+  fi
+
   test -f "$config_dir/cache/config.yml.sh" && source $config_dir/cache/config.yml.sh
 
   # Handle reading the drupal settings file if asked
@@ -403,7 +417,6 @@ function load_config() {
   fi
 
   # Define and ensure the mysql credentials.
-  local_db_cnf=$config_dir/cache/local.cnf
   test -f $local_db_cnf || generate_db_cnf
 
   if [[ ! $production_scp ]]; then
@@ -1804,9 +1817,6 @@ function get_var() {
  # Display configuation info
  #
 function show_info() {
-  clear
-  print_header
-
   theme_header 'LOCAL' $color_local
   echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
   echo "Config        : $config_dir"

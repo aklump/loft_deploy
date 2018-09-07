@@ -36,8 +36,8 @@ Then you should setup the second array element as `files/private` as shown above
 
 ## Test installation
 
-1. Make sure to `clearcache`
 1. Then run `configtest` to see if _Terminus_ is installed correctly.
+1. You may want to `clearcache` as a first step in debugging.
 
 ## Usage
 

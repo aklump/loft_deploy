@@ -1,8 +1,7 @@
 # Configuration Examples
 
-* After configuration changes you must call `ldp clearcache`.
-See _includes/schema--config.json_ for more info.
-* This includes updating Drupal's settings file; if you change DB credentials in the settings file, you will need to call `ldp clearcache`.
+* See _includes/schema--config.json_ for more info.
+* NOTE: If you change DB credentials in the settings file, you will need to call `ldp clearcache` manually.
 
 ## Example A
 
