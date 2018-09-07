@@ -63,6 +63,7 @@ while [ -h "$source" ]; do # resolve $source until the file is no longer a symli
 done
 ROOT="$( cd -P "$( dirname "$source" )" && pwd )"
 INCLUDES="$ROOT/includes"
+SECONDS=0
 
 ##
  # Bootstrap
@@ -207,21 +208,21 @@ case $op in
   'configtest')
     [[ "$status" == true ]] && configtest || status=false
     handle_post_hook $op $status || status=false
-    [[ "$status" == true ]] && complete 'Test complete.' && exit 0
+    [[ "$status" == true ]] && complete_elapsed 'Test complete.' && exit 0
     did_not_complete 'Test complete with failure(s).' && exit 1
     ;;
 
   'import')
     [[ "$status" == true ]] && import_db ${SCRIPT_ARGS[1]} || status=false
     handle_post_hook $op $status || status=false
-    [[ "$status" == true ]] && complete "Import complete." && exit 0
+    [[ "$status" == true ]] && complete_elapsed "Import complete." && exit 0
     did_not_complete "Import failed." && exit 1
     ;;
 
   'export')
     [[ "$status" == true ]] && export_db ${SCRIPT_ARGS[1]} || status=false
     handle_post_hook $op $status || status=false
-    [[ "$status" == true ]] && complete 'Export complete.' && exit 0
+    [[ "$status" == true ]] && complete_elapsed 'Export complete.' && exit 0
     did_not_complete 'Export failed.' && exit 1
     ;;
 
@@ -238,7 +239,7 @@ case $op in
       fetch_files || status=false
     fi
     handle_post_hook $op $status || status=false
-    [[ "$status" == true ]] && complete "Fetch complete." && exit 0
+    [[ "$status" == true ]] && complete_elapsed "Fetch complete." && exit 0
     did_not_complete "Fetch failed." && exit 1
     ;;
 
@@ -250,14 +251,14 @@ case $op in
         reset_files && echo "Local files has been reset to match $source_server." || status=false
     fi
     handle_post_hook $op $status || status=false
-    [[ "$status" == true ]] && complete "Reset complete." && exit 0
+    [[ "$status" == true ]] && complete_elapsed "Reset complete." && exit 0
     did_not_complete "Reset failed." && exit 1
     ;;
 
   'pull')
     [[ "$status" == true ]] && do_pull || status=false
     handle_post_hook $op $status || status=false
-    [[ "$status" == true ]] && complete "Pull complete." && exit 0
+    [[ "$status" == true ]] && complete_elapsed "Pull complete." && exit 0
     did_not_complete "Pull failed." && exit 1
     ;;
 
@@ -270,7 +271,7 @@ case $op in
     fi
 
     handle_post_hook $op $status || status=false
-    [[ "$status" == true ]] && complete "Push complete." && exit 0
+    [[ "$status" == true ]] && complete_elapsed "Push complete." && exit 0
     did_not_complete "Push failed." && exit 1
     ;;
 
@@ -303,15 +304,15 @@ case $op in
     ;;
 
   'help')
-    show_help
-    handle_post_hook $op
-    end
+    show_help || status=false
+    handle_post_hook $op $status && complete && exit 0
+    did_not_complete && exit 1
     ;;
 
   'info')
-    show_info
-    handle_post_hook $op
-    end
+    show_info || status=false
+    handle_post_hook $op $status && complete_elapsed "Info displayed" && exit 0
+    did_not_complete && exit 1
     ;;
 
   'pass')

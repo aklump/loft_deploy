@@ -1302,6 +1302,20 @@ function _drop_tables() {
  # @param string $1
  #   The message to delive
  #
+function complete_elapsed() {
+    echo
+    echo "👍 `tty -s && tput setaf 4`${1//.} in $SECONDS seconds.`tty -s && tput op`"
+    echo
+
+    return 0
+}
+
+##
+ # Echo an operation complete message.
+ #
+ # @param string $1
+ #   The message to delive
+ #
 function complete() {
     echo
     echo "👍 `tty -s && tput setaf 4`$1`tty -s && tput op`"
