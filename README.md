@@ -27,6 +27,13 @@
         $ . ~/.bash_profile
         $ ldp
 
+## Installation
+
+Here is a one-liner to clone this repo to a directory on your system _$HOME/opt/loft_deploy_ and create a symlink in _$HOME/bin/ldp_.  This assumes _~/bin_ is in your `$PATH` variable.
+
+    (cd $HOME && (test -d opt || mkdir opt) && (test -d bin || mkdir bin) && cd opt && (test -d loft_deploy || git clone https://github.com/aklump/loft_deploy.git) && (test -s $HOME/bin/ldp || ln -s $HOME/opt/loft_deploy/loft_deploy.sh $HOME/bin/ldp) && cd $HOME/opt/loft_deploy && composer install)
+
+
 ## Documentation
 
 After downloading, open `docs/index.html` for documentation.
