@@ -247,12 +247,12 @@ function init() {
   if [ $# -ne 1 ]; then
     end "Please specific one of: dev, staging or prod.  e.g. loft_deploy init dev"
   elif [ "$1" == 'dev' ] || [ "$1" == 'staging' ] || [ "$1" == 'prod' ]; then
-    mkdir $config_dir && rsync -a "$ROOT/install/base/" "$config_dir/"
+    mkdir $config_dir && rsync -a "$ROOT/install/base/" "$config_dir/" --exclude=.gitkeep
     chmod 0644 "$config_dir/.htaccess"
     cp "$ROOT/install/config/$1.yml" "$config_dir/config.yml"
     cd "$start_dir"
-    complete
-    end "Please configure and save $config_dir/config.yml.  Then run: clearcache"
+    complete "Initialization almost done; please configure and save $config_dir/config.yml.  Then run: clearcache"
+    end
   else
     end "Invalid argument: $1"
   fi
