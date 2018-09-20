@@ -57,6 +57,13 @@ $ ldp
 </code></pre></li>
 </ol>
 
+<h2>Installation</h2>
+
+<p>Here is a one-liner to clone this repo to a directory on your system <em>$HOME/opt/loft_deploy</em> and create a symlink in <em>$HOME/bin/ldp</em>.  This assumes <em>~/bin</em> is in your <code>$PATH</code> variable.</p>
+
+<pre><code>(cd $HOME &amp;&amp; (test -d opt || mkdir opt) &amp;&amp; (test -d bin || mkdir bin) &amp;&amp; cd opt &amp;&amp; (test -d loft_deploy || git clone https://github.com/aklump/loft_deploy.git) &amp;&amp; (test -s $HOME/bin/ldp || ln -s $HOME/opt/loft_deploy/loft_deploy.sh $HOME/bin/ldp) &amp;&amp; cd $HOME/opt/loft_deploy &amp;&amp; composer install)
+</code></pre>
+
 <h2>Documentation</h2>
 
 <p>After downloading, open <code>docs/index.html</code> for documentation.</p>
@@ -86,7 +93,7 @@ $ ldp
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 07 Sep 2018 09:44:31 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Thu, 20 Sep 2018 16:51:45 -0700</p>
   </div>
 </footer>
 
