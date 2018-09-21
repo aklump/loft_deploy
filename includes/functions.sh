@@ -500,18 +500,19 @@ function do_migrate() {
     ! has_option 'v' && db_command="$db_command -q"
     ! has_option 'v' && files_command="$files_command -q"
 
+    echo_title "Migration from \"$migration_title\""
+
     if ! confirm "$(echo_yellow "Migration will overwrite your local files and database.")  Your database will be backed up, but your files will not.  Are you sure?"; then
         fail_because "User cancelled."
         return 1
     fi
 
-    echo_title "Migration from \"$migration_role\""
 
     local base="$config_dir/migrate"
 
     # Database
     if [[ "$migration_database_path" ]]; then
-        echo_headline "Copying database from $migration_role..."
+        echo_headline "Copying database from $migration_title..."
         [ -d "$base/db" ] || mkdir -p "$base/db"
         rm "$base/db/fetched.sql"* > /dev/null 2>&1
 
@@ -536,7 +537,7 @@ function do_migrate() {
         local from=$(_get_path_with_user_and_host $migration_files_user $migration_files_host $migration_files_path)
         local to="$local_files"
         if [[ "$to" ]]; then
-            if confirm "$to will be erased to match $migration_role"; then
+            if confirm "$to will be erased to match $migration_title"; then
                 $files_command $from/ $to/ || fail_because "Could not migrate files $(basename $from)"
             else
                 fail_because "User cancelled files."
@@ -554,7 +555,7 @@ function do_migrate() {
         local from=$(_get_path_with_user_and_host $migration_files2_user $migration_files2_host $migration_files2_path)
         local to="$local_files2"
         if [[ "$to" ]]; then
-            if confirm "$to will be erased to match $migration_role"; then
+            if confirm "$to will be erased to match $migration_title"; then
                 $files_command $from/ $to/ || fail_because "Could not migrate files2 $(basename $from)"
             else
                 fail_because "User cancelled files2."
@@ -572,7 +573,7 @@ function do_migrate() {
         local from=$(_get_path_with_user_and_host $migration_files3_user $migration_files3_host $migration_files3_path)
         local to="$local_files3"
         if [[ "$to" ]]; then
-            if confirm "$to will be erased to match $migration_role"; then
+            if confirm "$to will be erased to match $migration_title"; then
                 $files_command $from/ $to/ || fail_because "Could not migrate files2 $(basename $from)"
             else
                 fail_because "User cancelled files3."
@@ -2014,9 +2015,9 @@ function show_info() {
     fi
   fi
 
-  if [[ "$migration_role" ]]; then
+  if [[ "$migration_title" ]]; then
     theme_header "MIGRATION"
-    table_add_row "From" "$migration_role"
+    table_add_row "From" "$migration_title"
     [[ "$migration_database_path" ]] && table_add_row "Database" "$migration_database_user@$migration_database_host:$migration_database_path"
     [[ "$migration_files_path" ]] && table_add_row "Files" "$migration_files_user@$migration_files_host:$migration_files_path"
     [[ "$migration_files2_path" ]] && table_add_row "Files2" "$migration_files2_user@$migration_files2_host:$migration_files2_path"

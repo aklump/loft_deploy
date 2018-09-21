@@ -106,7 +106,7 @@ fi
 ##
  # Bootstrap
  #
-eval $(get_config "migration.role")
+eval $(get_config "migration.title")
 eval $(get_config -a "migration.database")
 eval $(get_config_as -a "migration_files" "migration.files.0")
 eval $(get_config_as -a "migration_files2" "migration.files.1")

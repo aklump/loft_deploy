@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Migrations</title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+
+<body class="page--migrations">
+<header>
+  <div class="pager">
+  <a href="hooks.html" class="prev hooks">&laquo;Hooks</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="motd.html" class="next motd">Motd&raquo;</a>
+</div>
+</header>
+
+  <div class="search__wrapper">
+  <form action="search--results.html">
+    <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
+  </form>
+</div>
+
+  <h1>Migrations</h1>
+  <div class="breadcrumb"><a href="index.html">Index</a></div>
+
+<section>
+
+<p>You may wish to migrate a database and/or files from another server, which does not have Loft Deploy installed.  As long as you can scp and rsync into this other server you can use this feature.</p>
+
+<p>Migrations are unique in that they do not allow filters or hooks at this time.  In other words, all tables, and all files</p>
+
+<h2>On destination server</h2>
+
+<ol>
+<li>Create a mysql dump of the database and take note of it's path</li>
+</ol>
+
+<h2>On the source server</h2>
+
+<p>Add something like the following to your Loft Deploy configuration and do <code>ldp cc</code>.  The role that you choose will determine where the files are staged within Loft Deploy on your destination server.  If you choose prod, they will appear in the same folder as if you had done <code>ldp pull prod</code>.</p>
+
+<pre><code>migration:
+  role: prod
+  database:
+    user: cwcd8
+    host: 192.168.0.100
+    path: /home/parrot/backups/migrate.sql.gz
+  files:
+  - user: parrot
+    host: 192.168.0.100
+    path: /home/parrot/public_html/web/sites/default/files
+  - user: parrot
+    host: 192.168.0.100
+    path: /home/parrot/public_html/private/default/files
+</code></pre>
+
+<ol>
+<li>Check your configration with <code>ldp info</code>; you should see a migration section with the paths to the assets you can migrate.</li>
+</ol>
+
+<p>ldp export migrate
+cd path/to/dbs</p>
+
+<p>? enter the name of the db dump
+scp *-migrate.sql.gz challengestaging@166.62.85.248:/home/challengestaging/releases/current/private/default/db/purgeable</p>
+</section>
+
+<div class="search__results">
+  <div id="tipue_search_content"></div>
+</div>
+
+<footer>
+  <div class="pager">
+  <a href="hooks.html" class="prev hooks">&laquo;Hooks</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="motd.html" class="next motd">Motd&raquo;</a>
+</div>
+  
+  <div id="footer-legaleeze">
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 21 Sep 2018 11:37:19 -0700</p>
+  </div>
+</footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#tipue_search_input').tipuesearch();
+    });
+  </script>
+<script src="js/core.js"></script>
+</body>
+</html>
+
