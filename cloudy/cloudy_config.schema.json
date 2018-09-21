@@ -1,0 +1,142 @@
+{
+    "definitions": {
+        "help": {
+            "type": "string",
+            "minLength": 10
+        },
+        "commandName": {
+            "type": "string",
+            "pattern": "^[a-z_-]*$"
+        },
+        "command": {
+            "type": "object",
+            "properties": {
+                "aliases": {
+                    "type": "array"
+                },
+                "help": {
+                    "$ref": "#/definitions/help"
+                },
+                "arguments": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/argument"
+                    }
+                },
+                "options": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/option"
+                    }
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "help"
+            ]
+        },
+        "argument": {
+            "type": "object",
+            "properties": {
+                "aliases": {
+                    "type": "array"
+                },
+                "help": {
+                    "$ref": "#/definitions/help"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "help"
+            ]
+        },
+        "option": {
+            "type": "object",
+            "properties": {
+                "aliases": {
+                    "type": "array"
+                },
+                "help": {
+                    "$ref": "#/definitions/help"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "enum": {
+                    "type": "array"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "help",
+                "type"
+            ]
+        }
+    },
+    "type": "object",
+    "properties": {
+        "title": {
+            "type": "string"
+        },
+        "additional_config": {
+            "type": [
+                "null",
+                "array"
+            ],
+            "uniqueItems": true
+        },
+        "default_command": {
+            "$ref": "#/definitions/commandName"
+        },
+        "logging": {
+            "type": "object",
+            "properties": {
+                "file": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "file",
+                "enabled"
+            ]
+        },
+        "commands": {
+            "type": "object",
+            "propertyNames": {
+                "$ref": "#/definitions/commandName"
+            },
+            "additionalProperties": {
+                "$ref": "#/definitions/command"
+            }
+        },
+        "translate": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array"
+                },
+                "strings": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^\\S{2,3}$": {
+                            "type": [
+                                "null",
+                                "array"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            }
+        }
+    },
+    "required": [
+        "title",
+        "default_command",
+        "commands"
+    ]
+}

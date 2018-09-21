@@ -55,19 +55,63 @@
 # @defgroup loft_deploy Loft Deploy
 # @{
 #
-source="${BASH_SOURCE[0]}"
-while [ -h "$source" ]; do # resolve $source until the file is no longer a symlink
-  dir="$( cd -P "$( dirname "$source" )" && pwd )"
-  source="$(readlink "$source")"
-  [[ $source != /* ]] && source="$dir/$source" # if $source was a relative symlink, we need to resolve it relative to the path where the symlink file was located
-done
-ROOT="$( cd -P "$( dirname "$source" )" && pwd )"
-INCLUDES="$ROOT/includes"
-SECONDS=0
+
+# Define the configuration file relative to this script.
+CONFIG="loft_deploy.yml";
+
+# Uncomment this line to enable file logging.
+LOGFILE="loft_deploy.log"
+
+# TODO: Event handlers and other functions go here or source another file.
+
+function on_compile_config() {
+    # Make the instance configuration accessible to Cloudy.
+    echo "$config_dir/config.yml"
+}
+
+function on_clear_cache() {
+    # Convert config from yaml to bash.
+    $ld_php "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json"
+    status=$?
+    if [ $status -ne 0 ]; then
+        fail_because "YAML config could not be converted." && return 1
+    fi
+    succeed_because "$(echo_green "config.yml.sh")"
+    load_config
+    generate_db_cnf && succeed_because "$(echo_green "local.cnf")"
+}
+
+# Begin Cloudy Bootstrap
+s="${BASH_SOURCE[0]}";while [ -h "$s" ];do dir="$(cd -P "$(dirname "$s")" && pwd)";s="$(readlink "$s")";[[ $s != /* ]] && s="$dir/$s";done;r="$(cd -P "$(dirname "$s")" && pwd)";
+
+INCLUDES="$r/includes"
+
+# Import functions
+source "$INCLUDES/functions.sh"
+
+# Holds the directory of the config file and is modified by load_config().
+# This has to happen before cloudy bootstrap.
+config_dir=${PWD}/.loft_deploy
+_upsearch $(basename $config_dir)
+
+source "$r/cloudy/cloudy.sh"
+# End Cloudy Bootstrap
+
+if [[ "$LOFT_DEPLOY_PHP" ]]; then
+    ld_php=$LOFT_DEPLOY_PHP
+else
+    ld_php=$(type php >/dev/null 2>&1 && which php)
+fi
 
 ##
  # Bootstrap
  #
+eval $(get_config "migration.role")
+eval $(get_config -a "migration.database")
+eval $(get_config_as -a "migration_files" "migration.files.0")
+eval $(get_config_as -a "migration_files2" "migration.files.1")
+eval $(get_config_as -a "migration_files3" "migration.files.2")
+
 declare -a SCRIPT_ARGS=()
 declare -a flags=()
 declare -a params=()
@@ -99,9 +143,6 @@ current_db_dir=''
 # holds the filename of the last db export
 current_db_filename=''
 
-# holds the directory of the config file
-config_dir=${PWD}/.loft_deploy
-
 # holds the result of connect()
 mysql_check_result=false
 
@@ -109,7 +150,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.14.17
+ld_version=0.14.18
 
 # theme color definitions
 color_red=1
@@ -125,15 +166,15 @@ color_prod=$color_red
 
 lobster_user=$(whoami)
 
-# Import functions
-source "$INCLUDES/functions.sh"
-
 ld_remote_rsync_cmd="rsync -azP"
 has_flag v && ld_remote_rsync_cmd="rsync -azPv"
 
 ##
  # Begin Controller
  #
+
+implement_cloudy_basic
+
 
 # init has to come before configuration loading
 if [ "$op" == 'init' ]; then
@@ -170,8 +211,7 @@ fi
  # Access Check
  #
 if ! _access_check $op; then
-  echo "`tty -s && tput setaf 1`ACCESS DENIED!`tty -s && tput op`"
-  end "$local_role sites may not invoke: loft_deploy $op"
+    exit_with_failure "The \"$op\" command is not allowed for \"$local_role\" role environments."
 fi
 
 ##
@@ -199,6 +239,12 @@ status=true
 handle_pre_hook $op || status=false
 
 case $op in
+  'migrate')
+    [[ "$status" == true ]] && do_migrate || status=false
+    handle_post_hook $op $status || status=false
+    [[ "$status" == true ]] && exit_with_success_elapsed "Migration complete"
+    exit_with_failure "Migration failed."
+    ;;
   'init')
     [[ "$status" == true ]] && init ${SCRIPT_ARGS[1]} || status=false
     handle_post_hook $op $status && exit 0
@@ -333,12 +379,6 @@ case $op in
     end
     ;;
 
-  'clearcache')
-    do_clearcache && complete "Caches cleared." && end
-    did_not_complete "Caches failed to clear." && end
-    ;;
-
 esac
 
-did_not_complete "\"$op\" is an unknown operation; please try something else."
-exit 1
+exit_with_failure "\"$op\" is an unknown operation; please try something else."

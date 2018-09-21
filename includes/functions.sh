@@ -371,12 +371,6 @@ function load_config() {
   production_root=''
   staging_pass=''
 
-  if [[ "$LOFT_DEPLOY_PHP" ]]; then
-    ld_php=$LOFT_DEPLOY_PHP
-  else
-    ld_php=$(type php >/dev/null 2>&1 && which php)
-  fi
-
   ld_mysql=$(type mysql >/dev/null 2>&1 && which mysql)
   ld_mysqldump=$(type mysqldump >/dev/null 2>&1 && which mysqldump)
   ld_gzip=$(type gzip >/dev/null 2>&1 && which gzip)
@@ -498,6 +492,108 @@ function load_staging_config() {
  #
 function _upsearch () {
   test / == "$PWD" && echo && echo "`tty -s && tput setaf 1`NO CONFIG FILE FOUND!`tty -s && tput op`" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
+}
+
+function do_migrate() {
+    local db_command="scp"
+    local files_command="$ld_remote_rsync_cmd --delete"
+    ! has_option 'v' && db_command="$db_command -q"
+    ! has_option 'v' && files_command="$files_command -q"
+
+    if ! confirm "$(echo_yellow "Migration will overwrite your local files and database.")  Your database will be backed up, but your files will not.  Are you sure?"; then
+        fail_because "User cancelled."
+        return 1
+    fi
+
+    echo_title "Migration from \"$migration_role\""
+
+    local base="$config_dir/migrate"
+
+    # Database
+    if [[ "$migration_database_path" ]]; then
+        echo_headline "Copying database from $migration_role..."
+        [ -d "$base/db" ] || mkdir -p "$base/db"
+        rm "$base/db/fetched.sql"* > /dev/null 2>&1
+
+        local from=$(_get_path_with_user_and_host $migration_database_user $migration_database_host $migration_database_path)
+
+        local to="$base/db/fetched.sql"
+        if [ $(path_extension "$migration_database_path") == "gz" ]; then
+            local to="$base/db/fetched.sql.gz"
+        fi
+
+        $db_command $from $to || fail_because "Could not migrate database $(basename $migration_database_path)"
+
+        reset_db -y --source=migrate || fail_because "Could not import the database."
+        rm $to || fail_because "Could not remove $to"
+
+        ! has_failed && echo_green "$LIL db done."
+    fi
+
+    # Copy files
+    if [[ "$migration_files_path" ]]; then
+        echo_headline "Copying files..."
+        local from=$(_get_path_with_user_and_host $migration_files_user $migration_files_host $migration_files_path)
+        local to="$local_files"
+        if [[ "$to" ]]; then
+            if confirm "$to will be erased to match $migration_role"; then
+                $files_command $from/ $to/ || fail_because "Could not migrate files $(basename $from)"
+            else
+                fail_because "User cancelled files."
+                echo_red "$LIL Skipping files."
+            fi
+        else
+            fail_because "There is no local path to \"files\"."
+        fi
+        ! has_failed && echo_green "$LIL files done."
+    fi
+
+    # Copy files2
+    if [[ "$migration_files2_path" ]]; then
+        echo_headline "Copying files2..."
+        local from=$(_get_path_with_user_and_host $migration_files2_user $migration_files2_host $migration_files2_path)
+        local to="$local_files2"
+        if [[ "$to" ]]; then
+            if confirm "$to will be erased to match $migration_role"; then
+                $files_command $from/ $to/ || fail_because "Could not migrate files2 $(basename $from)"
+            else
+                fail_because "User cancelled files2."
+                echo_red "$LIL Skipping files2."
+            fi
+        else
+            fail_because "There is no local path to \"files2\"."
+        fi
+        ! has_failed && echo_green "$LIL files2 done."
+    fi
+
+    # Copy files3
+    if [[ "$migration_files3_path" ]]; then
+        echo_headline "Copying files3..."
+        local from=$(_get_path_with_user_and_host $migration_files3_user $migration_files3_host $migration_files3_path)
+        local to="$local_files3"
+        if [[ "$to" ]]; then
+            if confirm "$to will be erased to match $migration_role"; then
+                $files_command $from/ $to/ || fail_because "Could not migrate files2 $(basename $from)"
+            else
+                fail_because "User cancelled files3."
+                echo_red "$LIL Skipping files3."
+            fi
+        else
+            fail_because "There is no local path to \"files3\"."
+        fi
+        ! has_failed && echo_green "$LIL files3 done."
+    fi
+
+    has_failed && return 1
+    return 0
+}
+
+function _get_path_with_user_and_host() {
+    local user=$1
+    local host=$2
+    local path=$3
+
+    echo "$user@$host:$path"
 }
 
 ##
@@ -986,19 +1082,24 @@ function _reset_dir() {
  # Reset the local database with a previously fetched copy
  #
 function reset_db() {
+    parse_args $@
+
+    local source=$source_server
+    [[ "$parse_args__options__source" ]] && source=$parse_args__options__source
+
     if has_flag v; then
         echo "This process will reset your local db to match the most recently fetched"
-        echo "$source_server db, first backing up your local db. To absolutely match $source_server,"
+        echo "$source db, first backing up your local db. To absolutely match $source,"
         echo "consider fetching the database first, however it is slower."
         echo
-        echo "`tty -s && tput setaf 3`End result: Your local database will match the $source_server database.`tty -s && tput op`"
+        echo "`tty -s && tput setaf 3`End result: Your local database will match the $source database.`tty -s && tput op`"
     fi
-    has_flag 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source_server db" || return 2
+    [[ "$parse_args__option__y" ]] || has_flag 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source db" || return 2
 
-    local fetched_db_dump=($(find $config_dir/$source_server/db -name fetched.sql*))
+    local fetched_db_dump=($(find $config_dir/$source/db -name fetched.sql*))
 
     if [[ ${#fetched_db_dump[@]} -gt 1 ]]; then
-        end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/$source_server/db"
+        end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/$source/db"
     elif [[ ${#fetched_db_dump[@]} -eq 0 ]]; then
         end "Please fetch_db first"
     fi
@@ -1444,12 +1545,14 @@ function theme_help_topic() {
  #   Sets the value of global $theme_header_return
  #
 function theme_header() {
-  if [ $# -eq 1 ]; then
-    color=7
-  else
-    color=$2
-  fi
-  echo "`tty -s && tput setaf $color`~~$1~~`tty -s && tput op`"
+    local header=$1
+
+    if [ $# -eq 1 ]; then
+      color=7
+    else
+      color=$2
+    fi
+    echo "`tty -s && tput setaf $color`$(echo_headline "$header")`tty -s && tput op`"
 }
 
 show_switch_state='remote'
@@ -1539,8 +1642,7 @@ function mysql_check_local() {
  #
  #
 function print_header() {
-    echo
-    echo "⭐ ⭐ ⭐  $local_title ⭐  $local_role"
+    echo_title "$local_title 🔸  $local_role"
     if [[ "$op" != 'terminus' ]]; then
         if [[ "$motd" ]]; then
             echo
@@ -1836,79 +1938,94 @@ function get_var() {
  #
 function show_info() {
   theme_header 'LOCAL' $color_local
-  echo "Role          : $local_role " | tr "[:lower:]" "[:upper:]"
-  echo "Config        : $config_dir"
+  table_add_row "Role" "$(echo $local_role | tr [:lower:] [:upper:])"
+  table_add_row "Config" "$config_dir"
   if [ "$local_drupal_settings" ]; then
-    echo "DRUPAL_ROOT   : $local_drupal_root"
-    echo "Drupal        : $local_drupal_settings"
+    table_add_row "DRUPAL_ROOT" "$local_drupal_root"
+    table_add_row "Drupal" "$local_drupal_settings"
   fi
-  echo "DB Host       : $local_db_host"
-  echo "DB Name       : $local_db_name"
-  echo "DB User       : $local_db_user"
-  [ "$local_db_port" ] && echo "DB Port       : $local_db_port"
-  echo "Dumps         : $local_db_dir"
+
+  table_add_row "DB Host" "$local_db_host"
+  table_add_row "DB Name" "$local_db_name"
+  table_add_row "DB User" "$local_db_user"
+  [ "$local_db_port" ] && table_add_row "DB Port" "$local_db_port"
+  table_add_row "DB Dumps" "$local_db_dir"
   if _access_check 'fetch_db'; then
     if [[ -f "$config_dir/cached_db" ]]; then
-      echo "DB Fetched    : "$(cat $config_dir/cached_db)
+      table_add_row "DB Fetched" "$(cat $config_dir/cached_db)"
     fi
   fi
+    table_add_row "Files" "$local_files"
+    [ "$local_files2" ] && table_add_row "Files2" "$local_files2"
+    [ "$local_files3" ] && table_add_row "Files3" "$local_files3"
+
   if _access_check 'fetch_files'; then
-    echo "Files         : $local_files"
     if [[ "$ld_rsync_ex" ]]; then
       echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file are being ignored.`tty -s && tput op`"
     fi
 
-    [ "$local_files2" ] && echo "Files2        : $local_files2"
     if [[ "$ld_rsync_ex2" ]]; then
       echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file2 are being ignored.`tty -s && tput op`"
     fi
 
-    [ "$local_files3" ] && echo "Files3        : $local_files3"
     if [[ "$ld_rsync_ex3" ]]; then
       echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file3 are being ignored.`tty -s && tput op`"
     fi
 
     if [[ -f "$config_dir/prod/cached_files" ]]; then
-      echo "Prod files    : "$(cat $config_dir/prod/cached_files)
+      table_add_row "Prod files" "$(cat $config_dir/prod/cached_files)"
     fi
 
     if [[ -f "$config_dir/staging/cached_files" ]]; then
-      echo "Staging files : "$(cat $config_dir/staging/cached_files)
+      table_add_row "Staging files" "$(cat $config_dir/staging/cached_files)"
     fi
   fi
-  echo
+  echo_slim_table
 
   if [ "$local_role" == 'dev' ]; then
     load_staging_config
     load_production_config
-    theme_header 'PRODUCTION' $color_prod
-    echo "Server        : $production_server"
-    if [ $production_port ]; then
-      echo "Port          : $production_port"
+    if [[ "$production_server" ]]; then
+        theme_header 'PRODUCTION' $color_prod
+        table_add_row "Server" "$production_server"
+        if [ $production_port ]; then
+          table_add_row "Port" "$production_port"
+        fi
+        table_add_row "DB Host" "$production_db_host"
+        table_add_row "DB Name" "$production_db_name"
+        table_add_row "DB Dumps" "$production_db_dir"
+        table_add_row "Files" "$production_files"
+        [[ "$production_files2" != null ]] && table_add_row "Files2" "$production_files2"
+        [[ "$production_files3" != null ]] && table_add_row "Files3" "$production_files3"
+        echo_slim_table
     fi
-    echo "DB Host       : $production_db_host"
-    echo "DB Name       : $production_db_name"
-    echo "Dumps         : $production_db_dir"
-    echo "Files         : $production_files"
-    [[ "$production_files2" != null ]] && echo "Files2        : $production_files2"
-    [[ "$production_files3" != null ]] && echo "Files3        : $production_files3"
-    echo
-    theme_header 'STAGING' $color_staging
-    echo "Server        : $staging_server"
-    if [ $staging_port ]; then
-      echo "Port          : $staging_port"
+
+    if [[ "$staging_server" ]]; then
+        theme_header 'STAGING' $color_staging
+        table_add_row "Server" "$staging_server"
+        if [ $staging_port ]; then
+          table_add_row "Port" "$staging_port"
+        fi
+        table_add_row "DB Host" "$staging_db_host"
+        table_add_row "DB Name" "$staging_db_name"
+        table_add_row "DB Dumps" "$staging_db_dir"
+        table_add_row "Files" "$staging_files"
+        echo_slim_table
     fi
-    echo "DB Host       : $staging_db_host"
-    echo "DB Name       : $staging_db_name"
-    echo "Dumps         : $staging_db_dir"
-    echo "Files         : $staging_files"
-    echo
   fi
 
-  # version_result='?'
-  # version
-  theme_header 'LOFT_DEPLOY'
-  echo "Version       : $ld_version"
+  if [[ "$migration_role" ]]; then
+    theme_header "MIGRATION"
+    table_add_row "From" "$migration_role"
+    [[ "$migration_database_path" ]] && table_add_row "Database" "$migration_database_user@$migration_database_host:$migration_database_path"
+    [[ "$migration_files_path" ]] && table_add_row "Files" "$migration_files_user@$migration_files_host:$migration_files_path"
+    [[ "$migration_files2_path" ]] && table_add_row "Files2" "$migration_files2_user@$migration_files2_host:$migration_files2_path"
+    [[ "$migration_files3_path" ]] && table_add_row "Files3" "$migration_files3_user@$migration_files3_host:$migration_files3_path"
+    echo_slim_table
+  fi
+
+  echo
+  echo "Loft Deploy Ver. $ld_version"
 }
 
 function warning() {
@@ -1935,18 +2052,6 @@ function echo_fix() {
   echo 'To fix this try:'
   echo "`tty -s && tput setaf 2`$1`tty -s && tput op`"
   echo
-}
-
-function echo_yellow() {
-    echo "`tty -s && tput setaf $color_yellow`$1`tty -s && tput op`"
-}
-
-function echo_green() {
-    echo "`tty -s && tput setaf $color_green`$1`tty -s && tput op`"
-}
-
-function echo_red() {
-    echo "`tty -s && tput setaf $color_red`$1`tty -s && tput op`"
 }
 
 ##
@@ -2056,6 +2161,9 @@ function _access_check() {
       'pass')
         return 0
         ;;
+      'migrate')
+        return 0
+        ;;
     esac
   elif [ "$local_role" == 'dev' ]; then
     return 0
@@ -2081,20 +2189,6 @@ function do_ls() {
   done
   ls -$ls_flags $1
   complete
-}
-
-##
- # Handle the clearcache op.
- #
-function do_clearcache() {
-    # Convert config from yaml to bash.
-    $ld_php "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json"
-    status=$?
-    if [ $status -ne 0 ]; then
-        exit
-    fi
-    load_config
-    generate_db_cnf
 }
 
 ##

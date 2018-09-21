@@ -1,5 +1,30 @@
 {
     "definitions": {
+        "migration_resource": {
+            "type": "object",
+            "properties": {
+                "user": {
+                    "$ref": "#/definitions/user"
+                },
+                "host": {
+                    "$ref": "#/definitions/host"
+                },
+                "path": {
+                    "type": "string",
+                    "pattern": "^\\/.+$"
+                }
+            },
+            "additionalProperties": false,
+            "required": ["user", "host", "path"]
+        },
+        "user": {
+            "type": "string",
+            "minLength": 1
+        },
+        "host": {
+            "type": "string",
+            "minLength": 1
+        },
         "basepath": {
             "type": "string",
             "pattern": "\/.+"
@@ -8,6 +33,14 @@
             "type": "array",
             "maxItems": 3,
             "uniqueItems": true
+        },
+        "role": {
+            "type": "string",
+            "enum": [
+                "dev",
+                "prod",
+                "staging"
+            ]
         },
         "local": {
             "type": "object",
@@ -39,12 +72,7 @@
                     "$ref": "#/definitions/basepath"
                 },
                 "role": {
-                    "type": "string",
-                    "enum": [
-                        "dev",
-                        "prod",
-                        "staging"
-                    ]
+                    "$ref": "#/definitions/role"
                 },
                 "files": {
                     "$ref": "#/definitions/files"
@@ -66,10 +94,10 @@
                             "pattern": "\\/loft_deploy$"
                         },
                         "user": {
-                            "type": "string"
+                            "$ref": "#/definitions/user"
                         },
                         "host": {
-                            "type": "string"
+                            "$ref": "#/definitions/host"
                         },
                         "port": {
                             "type": "integer"
@@ -224,6 +252,24 @@
         },
         "staging": {
             "$ref": "#/definitions/remote"
+        },
+        "migration": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "type": "string",
+                    "enum": ["prod", "stage"]
+                },
+                "database": {
+                    "$ref": "#/definitions/migration_resource"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration_resource"
+                    }
+                }
+            }
         },
         "bin": {
             "type": "object",
