@@ -55,15 +55,37 @@
 # @defgroup loft_deploy Loft Deploy
 # @{
 #
-source="${BASH_SOURCE[0]}"
-while [ -h "$source" ]; do # resolve $source until the file is no longer a symlink
-  dir="$( cd -P "$( dirname "$source" )" && pwd )"
-  source="$(readlink "$source")"
-  [[ $source != /* ]] && source="$dir/$source" # if $source was a relative symlink, we need to resolve it relative to the path where the symlink file was located
-done
-ROOT="$( cd -P "$( dirname "$source" )" && pwd )"
+
+# Define the configuration file relative to this script.
+CONFIG="loft_deploy.yml";
+
+# Uncomment this line to enable file logging.
+LOGFILE="loft_deploy.log"
+
+# TODO: Event handlers and other functions go here or source another file.
+
+function on_clear_cache() {
+    # Convert config from yaml to bash.
+    $ld_php "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json"
+    status=$?
+    if [ $status -ne 0 ]; then
+        fail_because "YAML config could not be converted." && return 1
+    fi
+    succeed_because "$(echo_green "config.yml.sh")"
+    load_config
+    generate_db_cnf && succeed_because "$(echo_green "local.cnf")"
+}
+
+# Begin Cloudy Bootstrap
+s="${BASH_SOURCE[0]}";while [ -h "$s" ];do dir="$(cd -P "$(dirname "$s")" && pwd)";s="$(readlink "$s")";[[ $s != /* ]] && s="$dir/$s";done;r="$(cd -P "$(dirname "$s")" && pwd)";source "$r/cloudy/cloudy.sh"
+# End Cloudy Bootstrap
+
 INCLUDES="$ROOT/includes"
-SECONDS=0
+if [[ "$LOFT_DEPLOY_PHP" ]]; then
+    ld_php=$LOFT_DEPLOY_PHP
+else
+    ld_php=$(type php >/dev/null 2>&1 && which php)
+fi
 
 ##
  # Bootstrap
@@ -134,6 +156,9 @@ has_flag v && ld_remote_rsync_cmd="rsync -azPv"
 ##
  # Begin Controller
  #
+
+implement_cloudy_basic
+
 
 # init has to come before configuration loading
 if [ "$op" == 'init' ]; then
@@ -331,11 +356,6 @@ case $op in
     fi
     $ld_terminus $cmd && echo_green "└── $config_dir/vendor/bin/terminus" || did_not_complete
     end
-    ;;
-
-  'clearcache')
-    do_clearcache && complete "Caches cleared." && end
-    did_not_complete "Caches failed to clear." && end
     ;;
 
 esac

@@ -371,12 +371,6 @@ function load_config() {
   production_root=''
   staging_pass=''
 
-  if [[ "$LOFT_DEPLOY_PHP" ]]; then
-    ld_php=$LOFT_DEPLOY_PHP
-  else
-    ld_php=$(type php >/dev/null 2>&1 && which php)
-  fi
-
   ld_mysql=$(type mysql >/dev/null 2>&1 && which mysql)
   ld_mysqldump=$(type mysqldump >/dev/null 2>&1 && which mysqldump)
   ld_gzip=$(type gzip >/dev/null 2>&1 && which gzip)
@@ -1444,12 +1438,14 @@ function theme_help_topic() {
  #   Sets the value of global $theme_header_return
  #
 function theme_header() {
-  if [ $# -eq 1 ]; then
-    color=7
-  else
-    color=$2
-  fi
-  echo "`tty -s && tput setaf $color`~~$1~~`tty -s && tput op`"
+    local header=$1
+
+    if [ $# -eq 1 ]; then
+      color=7
+    else
+      color=$2
+    fi
+    echo "`tty -s && tput setaf $color`$(echo_headline "$header")`tty -s && tput op`"
 }
 
 show_switch_state='remote'
@@ -1539,8 +1535,7 @@ function mysql_check_local() {
  #
  #
 function print_header() {
-    echo
-    echo "⭐ ⭐ ⭐  $local_title ⭐  $local_role"
+    echo_title "$local_title 🔸  $local_role"
     if [[ "$op" != 'terminus' ]]; then
         if [[ "$motd" ]]; then
             echo
@@ -1906,10 +1901,7 @@ function show_info() {
     echo
   fi
 
-  # version_result='?'
-  # version
-  theme_header 'LOFT_DEPLOY'
-  echo "Version       : $ld_version"
+  echo "Loft Deploy Ver. $ld_version"
 }
 
 function warning() {
@@ -2082,20 +2074,6 @@ function do_ls() {
   done
   ls -$ls_flags $1
   complete
-}
-
-##
- # Handle the clearcache op.
- #
-function do_clearcache() {
-    # Convert config from yaml to bash.
-    $ld_php "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json"
-    status=$?
-    if [ $status -ne 0 ]; then
-        exit
-    fi
-    load_config
-    generate_db_cnf
 }
 
 ##

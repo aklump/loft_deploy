@@ -1,0 +1,6 @@
+title: "Loft Deploy"
+default_command: "help"
+commands:
+  clear-cache:
+    aliases: [clearcache, cc]
+    help: Clear the Cloudy Tools caches.
