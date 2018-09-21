@@ -1,0 +1,8 @@
+{
+    "require": {
+        "symfony/yaml": "~3.4",
+        "justinrainbow/json-schema": "^5.2",
+        "aklump/data": "^0.0.28",
+        "aklump/loft-lib": "~1.0"
+    }
+}
