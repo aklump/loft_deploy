@@ -35,5 +35,5 @@ In a migration, the database is backed up unless you use the `--nobu` option.  T
 
 1. Clear caches to update the config `ldp cc`.
 1. Check your configration with `ldp info`; you should see a migration section with the paths to the assets you can migrate.
-1. When you are ready call `lpd migrate`.  You will asked to confirm each step.    
+1. When you are ready call `ldp migrate`.  You will asked to confirm each step.    
 
