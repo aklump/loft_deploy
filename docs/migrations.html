@@ -27,22 +27,30 @@
 
 <section>
 
-<p>You may wish to migrate a database and/or files from another server, which does not have Loft Deploy installed.  As long as you can scp and rsync into this other server you can use this feature.</p>
+<p>You may wish to migrate a database and/or files from another server, which does not have Loft Deploy installed.  As long as you can <code>scp</code> and <code>rsync</code> into this other server you can use this feature.</p>
 
-<p>Migrations are unique in that they do not allow filters or hooks at this time.  In other words, all tables, and all files</p>
+<p>Migrations are unique in that they do implement the file excludes or the database filters.  In other words, all tables, and all files.</p>
 
-<h2>On destination server</h2>
+<p>Hooks are available, you can see the hooks if you run a migration with the <code>-v</code> option.</p>
 
-<ol>
-<li>Create a mysql dump of the database and take note of it's path</li>
-</ol>
+<p><strong>Also, migrations affect the destination server immediately,</strong> they are unlike the fetch/pull strategy.  When you migrate, the database is directly imported and the files are immediately deleted to match the source.</p>
+
+<p>In a migration, the database is backed up unless you use the <code>--nobu</code> option.  The files are NOT backed up.</p>
 
 <h2>On the source server</h2>
 
-<p>Add something like the following to your Loft Deploy configuration and do <code>ldp cc</code>.  The role that you choose will determine where the files are staged within Loft Deploy on your destination server.  If you choose prod, they will appear in the same folder as if you had done <code>ldp pull prod</code>.</p>
+<ol>
+<li>Create a mysql dump of the database and take note of it's path.</li>
+<li>Take note of the paths to each of the user files directories, up to 3.</li>
+</ol>
+
+<h2>On the destination server (the one you are migrating to)</h2>
+
+<ol>
+<li><p>Add something like the following to your Loft Deploy configuration file <em>.loft_deploy/config.yml</em>.  You do not need to add both <code>database</code> and <code>files</code> as they can act independently, if desired.</p>
 
 <pre><code>migration:
-  role: prod
+  title: d8-staging.mysite.com
   database:
     user: cwcd8
     host: 192.168.0.100
@@ -54,17 +62,11 @@
   - user: parrot
     host: 192.168.0.100
     path: /home/parrot/public_html/private/default/files
-</code></pre>
-
-<ol>
+</code></pre></li>
+<li><p>Clear caches to update the config <code>ldp cc</code>.</p></li>
 <li>Check your configration with <code>ldp info</code>; you should see a migration section with the paths to the assets you can migrate.</li>
+<li>When you are ready call <code>lpd migrate</code>.  You will asked to confirm each step.</li>
 </ol>
-
-<p>ldp export migrate
-cd path/to/dbs</p>
-
-<p>? enter the name of the db dump
-scp *-migrate.sql.gz challengestaging@166.62.85.248:/home/challengestaging/releases/current/private/default/db/purgeable</p>
 </section>
 
 <div class="search__results">
@@ -79,7 +81,7 @@ scp *-migrate.sql.gz challengestaging@166.62.85.248:/home/challengestaging/relea
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 21 Sep 2018 11:37:19 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 21 Sep 2018 11:54:05 -0700</p>
   </div>
 </footer>
 
