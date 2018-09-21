@@ -64,6 +64,11 @@ LOGFILE="loft_deploy.log"
 
 # TODO: Event handlers and other functions go here or source another file.
 
+function on_compile_config() {
+    # Make the instance configuration accessible to Cloudy.
+    echo "$config_dir/config.yml"
+}
+
 function on_clear_cache() {
     # Convert config from yaml to bash.
     $ld_php "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json"
@@ -77,13 +82,20 @@ function on_clear_cache() {
 }
 
 # Begin Cloudy Bootstrap
-s="${BASH_SOURCE[0]}";while [ -h "$s" ];do dir="$(cd -P "$(dirname "$s")" && pwd)";s="$(readlink "$s")";[[ $s != /* ]] && s="$dir/$s";done;r="$(cd -P "$(dirname "$s")" && pwd)";source "$r/cloudy/cloudy.sh"
-# End Cloudy Bootstrap
+s="${BASH_SOURCE[0]}";while [ -h "$s" ];do dir="$(cd -P "$(dirname "$s")" && pwd)";s="$(readlink "$s")";[[ $s != /* ]] && s="$dir/$s";done;r="$(cd -P "$(dirname "$s")" && pwd)";
 
-INCLUDES="$ROOT/includes"
+INCLUDES="$r/includes"
 
 # Import functions
 source "$INCLUDES/functions.sh"
+
+# Holds the directory of the config file and is modified by load_config().
+# This has to happen before cloudy bootstrap.
+config_dir=${PWD}/.loft_deploy
+_upsearch $(basename $config_dir)
+
+source "$r/cloudy/cloudy.sh"
+# End Cloudy Bootstrap
 
 if [[ "$LOFT_DEPLOY_PHP" ]]; then
     ld_php=$LOFT_DEPLOY_PHP
@@ -130,9 +142,6 @@ current_db_dir=''
 
 # holds the filename of the last db export
 current_db_filename=''
-
-# holds the directory of the config file
-config_dir=${PWD}/.loft_deploy
 
 # holds the result of connect()
 mysql_check_result=false
