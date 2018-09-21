@@ -81,6 +81,10 @@ s="${BASH_SOURCE[0]}";while [ -h "$s" ];do dir="$(cd -P "$(dirname "$s")" && pwd
 # End Cloudy Bootstrap
 
 INCLUDES="$ROOT/includes"
+
+# Import functions
+source "$INCLUDES/functions.sh"
+
 if [[ "$LOFT_DEPLOY_PHP" ]]; then
     ld_php=$LOFT_DEPLOY_PHP
 else
@@ -90,6 +94,12 @@ fi
 ##
  # Bootstrap
  #
+eval $(get_config "migration.role")
+eval $(get_config -a "migration.database")
+eval $(get_config_as -a "migration_files" "migration.files.0")
+eval $(get_config_as -a "migration_files2" "migration.files.1")
+eval $(get_config_as -a "migration_files3" "migration.files.2")
+
 declare -a SCRIPT_ARGS=()
 declare -a flags=()
 declare -a params=()
@@ -147,9 +157,6 @@ color_prod=$color_red
 
 lobster_user=$(whoami)
 
-# Import functions
-source "$INCLUDES/functions.sh"
-
 ld_remote_rsync_cmd="rsync -azP"
 has_flag v && ld_remote_rsync_cmd="rsync -azPv"
 
@@ -195,8 +202,7 @@ fi
  # Access Check
  #
 if ! _access_check $op; then
-  echo "`tty -s && tput setaf 1`ACCESS DENIED!`tty -s && tput op`"
-  end "$local_role sites may not invoke: loft_deploy $op"
+    exit_with_failure "The \"$op\" command is not allowed for \"$local_role\" role environments."
 fi
 
 ##
@@ -224,6 +230,12 @@ status=true
 handle_pre_hook $op || status=false
 
 case $op in
+  'migrate')
+    [[ "$status" == true ]] && do_migrate || status=false
+    handle_post_hook $op $status || status=false
+    [[ "$status" == true ]] && exit_with_success_elapsed "Migration complete"
+    exit_with_failure "Migration failed."
+    ;;
   'init')
     [[ "$status" == true ]] && init ${SCRIPT_ARGS[1]} || status=false
     handle_post_hook $op $status && exit 0
@@ -360,5 +372,4 @@ case $op in
 
 esac
 
-did_not_complete "\"$op\" is an unknown operation; please try something else."
-exit 1
+exit_with_failure "\"$op\" is an unknown operation; please try something else."
