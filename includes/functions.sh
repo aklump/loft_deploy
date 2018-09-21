@@ -1846,24 +1846,25 @@ function show_info() {
   echo "DB Name       : $local_db_name"
   echo "DB User       : $local_db_user"
   [ "$local_db_port" ] && echo "DB Port       : $local_db_port"
-  echo "Dumps         : $local_db_dir"
+  echo "DB Dumps      : $local_db_dir"
   if _access_check 'fetch_db'; then
     if [[ -f "$config_dir/cached_db" ]]; then
       echo "DB Fetched    : "$(cat $config_dir/cached_db)
     fi
   fi
-  if _access_check 'fetch_files'; then
     echo "Files         : $local_files"
+    [ "$local_files2" ] && echo "Files2        : $local_files2"
+    [ "$local_files3" ] && echo "Files3        : $local_files3"
+
+  if _access_check 'fetch_files'; then
     if [[ "$ld_rsync_ex" ]]; then
       echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file are being ignored.`tty -s && tput op`"
     fi
 
-    [ "$local_files2" ] && echo "Files2        : $local_files2"
     if [[ "$ld_rsync_ex2" ]]; then
       echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file2 are being ignored.`tty -s && tput op`"
     fi
 
-    [ "$local_files3" ] && echo "Files3        : $local_files3"
     if [[ "$ld_rsync_ex3" ]]; then
       echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file3 are being ignored.`tty -s && tput op`"
     fi
