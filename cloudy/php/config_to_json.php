@@ -16,9 +16,9 @@ use JsonSchema\Validator;
 use Symfony\Component\Yaml\Yaml;
 
 require_once __DIR__ . '/bootstrap.php';
-
 $filepath_to_config_file = $argv[2];
 $skip_config_validation = $argv[3] === 'true';
+$additional_config = array_filter(explode("\n", trim($g->get($argv, '4', ''))));
 
 try {
   $data = [];
@@ -47,8 +47,10 @@ try {
 
   }
 
-  foreach ($g->get($data, 'additional_config', []) as $basename) {
-    $path = ROOT . "/$basename";
+  // TODO There is no support for JSON additional config yet.
+  $additional_config += $g->get($data, 'additional_config', []);
+  foreach ($additional_config as $basename) {
+    $path = strpos($basename, '/') !== 0 ? ROOT . "/$basename" : $basename;
     if (!file_exists($path)) {
       throw new \RuntimeException("Missing configuration file: $path");
     }
