@@ -109,11 +109,11 @@ function parse_args() {
         # a=1, dog=bark
         if [[ ${BASH_REMATCH[2]} = *"="* ]]; then
             [[ ${BASH_REMATCH[2]} =~ (.+)=(.+) ]]
-            name=${BASH_REMATCH[1]}
-            value=${BASH_REMATCH[2]}
+            name="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
 
             parse_args__options=("${parse_args__options[@]}" "$name")
-            eval "parse_args__option__${name}=${value}"
+            eval "parse_args__option__${name}=\"${value}\""
             parse_args__options_passthru="$parse_args__options_passthru $arg"
 
         # bc, tree
@@ -892,76 +892,11 @@ function string_repeat() {
     for ((i=0; i < $repetitions; i++)){ echo -n "$string"; }
 }
 
-##
- # Echo a table output.
- #
- # @options
- # --padding={n}
- #
- # @see table_header_separator
- # @see table_column separators
- #
+function echo_slim_table() {
+    _cloudy_echo_aligned_columns --lpad=1 --top="" --lborder="" --mborder=":" --rborder=""
+}
 function echo_table() {
-    parse_args $@
-    local lpad=${parse_args__option__lpad:-1}
-    local rpad=${parse_args__option__rpad:-4}
-
-    table_header_separator=${table_header_separator:-"-"}
-    if [[ ${#table_column_separators} -eq 0 ]]; then
-        table_column_separators=("|" "|" "|")
-    fi
-
-    # Draw a line
-    local width=${#table_column_separators[0]}
-    i=1
-    for column_width in "${_cloudy_table_col_widths[@]}"; do
-        width=$(( $width + $lpad + $column_width + $rpad))
-        if [[ $i -lt ${#_cloudy_table_col_widths} ]]; then
-            width=$(( $width + ${#table_column_separators[1]}))
-        fi
-        let i++
-    done
-    if [ ${#_cloudy_table_col_widths[@]} -gt 1 ]; then
-        width=$(( $width + ${#table_column_separators[2]}))
-    fi
-    local line="$(string_repeat "$table_header_separator" $width)"
-
-    echo "$line"
-
-    # Deal with header
-    if [ ${#_cloudy_table_header[@]} -gt 0 ]; then
-        array_join__array=("${_cloudy_table_header[@]}")
-        _cloudy_table_rows=("$(array_join '|')" "${_cloudy_table_rows[@]}")
-    fi
-
-    # Output the body
-    local row_id=0
-    for string_split__string in "${_cloudy_table_rows[@]}"; do
-        string_split '|'
-        local column_index=0
-        echo -n "${table_column_separators[0]}"
-        for cell in "${string_split__array[@]}"; do
-            echo -n "$(string_repeat " " $lpad)$cell"
-            echo -n "$(string_repeat " " $(( ${_cloudy_table_col_widths[$column_index]} - ${#cell} + $rpad )))"
-
-            echo -n "${table_column_separators[1]}"
-            let column_index++
-        done
-        echo
-
-        if [ ${#_cloudy_table_header[@]} -gt 0 ] && [ $row_id -eq 0 ]; then
-            echo $line
-        fi
-
-        let row_id++
-    done
-
-    echo "$line"
-
-    # Reset the table global vars.
-    _cloudy_table_col_widths=()
-    _cloudy_table_header=()
-    _cloudy_table_rows=()
+    _cloudy_echo_aligned_columns --lpad=1 --top="-" --lborder="|" --mborder="|" --rborder="|"
 }
 
 #

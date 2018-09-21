@@ -549,6 +549,80 @@ function _cloudy_trigger_event() {
     return 0
 }
 
+##
+ # Helper to echo a table-like output.
+ #
+function _cloudy_echo_aligned_columns() {
+    parse_args $@
+    local lpad=${parse_args__option__lpad:-1}
+    local rpad=${parse_args__option__rpad:-4}
+    local lborder="${parse_args__option__lborder}"
+    local mborder="${parse_args__option__mborder}"
+    local rborder="${parse_args__option__rborder}"
+    local top="${parse_args__option__top}"
+
+    # Draw a line
+    local width=${#lborder}
+    local column_width
+    local line
+
+    i=1
+    for column_width in "${_cloudy_table_col_widths[@]}"; do
+        width=$(( $width + $lpad + $column_width + $rpad))
+        if [[ $i -lt ${#_cloudy_table_col_widths} ]]; then
+            width=$(( $width + ${#mborder}))
+        fi
+        let i++
+    done
+    if [ ${#_cloudy_table_col_widths[@]} -gt 1 ]; then
+        width=$(( $width + ${#rborder}))
+    fi
+    line="$(string_repeat "$top" $width)"
+
+    echo "$line"
+
+    # Deal with header
+    if [ ${#_cloudy_table_header[@]} -gt 0 ]; then
+        array_join__array=("${_cloudy_table_header[@]}")
+        _cloudy_table_rows=("$(array_join '|')" "${_cloudy_table_rows[@]}")
+    fi
+
+    # Output the body
+    local row_id=0
+    for string_split__string in "${_cloudy_table_rows[@]}"; do
+        string_split '|'
+        local column_index=0
+        echo -n "${lborder}"
+        local last_column=${#_cloudy_table_col_widths[@]}
+        let last_column--
+        for cell in "${string_split__array[@]}"; do
+            echo -n "$(string_repeat " " $lpad)$cell"
+            echo -n "$(string_repeat " " $(( ${_cloudy_table_col_widths[$column_index]} - ${#cell} + $rpad )))"
+
+            if [ $column_index -eq $last_column ]; then
+                echo -n "${rborder}"
+            else
+                echo -n "${mborder}"
+            fi
+            let column_index++
+        done
+        echo
+
+        if [ ${#_cloudy_table_header[@]} -gt 0 ] && [ $row_id -eq 0 ]; then
+            echo $line
+        fi
+
+        let row_id++
+    done
+
+    echo "$line"
+
+    # Reset the table global vars.
+    _cloudy_table_col_widths=()
+    _cloudy_table_header=()
+    _cloudy_table_rows=()
+}
+
 #
 # Begin Core Controller Section.
 #
