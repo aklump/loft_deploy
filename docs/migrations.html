@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Migrations</title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+
+<body class="page--migrations">
+<header>
+  <div class="pager">
+  <a href="hooks.html" class="prev hooks">&laquo;Hooks</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="motd.html" class="next motd">Motd&raquo;</a>
+</div>
+</header>
+
+  <div class="search__wrapper">
+  <form action="search--results.html">
+    <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
+  </form>
+</div>
+
+  <h1>Migrations</h1>
+  <div class="breadcrumb"><a href="index.html">Index</a></div>
+
+<section>
+
+<p>You may wish to migrate a database and/or files from another server, which does not have Loft Deploy installed.  As long as you can <code>scp</code> and <code>rsync</code> into this other server you can use this feature.</p>
+
+<p>Migrations are unique in that they do implement the file excludes or the database filters.  In other words, all tables, and all files.</p>
+
+<p>Hooks are available, you can see the hooks if you run a migration with the <code>-v</code> option.</p>
+
+<p><strong>Also, migrations affect the destination server immediately,</strong> they are unlike the fetch/pull strategy.  When you migrate, the database is directly imported and the files are immediately deleted to match the source.</p>
+
+<p>In a migration, the database is backed up unless you use the <code>--nobu</code> option.  The files are NOT backed up.</p>
+
+<h2>On the source server</h2>
+
+<ol>
+<li>Create a mysql dump of the database and take note of it's path.</li>
+<li>Take note of the paths to each of the user files directories, up to 3.</li>
+</ol>
+
+<h2>On the destination server (the one you are migrating to)</h2>
+
+<ol>
+<li><p>Add something like the following to your Loft Deploy configuration file <em>.loft_deploy/config.yml</em>.  You do not need to add both <code>database</code> and <code>files</code> as they can act independently, if desired.</p>
+
+<pre><code>migration:
+  title: d8-staging.mysite.com
+  database:
+    user: cwcd8
+    host: 192.168.0.100
+    path: /home/parrot/backups/migrate.sql.gz
+  files:
+  - user: parrot
+    host: 192.168.0.100
+    path: /home/parrot/public_html/web/sites/default/files
+  - user: parrot
+    host: 192.168.0.100
+    path: /home/parrot/public_html/private/default/files
+</code></pre></li>
+<li><p>Clear caches to update the config <code>ldp cc</code>.</p></li>
+<li>Check your configration with <code>ldp info</code>; you should see a migration section with the paths to the assets you can migrate.</li>
+<li>When you are ready call <code>lpd migrate</code>.  You will asked to confirm each step.</li>
+</ol>
+</section>
+
+<div class="search__results">
+  <div id="tipue_search_content"></div>
+</div>
+
+<footer>
+  <div class="pager">
+  <a href="hooks.html" class="prev hooks">&laquo;Hooks</a>
+  <a href="index.html" class="index">Index</a>
+  <a href="motd.html" class="next motd">Motd&raquo;</a>
+</div>
+  
+  <div id="footer-legaleeze">
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 21 Sep 2018 11:54:05 -0700</p>
+  </div>
+</footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      $('#tipue_search_input').tipuesearch();
+    });
+  </script>
+<script src="js/core.js"></script>
+</body>
+</html>
+

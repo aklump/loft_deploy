@@ -106,7 +106,7 @@ fi
 ##
  # Bootstrap
  #
-eval $(get_config "migration.role")
+eval $(get_config "migration.title")
 eval $(get_config -a "migration.database")
 eval $(get_config_as -a "migration_files" "migration.files.0")
 eval $(get_config_as -a "migration_files2" "migration.files.1")
@@ -150,7 +150,7 @@ mysql_check_result=false
 now=$(date +"%Y%m%d_%H%M")
 
 # Current version of this script (auto-updated during build).
-ld_version=0.14.18
+ld_version=0.14.19
 
 # theme color definitions
 color_red=1
