@@ -1,6 +1,130 @@
 title: "Loft Deploy"
-default_command: "help"
+default_command: ""
 commands:
+  pull:
+    help: Combine the fetch and reset commands in one step.
+    arguments:
+      prod:
+        help: Pull from the production server; this is the default.
+      staging:
+        help: Pull from the staging server rather than the production server.
+    options:
+      f:
+        type: boolean
+        help: Pull only files, skip the database.
+      d:
+        type: boolean
+        help: Pull only database, ignoring files.
+      yes:
+        type: boolean
+        aliases: [y]
+        help: Answer yes to all confirmations, bypassing user input.
+      ind:
+        type: boolean
+        aliases: [i]
+        help: Only pull the individual files as defined by copy_production_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you often will pair it with -f, e.g. loft_deploy pull -fi
+  fetch:
+    help: Fetch assets from remote and stash for use by the reset command; this does not affect local database or files; use reset for that.
+    arguments:
+      prod:
+        help: Pull from the production server; this is the default.
+      staging:
+        help: Pull from the staging server rather than the production server.
+    options:
+      f:
+        type: boolean
+        help: Fetch only files, skip the database.
+      d:
+        type: boolean
+        help: Fetch only database, ignoring files.
+      ind:
+        type: boolean
+        aliases: [i]
+        help: Only fetch the individual files as defined by copy_production_to, copy_staging_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you may pair it with -f to ignore the database, e.g. loft_deploy fetch -fi
+  reset:
+    help: Reset local with fetched assets.
+    arguments:
+      prod:
+        help: Pull from the production server; this is the default.
+      staging:
+        help: Pull from the staging server rather than the production server.
+    options:
+      f:
+        type: boolean
+        help: Fetch only files, skip the database.
+      d:
+        type: boolean
+        help: Fetch only database, ignoring files.
+      yes:
+        type: boolean
+        aliases: [y]
+        help: Answer yes to all confirmations, bypassing user input.
+      ind:
+        type: boolean
+        aliases: [i]
+        help: Only reset the individual files as defined by copy_production_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you often will pair it with -f, e.g. loft_deploy reset -fi
+  export:
+    help: Dump the local database to a file.  The file is named after the database, but this can be modified using the suffix and the --time option.
+    arguments:
+      suffix:
+        help: An optional suffix to append to the filename of the dump file.
+    options:
+      time:
+        help: Append a UTC ISO8601 datestamp to the filename (after the suffix, if used).
+        type: boolean
+        aliases: [t]
+      yes:
+        type: boolean
+        aliases: [y]
+        help: Answer yes to all confirmations, bypassing user input.
+      force:
+        help: Overwrite file, if it exists.
+        type: boolean
+        aliases: [f]
+  import:
+    help: Empty your local database and import a database dump.
+    arguments:
+      suffix:
+        help: If you used export with a suffix, you may provide only the suffix here, e.g. loft_deploy export rollback, then you can use loft_deploy import rollback.  You may also provide a complete path to an exact filename and it will be used.
+    options:
+      yes:
+        type: boolean
+        aliases: [y]
+        help: Answer yes to all confirmations, bypassing user input.
+  mysql:
+    help: Start mysql shell using local credentials. Pass an SQL statement to immediately execute it, e.g. loft_deploy mysql "SHOW TABLES;".
+    arguments:
+      sql:
+        help: An optional SQL statement in double quotes to execute, e.g. loft_deploy mysql "SHOW TABLES;"
+  help:
+    help: Show this help screen.
+  info:
+    help: Show configuration information.
+  configtest:
+    help: Run a suite of tests to reveal possible configuration issues.  This is a good step to take after all configuration changes, as it checks your connections to your remote servers, files, databases, etc.
+  ls:
+    help: List the contents of various directories.  You may pass ls flags, e.g. loft_deploy ls -f -la
+    options:
+      d:
+        type: boolean
+        help: Specify the database directory.
+      f:
+        type: boolean
+        help: Specify the files directory.
+  pass:
+    help: Display password(s)
+  terminus:
+    help: Login to terminus with prod credentials.
+  hook:
+    help: Run the indicated hook, e.g. hook reset
   clear-cache:
     aliases: [clearcache, cc]
-    help: Clear the Cloudy Tools caches.
+    help: Clear all cached data.
+  migrate:
+    help: Migrate database and/or files from another server that does not have Loft Deploy installed.
+    options:
+      push:
+        type: boolean
+        help: "Output instruction and code snippets to push the files to the destination server when migrate fails.  Save instructions to a file like this: loft_deploy migrate --push > push-instructions.md"
+
+

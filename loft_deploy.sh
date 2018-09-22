@@ -81,6 +81,7 @@ function on_clear_cache() {
     generate_db_cnf && succeed_because "$(echo_green "local.cnf")"
 }
 
+
 # Begin Cloudy Bootstrap
 s="${BASH_SOURCE[0]}";while [ -h "$s" ];do dir="$(cd -P "$(dirname "$s")" && pwd)";s="$(readlink "$s")";[[ $s != /* ]] && s="$dir/$s";done;r="$(cd -P "$(dirname "$s")" && pwd)";
 
@@ -96,6 +97,11 @@ _upsearch $(basename $config_dir)
 
 source "$r/cloudy/cloudy.sh"
 # End Cloudy Bootstrap
+
+function get_version() {
+    local version=$(grep "version = " "$ROOT/web_package.info")
+    echo ${version/version = / }
+}
 
 if [[ "$LOFT_DEPLOY_PHP" ]]; then
     ld_php=$LOFT_DEPLOY_PHP
@@ -167,7 +173,7 @@ color_prod=$color_red
 lobster_user=$(whoami)
 
 ld_remote_rsync_cmd="rsync -azP"
-has_flag v && ld_remote_rsync_cmd="rsync -azPv"
+has_option v && ld_remote_rsync_cmd="rsync -azPv"
 
 ##
  # Begin Controller
@@ -255,21 +261,23 @@ case $op in
     [[ "$status" == true ]] && configtest || status=false
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed 'Test complete.' && exit 0
-    did_not_complete 'Test complete with failure(s).' && exit 1
+    exit_with_failure 'Test complete with failure(s).'
     ;;
 
   'import')
     [[ "$status" == true ]] && import_db ${SCRIPT_ARGS[1]} || status=false
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Import complete." && exit 0
-    did_not_complete "Import failed." && exit 1
+    exit_with_failure "Import failed."
     ;;
 
   'export')
-    [[ "$status" == true ]] && export_db ${SCRIPT_ARGS[1]} || status=false
+    suffix=${SCRIPT_ARGS[1]}
+    has_option "time" && suffix="${suffix}-$(date8601 -c)"
+    [[ "$status" == true ]] && export_db ${suffix#-} || status=false
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed 'Export complete.' && exit 0
-    did_not_complete 'Export failed.' && exit 1
+    exit_with_failure 'Export failed.'
     ;;
 
   'fetch')
@@ -286,7 +294,7 @@ case $op in
     fi
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Fetch complete." && exit 0
-    did_not_complete "Fetch failed." && exit 1
+    exit_with_failure "Fetch failed."
     ;;
 
   'reset')
@@ -298,14 +306,14 @@ case $op in
     fi
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Reset complete." && exit 0
-    did_not_complete "Reset failed." && exit 1
+    exit_with_failure "Reset failed."
     ;;
 
   'pull')
     [[ "$status" == true ]] && do_pull || status=false
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Pull complete." && exit 0
-    did_not_complete "Pull failed." && exit 1
+    exit_with_failure "Pull failed."
     ;;
 
   'push')
@@ -318,7 +326,7 @@ case $op in
 
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Push complete." && exit 0
-    did_not_complete "Push failed." && exit 1
+    exit_with_failure "Push failed."
     ;;
 
   'hook')
@@ -339,10 +347,10 @@ case $op in
     ;;
 
   'ls')
-    if has_flag d; then
+    if has_option d; then
       do_ls "$local_db_dir"
     fi
-    if has_flag f; then
+    if has_option f; then
       do_ls "$local_files"
     fi
     handle_post_hook $op
@@ -352,13 +360,13 @@ case $op in
   'help')
     show_help || status=false
     handle_post_hook $op $status && complete && exit 0
-    did_not_complete && exit 1
+    exit_with_failure
     ;;
 
   'info')
     show_info || status=false
     handle_post_hook $op $status && complete_elapsed "Info displayed" && exit 0
-    did_not_complete && exit 1
+    exit_with_failure
     ;;
 
   'pass')
@@ -375,7 +383,7 @@ case $op in
     if [[ "${SCRIPT_ARGS[1]}" ]]; then
       cmd="${SCRIPT_ARGS[1]}"
     fi
-    $ld_terminus $cmd && echo_green "└── $config_dir/vendor/bin/terminus" || did_not_complete
+    $ld_terminus $cmd && echo_green "└── $config_dir/vendor/bin/terminus" || exit_with_failure
     end
     ;;
 
