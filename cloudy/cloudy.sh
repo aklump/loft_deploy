@@ -30,6 +30,21 @@ function timestamp() {
     echo $(date +%s)
 }
 
+##
+ # Return the current datetime in iso 8601 in UTC.
+ #
+ # @option -c Remove punctuation for a compressed output say, for a filename.
+ #
+function date8601() {
+    parse_args $@
+    if [[ "$parse_args__option__c" ]]; then
+        echo $(date -u +%Y%m%dT%H%M%S)
+    else
+        echo $(date -u +%Y-%m-%dT%H:%M:%S)
+    fi
+    return 0
+}
+
 #
 # SECTION: Arguments, options, parameters
 #
@@ -484,18 +499,28 @@ function echo_blue() {
  # Print out a headline for a section of user output.
  #
 function echo_title() {
-    local headline=$1
+    local headline="$1"
     [[ ! "$headline" ]] && return 1
-    echo && echo "🔶 $(string_upper "${headline}")" && echo
+    echo && echo "🔶  $(string_upper "${headline}")" && echo
 }
 
 ##
  # Print out a headline for a section of user output.
  #
-function echo_headline() {
-    local headline=$1
+function echo_heading() {
+    local headline="$1"
     [[ ! "$headline" ]] && return 1
-    echo "🔸 ${headline}"
+    echo "🔸  ${headline}"
+}
+
+function list_clear() {
+    echo_list__array=()
+}
+
+function list_add_item() {
+    local item="$1"
+    echo_list__array=("${echo_list__array[@]}" "$item")
+    return 0
 }
 
 ##
@@ -503,11 +528,13 @@ function echo_headline() {
  #
  # @param $echo_list__array
  #
- # You must provide your list array as $echo_list__array like so:
+ # You must add items to your list first:
  # @code
- #   echo_list__array=("${some_array_to_echo[@]}")
+ #   list_add_item "List item"
  #   echo_list
  # @endcode
+ #
+ # @see echo_list__array=("${some_array_to_echo[@]}")
  #
 function echo_list() {
     _cloudy_echo_list
@@ -601,8 +628,6 @@ function exit_with_cache_clear() {
 function exit_with_help() {
     local help_command=$(_cloudy_get_master_command "$1")
 
-    _cloudy_echo_credits
-
     # Focused help_command, show info about single command.
     if [[ "$help_command" ]]; then
         _cloudy_validate_command $help_command || exit_with_failure "No help for that!"
@@ -612,7 +637,7 @@ function exit_with_help() {
 
     # Top-level just show all commands.
     _cloudy_help_commands
-    exit_with_success "Use \"help [command]\" for specific info"
+    exit_with_success "Use \"help <command>\" for specific info"
 }
 
 function exit_with_success() {
@@ -655,6 +680,10 @@ function succeed_because() {
  #   This should be the same as passed to get_config, using dot separation.
  #
 function exit_with_failure_if_empty_config() {
+    parse_args $@
+    if [[ "$parse_args__option__status" ]]; then
+      CLOUDY_EXIT_STATUS=$parse_args__option__status
+    fi
     local variable=${1//./_}
 
     local code=$(echo_blue "eval \$(get_config_path \"$variable\")")
@@ -664,7 +693,12 @@ function exit_with_failure_if_empty_config() {
     return 0
 }
 
+##
+ # @option --status=N Optional, set the exit status, a number > 0
+ #
 function exit_with_failure() {
+    parse_args $@
+
     echo && echo_red "🔥  $(_cloudy_message "$1" "$CLOUDY_FAILED")"
 
     ## Write out the failure messages if any.
@@ -681,6 +715,11 @@ function exit_with_failure() {
     if [ $CLOUDY_EXIT_STATUS -lt 2 ]; then
       CLOUDY_EXIT_STATUS=1
     fi
+
+    if [[ "$parse_args__option__status" ]]; then
+      CLOUDY_EXIT_STATUS=$parse_args__option__status
+    fi
+
     _cloudy_exit
 }
 
@@ -689,9 +728,15 @@ function exit_with_failure() {
  #
  # Try not to use this because it gives no indication as to why
  #
+ # @option --status=N Optional, set the exit status, a number > 0
+ #
  # @see exit_with_failure
  #
 function fail() {
+    parse_args $@
+    if [[ "$parse_args__option__status" ]]; then
+      CLOUDY_EXIT_STATUS=$parse_args__option__status && return 0
+    fi
     CLOUDY_EXIT_STATUS=1 && return 0
 }
 
@@ -700,7 +745,7 @@ function fail() {
  #
 function fail_because() {
     local message=$1
-    fail
+    fail $@
     if [[ "$message" ]]; then
         CLOUDY_FAILURES=("${CLOUDY_FAILURES[@]}" "$message")
     fi
@@ -709,6 +754,14 @@ function fail_because() {
 function has_failed() {
     [ $CLOUDY_EXIT_STATUS -gt 0 ] && return 0
     return 1
+}
+
+##
+ # Echo the host portion an URL.
+ #
+function url_host() {
+    local url_path="$1"
+    echo "$url_path" | awk -F/ '{print $3}'
 }
 
 #
@@ -746,15 +799,15 @@ function path_extension() {
 }
 
 function string_upper() {
-    local string=$1
+    local string="$1"
 
-    echo $string | tr [a-z] [A-Z]
+    echo "$string" | tr [a-z] [A-Z]
 }
 
 function string_lower() {
-    local string=$1
+    local string="$1"
 
-    echo $string | tr [A-Z] [a-z]
+    echo "$string" | tr [A-Z] [a-z]
 }
 
 #

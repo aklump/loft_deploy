@@ -81,6 +81,7 @@ function on_clear_cache() {
     generate_db_cnf && succeed_because "$(echo_green "local.cnf")"
 }
 
+
 # Begin Cloudy Bootstrap
 s="${BASH_SOURCE[0]}";while [ -h "$s" ];do dir="$(cd -P "$(dirname "$s")" && pwd)";s="$(readlink "$s")";[[ $s != /* ]] && s="$dir/$s";done;r="$(cd -P "$(dirname "$s")" && pwd)";
 
@@ -97,6 +98,11 @@ _upsearch $(basename $config_dir)
 source "$r/cloudy/cloudy.sh"
 # End Cloudy Bootstrap
 
+function get_version() {
+    local version=$(grep "version = " "$ROOT/web_package.info")
+    echo ${version/version = / }
+}
+
 if [[ "$LOFT_DEPLOY_PHP" ]]; then
     ld_php=$LOFT_DEPLOY_PHP
 else
@@ -111,6 +117,10 @@ eval $(get_config -a "migration.database")
 eval $(get_config_as -a "migration_files" "migration.files.0")
 eval $(get_config_as -a "migration_files2" "migration.files.1")
 eval $(get_config_as -a "migration_files3" "migration.files.2")
+eval $(get_config "local.url")
+eval $(get_config "local.location")
+eval $(get_config "local.role" "prod")
+eval $(get_config "local.basepath")
 
 declare -a SCRIPT_ARGS=()
 declare -a flags=()
@@ -146,12 +156,6 @@ current_db_filename=''
 # holds the result of connect()
 mysql_check_result=false
 
-# holds a timestamp for backups, etc.
-now=$(date +"%Y%m%d_%H%M")
-
-# Current version of this script (auto-updated during build).
-ld_version=0.14.20
-
 # theme color definitions
 color_red=1
 color_green=2
@@ -160,21 +164,18 @@ color_blue=4
 color_magenta=5
 color_cyan=6
 color_white=7
-color_staging=$color_green
-color_local=$color_yellow
-color_prod=$color_red
-
-lobster_user=$(whoami)
 
 ld_remote_rsync_cmd="rsync -azP"
-has_flag v && ld_remote_rsync_cmd="rsync -azPv"
+has_option "v" && ld_remote_rsync_cmd="rsync -azPv"
 
 ##
  # Begin Controller
  #
 
-implement_cloudy_basic
+# Input validation.
+validate_input || exit_with_failure "Something didn't work..."
 
+implement_cloudy_basic
 
 # init has to come before configuration loading
 if [ "$op" == 'init' ]; then
@@ -195,16 +196,6 @@ if [ "$op" == 'update' ]; then
     echo "`tty -s && tput setaf 1`ACCESS DENIED!`tty -s && tput op`"
     end "$local_role sites may not invoke: loft_deploy $op"
   fi
-fi
-
-# Help MUST COME AFTER CONFIG FOR ACCESS CHECKING!!!! DON'T MOVE
-if [ ! "$op" ] || [ "$op" == 'help' ]; then
-  show_help
-
-  if [ ! "$op" ]; then
-    echo "Please call with one or more arguments."
-  fi
-  end
 fi
 
 ##
@@ -228,9 +219,10 @@ if [ $op == "get" ]; then
   get_var $2 && exit 0
   exit 1
 fi
-
-print_header
-update_needed
+if [[ "$(get_migration_type)" != "push" ]]; then
+    print_header
+    update_needed
+fi
 
 #
 # status will go to false at any time that an operation fails, e.g. hook, or step, etc.
@@ -255,21 +247,23 @@ case $op in
     [[ "$status" == true ]] && configtest || status=false
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed 'Test complete.' && exit 0
-    did_not_complete 'Test complete with failure(s).' && exit 1
+    exit_with_failure 'Test complete with failure(s).'
     ;;
 
   'import')
     [[ "$status" == true ]] && import_db ${SCRIPT_ARGS[1]} || status=false
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Import complete." && exit 0
-    did_not_complete "Import failed." && exit 1
+    exit_with_failure "Import failed."
     ;;
 
   'export')
-    [[ "$status" == true ]] && export_db ${SCRIPT_ARGS[1]} || status=false
+    suffix=${SCRIPT_ARGS[1]}
+    has_option "time" && suffix="${suffix}-$(date8601 -c)"
+    [[ "$status" == true ]] && export_db ${suffix#-} || status=false
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed 'Export complete.' && exit 0
-    did_not_complete 'Export failed.' && exit 1
+    exit_with_failure 'Export failed.'
     ;;
 
   'fetch')
@@ -286,7 +280,7 @@ case $op in
     fi
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Fetch complete." && exit 0
-    did_not_complete "Fetch failed." && exit 1
+    exit_with_failure "Fetch failed."
     ;;
 
   'reset')
@@ -298,14 +292,14 @@ case $op in
     fi
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Reset complete." && exit 0
-    did_not_complete "Reset failed." && exit 1
+    exit_with_failure "Reset failed."
     ;;
 
   'pull')
     [[ "$status" == true ]] && do_pull || status=false
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Pull complete." && exit 0
-    did_not_complete "Pull failed." && exit 1
+    exit_with_failure "Pull failed."
     ;;
 
   'push')
@@ -318,7 +312,7 @@ case $op in
 
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Push complete." && exit 0
-    did_not_complete "Push failed." && exit 1
+    exit_with_failure "Push failed."
     ;;
 
   'hook')
@@ -339,32 +333,20 @@ case $op in
     ;;
 
   'ls')
-    if has_flag d; then
+    if has_option d; then
       do_ls "$local_db_dir"
     fi
-    if has_flag f; then
+    if has_option f; then
       do_ls "$local_files"
     fi
     handle_post_hook $op
     end
     ;;
 
-  'help')
-    show_help || status=false
-    handle_post_hook $op $status && complete && exit 0
-    did_not_complete && exit 1
-    ;;
-
   'info')
     show_info || status=false
     handle_post_hook $op $status && complete_elapsed "Info displayed" && exit 0
-    did_not_complete && exit 1
-    ;;
-
-  'pass')
-    show_pass
-    handle_post_hook $op
-    end
+    exit_with_failure
     ;;
 
   'terminus')
@@ -375,7 +357,7 @@ case $op in
     if [[ "${SCRIPT_ARGS[1]}" ]]; then
       cmd="${SCRIPT_ARGS[1]}"
     fi
-    $ld_terminus $cmd && echo_green "└── $config_dir/vendor/bin/terminus" || did_not_complete
+    $ld_terminus $cmd && echo_green "└── $config_dir/vendor/bin/terminus" || exit_with_failure
     end
     ;;
 

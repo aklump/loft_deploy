@@ -1,6 +1,6 @@
 # Migrations
 
-You may wish to migrate a database and/or files from another server, which does not have Loft Deploy installed.  As long as you can `scp` and `rsync` into this other server you can use this feature.
+You may wish to migrate a database and/or files from another server, which does not have Loft Deploy installed.  As long as you can `scp` and `rsync` from this other server you can use this feature.  If you cannot then see the section _The Push Option_ for a method to push the files to your destination server.
 
 Migrations are unique in that they do implement the file excludes or the database filters.  In other words, all tables, and all files.
 
@@ -37,3 +37,14 @@ In a migration, the database is backed up unless you use the `--nobu` option.  T
 1. Check your configration with `ldp info`; you should see a migration section with the paths to the assets you can migrate.
 1. When you are ready call `ldp migrate`.  You will asked to confirm each step.    
 
+## The Push Option
+
+If you try to migrate and the process hangs, [one issue](https://superuser.com/questions/395356/scp-doesnt-work-but-ssh-does#396667) may be that there is a problem with the SSH tunnel made during the `scp` operation.  In any event you can use the `--push` option to create a markdown file with step by step instructions and code snippets to run **on the source server** to push the files to your destination by hand.
+
+The second part of this method requires the you do a manual `ldp import` of the database file **on the destination server**, so don't miss that step.
+
+Simply call `ldp migrate --push` to see the output on the screen.  As a sidenote, the configuration is the same as above, you still need to add the `migration` array to your configuration file.
+
+Or pipe it to a file like this `ldp migrate --push > migrate.md`.
+
+Follow the instructions therein. 

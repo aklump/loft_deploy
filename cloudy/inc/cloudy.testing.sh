@@ -150,7 +150,7 @@ function assert_file_not_exists() {
     _cloudy_assert_failed "$filepath" "exists, but should not."
 }
 
-function assert_array_not_has_key() {
+function assert_not_contains() {
     local key=$1
     local array_var_name=$2
 
@@ -170,9 +170,9 @@ function assert_count() {
     assert_same $expected ${#value[@]}
 }
 
-function assert_array_has_key() {
-    local key=$1
-    local array_var_name=$2
+function assert_contains() {
+    local key="$1"
+    local array_var_name="$2"
 
     eval array_has_value__array=(\${"$array_var_name"[@]})
     let CLOUDY_ASSERTION_COUNT=(CLOUDY_ASSERTION_COUNT + 1)

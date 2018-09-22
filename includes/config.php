@@ -25,6 +25,18 @@ try {
   $schema = $argv[2];
   $config_file = FilePath::create("$config_dir/config.yml");
 
+  // Validate our schema file.
+  if (!file_exists($schema)) {
+    throw new \RuntimeException("JSON schema \"$schema\" does not exist.");
+  }
+
+  $schema_json = json_decode(file_get_contents($schema));
+  $valid_json_in_schema = !empty($schema_json);
+  if (!$valid_json_in_schema) {
+    throw new \RuntimeException("JSON schema \"$schema\" has malformed JSON.");
+  }
+
+
   if (!$config_file->exists()) {
     exit(0);
   }
@@ -34,7 +46,7 @@ try {
   $config = Yaml::parse($config_file->load()->get());
   $validator = new Validator;
   $_config = json_decode(json_encode($config));
-  $validator->validate($_config, (object) array('$ref' => 'file://' . realpath($schema)));
+  $validator->validate($_config, $schema_json);
   if (!$validator->isValid()) {
     $error_items = array_map(function ($error) {
       return sprintf("[%s] %s", $error['property'], $error['message']);
@@ -54,16 +66,12 @@ try {
 
   foreach ($config['local'] as $key => $item) {
     switch ($key) {
-      case 'location':
-        break;
 
+      // These do not need to print; they are probably imported using cloudy in loft_deploy.sh.
+      case 'role':
       case 'url':
-        $title = array();
-        if (isset($config['local']['location'])) {
-          $title[] = $config['local']['location'];
-        }
-        $data['local_title'][] = preg_replace('/https?:\/\//i', '', $item);
-        $data['local_title'] = implode(' ~ ', $data['local_title']);
+      case 'basepath':
+      case 'location':
         break;
 
       case 'database':
@@ -206,10 +214,8 @@ try {
   exit(0);
 }
 catch (\Exception $exception) {
-  print Color::wrap('black on red', 'Configuration Problem in: ' . $config_file->getBasename()) . PHP_EOL;
-  if (!isset($error_items)) {
-    $error_items = array($exception->getMessage());
-  }
+  print Color::wrap('red', 'Configuration Problem in: ' . $config_file->getBasename()) . PHP_EOL;
+  $error_items = array($exception->getMessage());
   print Output::tree($error_items) . PHP_EOL;
   exit(1);
 }

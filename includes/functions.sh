@@ -6,31 +6,6 @@
  #
 
 ##
- # Test for a flag
- #
- # @code
- # if has_flag s; then
- # @endcode
- #
- # @param string $1
- #   The flag name to test for, omit the -
- #
- # @return int
- #   0: it has the flag
- #   1: it does not have the flag
- #
-function has_flag() {
-  for var in "${flags[@]}"
-  do
-    if [[ "$var" =~ $1 ]]
-    then
-      return 0
-    fi
-  done
-  return 1
-}
-
-##
  # Return an array of assets being operated on by the current operation.
  #
  # This is based on the flags used and will set $operation_assets to contain
@@ -40,8 +15,8 @@ declare -a operation_assets=()
 function refresh_operation_assets() {
     operation_assets=()
     local flag_count=${#flags[@]}
-    ( has_flag f || (! has_flag f && ! has_flag d ) ) && operation_assets=("${operation_assets[@]}" "files")
-    ( has_flag d || (! has_flag f && ! has_flag d ) ) && operation_assets=("${operation_assets[@]}" "database")
+    ( has_option f || (! has_option f && ! has_option d ) ) && operation_assets=("${operation_assets[@]}" "files")
+    ( has_option d || (! has_option f && ! has_option d ) ) && operation_assets=("${operation_assets[@]}" "database")
 }
 
 ##
@@ -58,60 +33,11 @@ function has_asset() {
     return 1
 }
 
-##
- # Test for a parameter
- #
- # @code
- # if has_param code; then
- # @endcode
- #
- # @param string $1
- #   The param name to test for, omit the -
- #
- # @return int
- #   0: it has the param
- #   1: it does not have the param
- #
-function has_param() {
-  for var in "${params[@]}"
-  do
-    if [[ "$var" =~ $1 ]]
-    then
-      return 0
-    fi
-  done
-  return 1
-}
-
-##
- # Extract the value of a script param e.g. (--param=value)
- #
- # @code
- # value=$(get_param try)
- # @endcode
- #
- # @param string $1
- #   The name of the param
- #
- # @return NULL
- #   Sets the value of global $get_param_return
- #
-function get_param() {
-  for var in "${params[@]}"
-  do
-    if [[ "$var" =~ ^(.*)\=(.*) ]] && [ ${BASH_REMATCH[1]} == $1 ]
-    then
-      echo ${BASH_REMATCH[2]}
-      return
-    fi
-  done
-}
-
 function loft_deploy_mysql() {
   #@todo When we switch to lobster we need to add taking arguments for prod and staging.
-  if has_param 'prod'; then
+  if has_option 'prod'; then
     _mysql_production
-  elif has_param 'staging'; then
+  elif has_option 'staging'; then
     _mysql_staging
   else
     _mysql_local "$1"
@@ -179,7 +105,7 @@ function update() {
   _update_0_7_6
   _update_0_7_0
   complete 'Updates complete.' && end
-  did_not_complete 'Updates failed' && end
+  exit_with_failure 'Updates failed'
 }
 
 ##
@@ -203,11 +129,11 @@ function _update_0_7_0() {
     fi
 
     if [[ -f "$config_dir/cached_db" ]]; then
-      mv "$config_dir/cached_db" "$config_dir/prod/cached_db"
+      mv "$config_dir/cached_db" "$config_dir/prod/cached_db.txt"
     fi
 
     if [[ -f "$config_dir/cached_files" ]]; then
-      mv "$config_dir/cached_files" "$config_dir/prod/cached_files"
+      mv "$config_dir/cached_files" "$config_dir/prod/cached_files.txt.txt"
     fi
   fi
 
@@ -365,11 +291,8 @@ function load_config() {
   fi
 
   # these are defaults
-  local_role="prod"
   local_db_host='localhost'
-  production_pass=''
   production_root=''
-  staging_pass=''
 
   ld_mysql=$(type mysql >/dev/null 2>&1 && which mysql)
   ld_mysqldump=$(type mysqldump >/dev/null 2>&1 && which mysqldump)
@@ -494,7 +417,77 @@ function _upsearch () {
   test / == "$PWD" && echo && echo "`tty -s && tput setaf 1`NO CONFIG FILE FOUND!`tty -s && tput op`" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
 }
 
+function get_migration_type() {
+    local command=$(get_command)
+    [[ "$command" != "migrate" ]] && return 0
+    eval $(get_config_as "host" "migration.push_to.host")
+    eval $(get_config_as "user" "migration.push_to.user")
+    if [[ "$host" ]] || [[ "$user" ]]; then
+        echo "push";
+    else
+        echo "pull";
+    fi
+    return 0
+}
+
 function do_migrate() {
+    if [[ "$(get_migration_type)" == "push" ]]; then
+        _do_migrate_push
+        exit
+    else
+        _do_migrate_pull
+    fi
+    return $?
+}
+
+##
+ # Echo the instructions for a remote push migration.
+ # This will also exit the app.
+ #
+function _do_migrate_push() {
+    eval $(get_config_as "host" "migration.push_to.host")
+    eval $(get_config_as "user" "migration.push_to.user")
+
+    local destination=$(url_host $local_url)
+
+    echo "# Manual Push Migration Instructions"
+    echo "## $migration_title ---> $destination"
+    echo
+    echo "1. SSH into the source server, _${migration_title}_."
+    echo "1. Push your database dump to destination server:"
+    echo
+
+    filepath=$(_get_path_with_user_and_host $user $host ${config_dir}/migrate/db/$(basename $migration_database_path))
+    echo "        scp ${migration_database_path} ${filepath} || echo \"Failed to push database.\""
+    echo
+    echo "1. Push user files to destination server:"
+    echo
+
+    if [[ "$local_files" ]]; then
+        filepath=$(_get_path_with_user_and_host $user $host $local_files)
+        echo "        rsync -azP --delete ${migration_files_path%/}/ ${filepath%/}/ || echo \"Failed to push files.\""
+    fi
+
+    if [[ "$local_files2" ]]; then
+        filepath=$(_get_path_with_user_and_host $user $host $local_files2)
+        echo "        rsync -azP --delete ${migration_files2_path%/}/ ${filepath%/}/ || echo \"Failed to push files2.\""
+    fi
+
+    if [[ "$local_files3" ]]; then
+        filepath=$(_get_path_with_user_and_host $user $host $local_files3)
+        echo "        rsync -azP --delete ${migration_files3_path%/}/ ${filepath%/}/ || echo \"Failed to push files3.\""
+    fi
+
+    echo
+    echo "1. SSH in to destination server, _${destination}_."
+    echo "1. Import the database dump:"
+    echo
+    echo "        ldp import ${config_dir}/migrate/db/$(basename $migration_database_path)"
+
+    CLOUDY_EXIT_STATUS=0 && _cloudy_exit
+}
+
+function _do_migrate_pull() {
     local db_command="scp"
     local files_command="$ld_remote_rsync_cmd --delete"
     ! has_option 'v' && db_command="$db_command -q"
@@ -512,7 +505,7 @@ function do_migrate() {
 
     # Database
     if [[ "$migration_database_path" ]]; then
-        echo_headline "Copying database from $migration_title..."
+        echo_heading "Copying database from $migration_title..."
         [ -d "$base/db" ] || mkdir -p "$base/db"
         rm "$base/db/fetched.sql"* > /dev/null 2>&1
 
@@ -533,7 +526,7 @@ function do_migrate() {
 
     # Copy files
     if [[ "$migration_files_path" ]]; then
-        echo_headline "Copying files..."
+        echo_heading "Copying files..."
         local from=$(_get_path_with_user_and_host $migration_files_user $migration_files_host $migration_files_path)
         local to="$local_files"
         if [[ "$to" ]]; then
@@ -551,7 +544,7 @@ function do_migrate() {
 
     # Copy files2
     if [[ "$migration_files2_path" ]]; then
-        echo_headline "Copying files2..."
+        echo_heading "Copying files2..."
         local from=$(_get_path_with_user_and_host $migration_files2_user $migration_files2_host $migration_files2_path)
         local to="$local_files2"
         if [[ "$to" ]]; then
@@ -569,7 +562,7 @@ function do_migrate() {
 
     # Copy files3
     if [[ "$migration_files3_path" ]]; then
-        echo_headline "Copying files3..."
+        echo_heading "Copying files3..."
         local from=$(_get_path_with_user_and_host $migration_files3_user $migration_files3_host $migration_files3_path)
         local to="$local_files3"
         if [[ "$to" ]]; then
@@ -605,7 +598,7 @@ function do_pull() {
     load_production_config
 
     if [[ ! "$production_server" ]] && [[ ! "$terminus_site" ]]; then
-        echo_red "You cannot pull unless you define a production environment." && return 1
+        fail_because "You cannot pull unless you define a production environment." && return 1
     fi
 
     if [[ "$status" == true ]]; then handle_pre_hook fetch || status=false; fi
@@ -664,7 +657,7 @@ function _fetch_db_production() {
 
     $ld_terminus auth:login --machine-token=$terminus_machine_token --quiet
 
-    if ! has_flag y && ! confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?"; then
+    if ! has_option y && ! confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?"; then
       echo "Creating new backup using Terminus..."
       $ld_terminus backup:create $terminus_site.live --element=db
     fi
@@ -680,7 +673,7 @@ function _fetch_db_production() {
     fi
 
     show_switch
-    if has_flag v; then
+    if has_option v; then
         ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix"
     else
         ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix" > /dev/null
@@ -689,7 +682,7 @@ function _fetch_db_production() {
     [[ $? -eq 0 ]] && echo_green "├── Database exported and ready to download." || echo_red "Remote export failed."
 
     local _remote_file="$production_db_dir/${production_db_name}-$_export_suffix.sql.gz"
-    if has_flag v; then
+    if has_option v; then
         scp $production_scp_port"$production_server:$_remote_file" "$_local_file"
     else
         scp $production_scp_port"$production_server:$_remote_file" "$_local_file" > /dev/null
@@ -698,7 +691,7 @@ function _fetch_db_production() {
 
 
     # delete it from remote
-    if has_flag v; then
+    if has_option v; then
         ssh $production_server$production_ssh_port "rm $_remote_file"
     else
         ssh $production_server$production_ssh_port "rm $_remote_file" > /dev/null
@@ -708,7 +701,7 @@ function _fetch_db_production() {
   fi
 
   # record the fetch date
-  echo $now > $config_dir/prod/cached_db
+  echo "$(date8601)" > $config_dir/prod/cached_db.txt
 }
 
 ##
@@ -739,7 +732,7 @@ function _fetch_db_staging() {
   scp "$staging_server:$_remote_file" "$_local_file"
 
   # record the fetch date
-  echo $now > $config_dir/staging/cached_db
+  echo "$(date8601)" > $config_dir/staging/cached_db.txt
 
   # delete it from remote
   echo "Deleting the staging copy..."
@@ -759,7 +752,7 @@ function fetch_files() {
             if [ "$local_copy_production_to" ]; then
                 _fetch_copy "Production" "$production_server" "$production_copy_source" "$local_copy_production_to" || status=false
             fi
-            if ! has_param ind; then
+            if ! has_option ind; then
                 if [[ "$status" == true ]] && [ "$local_files" ] && [ "$production_files" ]; then
                     _fetch_dir 'files/*' "$production_server" "$production_port" "$production_files" "$local_files" "$config_dir/prod/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
                 fi
@@ -781,7 +774,7 @@ function fetch_files() {
 #        ;;
     esac
 
-    [[ "$status" == true ]] && echo $now > "$config_dir/$source_server/cached_files" && return 0
+    [[ "$status" == true ]] && echo "$(date8601)" > "$config_dir/$source_server/cached_files.txt" && return 0
     return 1
 }
 
@@ -821,7 +814,7 @@ function _fetch_copy() {
             output=''
         else
             local verbose=''
-            has_flag v && verbose=' -p -v' && echo_yellow "$server:$from $to"
+            has_option v && verbose=' -p -v' && echo_yellow "$server:$from $to"
             $($ld_scp $verbose "$server:$from" "$to")
             test -f "$to" && output="${from##*/}"
         fi
@@ -859,7 +852,7 @@ function _fetch_dir() {
   echo "Fetching $title directory contents to local cache..."
 
   # rsync exclude file indication to user....
-  if has_flag v && test -e "$exclude_file"; then
+  if has_option v && test -e "$exclude_file"; then
     excludes="$(cat $exclude_file)"
     echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
     echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
@@ -871,7 +864,7 @@ function _fetch_dir() {
     cmd="$ld_remote_rsync_cmd \"$server_remote:$path_remote/\" \"$path_stash\" --delete $exclude"
   fi
 
-  has_flag v && echo $cmd && echo
+  has_option v && echo $cmd && echo
 
   eval $cmd >/dev/null 2>&1
   [[ $? -ne 0 ]] && status=false
@@ -886,7 +879,7 @@ function _fetch_dir() {
 function reset_files() {
     local status=true
     if [ "$local_copy_production_to" ] || [ "$local_copy_local_to" ] || [ "$local_copy_staging_to" ] || [ "$local_files" ] || [ "$local_files2" ] || [ "$local_files3" ]; then
-        if has_flag v; then
+        if has_option v; then
             echo "This process will reset your local files to match the most recently fetched"
             echo "$source_server files, removing any local files that are not present in the fetched"
             echo "set. You will be given a preview of what will happen first. To absolutely"
@@ -899,7 +892,7 @@ function reset_files() {
             _reset_local_copy "$local_copy_source" "$local_copy_local_to" || status=false
         fi
 
-        has_param local && return 0
+        has_option local && return 0
 
         if [ "$status" == true ] && [ "$source_server" == 'prod' ] && [ "$local_copy_production_to" ]; then
             _reset_copy "$local_copy_production_to" || status=false
@@ -909,7 +902,7 @@ function reset_files() {
             _reset_copy "$local_copy_staging_to" || status=false
         fi
 
-        if ! has_param ind; then
+        if ! has_option ind; then
             if [ "$status" == true ] && [ "$local_files" ]; then
                 _reset_dir "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
                 if [[ "$status" == true ]]; then
@@ -960,7 +953,7 @@ function _reset_copy() {
     local to=''
     local output=''
 
-    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset $source_server individual files, are you sure?`tty -s && tput op`" || return 2
+    has_option 'y' || confirm "`tty -s && tput setaf 3`Reset $source_server individual files, are you sure?`tty -s && tput op`" || return 2
 
     echo "Resetting individual $source_server files from cache..."
     for from in "${destination[@]}"; do
@@ -969,7 +962,7 @@ function _reset_copy() {
         from="$config_dir/$source_server/copy/"$i~${from##*/}
         to=${destination[$i]}
         local verbose=''
-        has_flag v && verbose=' -v'
+        has_option v && verbose=' -v'
         local to_dir=$(dirname $to)
 
         # Create the parent directories of the destination if necessary
@@ -1011,7 +1004,7 @@ function _reset_local_copy() {
     local to=''
     local output=''
 
-    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`" || return 2
+    has_option 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`" || return 2
 
     echo "Copying individual local files..."
     for from in "${source[@]}"; do
@@ -1019,7 +1012,7 @@ function _reset_local_copy() {
         [[ "$error" ]] && echo_red "├── $error"
         to=${destination[$i]}
         local verbose=''
-        has_flag v && verbose=' -v'
+        has_option v && verbose=' -v'
         local to_dir=$(dirname $to)
 
         # Create the parent directories of the destination if necessary
@@ -1057,7 +1050,7 @@ function _reset_dir() {
     echo "Reset cached $source_server file directory: $title..."
 
     # rsync exclude file indication to user....
-    if has_flag v && test -e "$exclude_file"; then
+    if has_option v && test -e "$exclude_file"; then
         excludes="$(cat $exclude_file)"
         echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
         echo "`tty -s && tput setaf 3`$excludes`tty -s && tput op`"
@@ -1071,9 +1064,9 @@ function _reset_dir() {
 
     # Have to exclude here because there might be some lingering files in the cache
     # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
-    has_flag 'y' || confirm "`tty -s && tput setaf 3`Reset local \"$title\", are you sure?`tty -s && tput op`" || return 2
+    has_option 'y' || confirm "`tty -s && tput setaf 3`Reset local \"$title\", are you sure?`tty -s && tput op`" || return 2
 
-    has_flag v && echo $cmd && echo
+    has_option v && echo $cmd && echo
     eval $cmd
 
     return $?
@@ -1088,14 +1081,14 @@ function reset_db() {
     local source=$source_server
     [[ "$parse_args__options__source" ]] && source=$parse_args__options__source
 
-    if has_flag v; then
+    if has_option v; then
         echo "This process will reset your local db to match the most recently fetched"
         echo "$source db, first backing up your local db. To absolutely match $source,"
         echo "consider fetching the database first, however it is slower."
         echo
         echo "`tty -s && tput setaf 3`End result: Your local database will match the $source database.`tty -s && tput op`"
     fi
-    [[ "$parse_args__option__y" ]] || has_flag 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source db" || return 2
+    [[ "$parse_args__option__y" ]] || has_option 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source db" || return 2
 
     local fetched_db_dump=($(find $config_dir/$source/db -name fetched.sql*))
 
@@ -1105,7 +1098,7 @@ function reset_db() {
         end "Please fetch_db first"
     fi
 
-    has_param nobu || export_db "reset_backup_$now" '' 'Creating a backup of the local db...'
+    has_option nobu || export_db "reset_backup-$(date8601 -c)" '' 'Creating a backup of the local db...'
 
     import_db_silent=true
     import_db "$fetched_db_dump"
@@ -1122,7 +1115,7 @@ function push_files() {
             echo_red "You cannot push your files unless you define a staging environment" && return 1
         fi
 
-        if has_flag v; then
+        if has_option v; then
             echo "This process will push your local files to your staging server, removing any"
             echo "files on staging that are not present on local. You will be given"
             echo "a preview of what will happen first."
@@ -1173,7 +1166,7 @@ function _push_dir() {
   fi
 
   # rsync exclude file indication to user....
-  if has_flag v && test -e "$exclude_file"; then
+  if has_option v && test -e "$exclude_file"; then
     excludes="$(cat $exclude_file)"
     echo "`tty -s && tput setaf 3`Excluding per: $exclude_file`tty -s && tput op`"
     echo "`tty -s && tput setaf 3`$exclude_files`tty -s && tput op`"
@@ -1185,8 +1178,8 @@ function _push_dir() {
     cmd="$ld_remote_rsync_cmd \"$path_local/\" \"$server_remote:$path_remote/\" --delete $exclude"
   fi
 
-  has_flag y || confirm "Bring staging \"$title\" into sync with local, are you sure?" || return 2
-  has_flag v &&  echo $cmd && echo
+  has_option y || confirm "Bring staging \"$title\" into sync with local, are you sure?" || return 2
+  has_option v &&  echo $cmd && echo
 
   eval $cmd >/dev/null 2>&1
   [[ $? -ne 0 ]] && status=false
@@ -1205,13 +1198,13 @@ function push_db() {
       echo_red "You cannot push your database unless you define a staging environment." && return 1
     fi
 
-    if has_flag v; then
+    if has_option v; then
         echo "This process will push your local database to your staging server, "
         echo "ERASING the staging database and REPLACING it with a copy from local."
         echo
         echo "`tty -s && tput setaf 3`End result: Your staging database will match your local.`tty -s && tput op`"
     fi
-    has_flag y || confirm "Are you sure you want to push your local db to staging" || return 2
+    has_option y || confirm "Are you sure you want to push your local db to staging" || return 2
 
     export_db push_db -y || return 1
 
@@ -1273,7 +1266,7 @@ function export_db() {
   file_gz="$file.gz"
 
   if [ -f "$file" ] && [ "$2" != '-y' ]; then
-    if ! has_flag y; then
+    if ! has_option y; then
       confirm_result=false
       if ! confirm "File $file exists, replace"; then
         echo_red "Cancelled."
@@ -1283,7 +1276,7 @@ function export_db() {
     rm $file
   fi
   if [ -f "$file_gz" ] && [ "$2" != '-y' ]; then
-    if ! has_flag y; then
+    if ! has_option y; then
       confirm_result=false
       if ! confirm "File $file_gz exists, replace"; then
         echo_red "Cancelled."
@@ -1366,7 +1359,7 @@ function import_db() {
     end
   fi
 
-  has_flag 'y' || [ $import_db_silent = true ] || confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure" || return 2
+  has_option 'y' || [ $import_db_silent = true ] || confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure" || return 2
   echo "Importing data into $local_db_host:$local_db_name..."
   _drop_tables || return 1
 
@@ -1385,7 +1378,7 @@ function _drop_tables() {
   local status=true
   tables=$($ld_mysql --defaults-file=$local_db_cnf $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables' )
   for t in $tables; do
-    has_flag v && echo "├── $t"
+    has_option v && echo "├── $t"
     $ld_mysql --defaults-file=$local_db_cnf $local_db_name -e "DROP TABLE $t" || status=false
   done
 
@@ -1406,7 +1399,7 @@ function _drop_tables() {
  #
 function complete_elapsed() {
     echo
-    echo "👍 `tty -s && tput setaf 4`${1//.} in $SECONDS seconds.`tty -s && tput op`"
+    echo "👍  `tty -s && tput setaf 4`${1//.} in $SECONDS seconds.`tty -s && tput op`"
     echo
 
     return 0
@@ -1420,18 +1413,7 @@ function complete_elapsed() {
  #
 function complete() {
     echo
-    echo "👍 `tty -s && tput setaf 4`$1`tty -s && tput op`"
-    echo
-
-    return 0
-}
-
-##
- # Echo an operation did not complete successfully.
- #
-function did_not_complete() {
-    echo
-    echo_red "🔥🔥🔥 $1"
+    echo "👍  `tty -s && tput setaf 4`$1`tty -s && tput op`"
     echo
 
     return 0
@@ -1458,104 +1440,6 @@ function confirm() {
   done
 }
 
-##
- # Theme a help topic output
- #
- # @param string $1
- #   Access check arg
- # @param string $2
-#    The destination; expecting local or remote
- # @param string $3
- #   The help description
- #
- # @return NULL
- #
-function theme_help_topic() {
-  indent='    ';
-  if _access_check $1; then
-    left="<<<"
-    right=">>>"
-    case $2 in
-        'l')
-          color=$color_local
-          icon="`tty -s && tput setaf $color_local`local`tty -s && tput op`"
-          icon='';;
-
-        'pl')
-          color=$color_prod
-          icon="`tty -s && tput setaf $color_prod`local $left`tty -s && tput op` prod";;
-        'pld')
-          color=$color_prod
-          icon="`tty -s && tput setaf $color_prod`local db $left`tty -s && tput op` prod db";;
-        'plf')
-          color=$color_prod
-          icon="`tty -s && tput setaf $color_prod`local files $left`tty -s && tput op` prod files";;
-
-        #'lp')
-        #  color=3
-        #  icon="`tty -s && tput setaf 3`local $right`tty -s && tput op` prod";;
-        #'lpd')
-        #  icon="`tty -s && tput setaf 3`local db $right`tty -s && tput op` prod db";;
-        #'lpf')
-        #  icon="`tty -s && tput setaf 3`local files $right`tty -s && tput op` prod files";;
-
-        'sl')
-          icon="`tty -s && tput setaf 3`local $left`tty -s && tput op` staging";;
-        'sld')
-          icon="`tty -s && tput setaf 3`local db$left `tty -s && tput op` staging db";;
-        'slf')
-          icon="`tty -s && tput setaf 3`local files$left `tty -s && tput op` staging files";;
-
-        'lst')
-          color=$color_staging
-          icon="local `tty -s && tput setaf $color_staging`$right staging`tty -s && tput op`";;
-        'lsd')
-          color=$color_staging
-          icon="local db `tty -s && tput setaf $color_staging`$right staging db`tty -s && tput op`";;
-        'lsf')
-          color=$color_staging
-          icon="local files `tty -s && tput setaf $color_staging`$right staging files`tty -s && tput op`";;
-    esac
-
-    echo "`tty -s && tput setaf $color`$1`tty -s && tput op`"
-    i=0
-    for line in "$@"
-    do
-      if [ $i -gt 1 ]
-      then
-        echo "$indent$line"
-        #if [ "$icon" ]
-        #then
-        #  echo "$indent[ $icon ]"
-        #fi
-      fi
-      i+=1
-    done
-  fi
-}
-
-##
- # Theme a header
- #
- # @param string $1
- #   Header text
- # @param int $2
- #   Color
- #
- # @return NULL
- #   Sets the value of global $theme_header_return
- #
-function theme_header() {
-    local header=$1
-
-    if [ $# -eq 1 ]; then
-      color=7
-    else
-      color=$2
-    fi
-    echo "`tty -s && tput setaf $color`$(echo_headline "$header")`tty -s && tput op`"
-}
-
 show_switch_state='remote'
 function show_switch() {
     local title="Connecting to remote..."
@@ -1567,49 +1451,6 @@ function show_switch() {
     fi
     echo_yellow "🌎 $title"
     return 0
-}
-
-##
- # Display help for this script
- #
-function show_help() {
-  clear
-
-  title=$(echo "Commands for a $local_role Environment" | tr "[:lower:]" "[:upper:]")
-  theme_header "$title"
-
-  theme_header 'local' $color_local
-  theme_help_topic export 'l' 'Dump the local db with an optional suffix' 'export [suffix]' '-f to overwrite if exists'
-  theme_help_topic import 'l' 'Import a db export file overwriting local' 'import [suffix]'
-  theme_help_topic 'mysql' 'l' 'Start mysql shell using local credentials'
-  theme_help_topic 'mysql "SQL"' 'l' 'Execute a mysql statement using local credentials'
-  theme_help_topic help 'l' 'Show this help screen'
-  theme_help_topic info 'l' 'Show info'
-  theme_help_topic clearcache 'l' 'Import new configuration after editing config.yml' 'clearcache'
-  theme_help_topic configtest 'l' 'Test configuration'
-  theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. loft_deploy -f ls -la'
-  theme_help_topic pass 'l' 'Display password(s)' '--prod Production' 'staging Staging' '--all All'
-  theme_help_topic terminus 'l' 'Login to terminus with prod credentials'
-  theme_help_topic hook 'l' 'Run the indicated hook, e.g. hook reset'
-
-  if [ "$local_role" != 'prod' ]; then
-    theme_header 'from prod' $color_prod
-  fi
-
-  theme_help_topic fetch 'pl' 'Fetch production assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f' '-d to only fetch database' '--ind Only fetch individual files, skipping file directories'
-  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup' '--local skip remote operations' '--ind Only reset individual files, skipping file directories'
-  theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations' '--ind Only pull individual files, skipping file directories'
-
-  if [ "$local_role" != 'staging' ]; then
-    theme_header 'to/from staging' $color_staging
-  fi
-
-  theme_help_topic push 'lst' 'A push all shortcut' '-f files only' '-d database only'
-
-  theme_help_topic fetch 'pl' 'Use `staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f staging' '-d to only fetch database' '--ind Only fetch individual files, skipping file directories'
-  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup' '--local skip remote operations' '--ind Only reset individual files, skipping file directories'
-  theme_help_topic pull 'pl' 'Use `staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations' '--ind Only pull individual files, skipping file directories'
-
 }
 
 ##
@@ -1643,7 +1484,7 @@ function mysql_check_local() {
  #
  #
 function print_header() {
-    echo_title "$local_title 🔸  $local_role"
+    echo_title "$local_location ~ $(url_host $local_url) 🔸  $local_role"
     if [[ "$op" != 'terminus' ]]; then
         if [[ "$motd" ]]; then
             echo
@@ -1768,9 +1609,9 @@ function configtest() {
   fi
 
   # Test for prod server password in prod environments
-  if ([ "$local_role" == 'prod' ] && [ "$production_pass" ]) || ([ "$local_role" == 'staging' ] && [ "$staging_pass" ]); then
+  if [[ "$production_pass" ]] || [[ "$staging_pass" ]]; then
     configtest_return=false;
-    warning "For security purposes you should remove the $local_role server password from your config file in a $local_role environment."
+    warning "You should no longer include production_pass nor staging_pass in your configuration; you must use key-based authentication instead.  Remove those values from your configuration files."
   fi
 
   # Test for other environments than prod, in prod environment
@@ -1899,24 +1740,6 @@ function configtest() {
   return 0
 }
 
-##
- # Show the password information
- #
- # @param string $1
- #   description of param
- #
- # @return NULL
- #   Sets the value of global $func_name_return
- #
-function show_pass() {
-  if has_param all || has_param prod || [ ${#params[@]} -eq 0 ]; then
-    complete "Production Password: `tty -s && tput setaf 2`$production_pass`tty -s && tput op`"
-  fi
-  if has_param all || has_param staging; then
-    complete "Staging Password: `tty -s && tput setaf 2`$staging_pass`tty -s && tput op`"
-  fi
-}
-
 #
 # Return a specific variable value
 #
@@ -1938,7 +1761,7 @@ function get_var() {
  # Display configuation info
  #
 function show_info() {
-  theme_header 'LOCAL' $color_local
+  echo_heading 'Local'
   table_add_row "Role" "$(echo $local_role | tr [:lower:] [:upper:])"
   table_add_row "Config" "$config_dir"
   if [ "$local_drupal_settings" ]; then
@@ -1951,43 +1774,57 @@ function show_info() {
   table_add_row "DB User" "$local_db_user"
   [ "$local_db_port" ] && table_add_row "DB Port" "$local_db_port"
   table_add_row "DB Dumps" "$local_db_dir"
-  if _access_check 'fetch_db'; then
-    if [[ -f "$config_dir/cached_db" ]]; then
-      table_add_row "DB Fetched" "$(cat $config_dir/cached_db)"
+
+  table_add_row "Files" "$local_files"
+  [ "$local_files2" ] && table_add_row "Files2" "$local_files2"
+  [   "$local_files3" ] && table_add_row "Files3" "$local_files3"
+
+  echo_slim_table
+
+  echo "Some files are $(echo_yellow "ignored") because of these file(s):"
+  list_clear
+  if _access_check 'fetch_files'; then
+    if [[ "$ld_rsync_ex" ]] && [[ "$(cat $ld_rsync_exclude_file)" ]]; then
+        list_add_item "$ld_rsync_exclude_file"
+    fi
+
+    if [[ "$ld_rsync_ex2" ]] && [[ "$(cat $ld_rsync_exclude_file2)" ]]; then
+        list_add_item "$ld_rsync_exclude_file2"
+    fi
+
+    if [[ "$ld_rsync_ex3" ]] && [[ "$(cat $ld_rsync_exclude_file3)" ]]; then
+        list_add_item "$ld_rsync_exclude_file3"
     fi
   fi
-    table_add_row "Files" "$local_files"
-    [ "$local_files2" ] && table_add_row "Files2" "$local_files2"
-    [ "$local_files3" ] && table_add_row "Files3" "$local_files3"
+  echo_list && echo && echo
+
+  # Fetch Dates.
+  if _access_check 'fetch_db'; then
+    if [[ -f "$config_dir/prod/cached_db.txt" ]]; then
+      table_add_row "Production Database" "$(cat $config_dir/prod/cached_db.txt)"
+    fi
+    if [[ -f "$config_dir/staging/cached_db.txt" ]]; then
+      table_add_row "Staging Database" "$(cat $config_dir/staging/cached_db.txt)"
+    fi
+  fi
 
   if _access_check 'fetch_files'; then
-    if [[ "$ld_rsync_ex" ]]; then
-      echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file are being ignored.`tty -s && tput op`"
+    if [[ -f "$config_dir/prod/cached_files.txt" ]]; then
+      table_add_row "Production Files" "$(cat $config_dir/prod/cached_files.txt)"
     fi
 
-    if [[ "$ld_rsync_ex2" ]]; then
-      echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file2 are being ignored.`tty -s && tput op`"
-    fi
-
-    if [[ "$ld_rsync_ex3" ]]; then
-      echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file3 are being ignored.`tty -s && tput op`"
-    fi
-
-    if [[ -f "$config_dir/prod/cached_files" ]]; then
-      table_add_row "Prod files" "$(cat $config_dir/prod/cached_files)"
-    fi
-
-    if [[ -f "$config_dir/staging/cached_files" ]]; then
-      table_add_row "Staging files" "$(cat $config_dir/staging/cached_files)"
+    if [[ -f "$config_dir/staging/cached_files.txt" ]]; then
+      table_add_row "Staging Files" "$(cat $config_dir/staging/cached_files.txt)"
     fi
   fi
-  echo_slim_table
+  echo_heading 'Last Fetches'
+  echo_slim_table && echo
 
   if [ "$local_role" == 'dev' ]; then
     load_staging_config
     load_production_config
     if [[ "$production_server" ]]; then
-        theme_header 'PRODUCTION' $color_prod
+        echo_heading 'Production'
         table_add_row "Server" "$production_server"
         if [ $production_port ]; then
           table_add_row "Port" "$production_port"
@@ -2002,7 +1839,7 @@ function show_info() {
     fi
 
     if [[ "$staging_server" ]]; then
-        theme_header 'STAGING' $color_staging
+        echo_heading 'Staging'
         table_add_row "Server" "$staging_server"
         if [ $staging_port ]; then
           table_add_row "Port" "$staging_port"
@@ -2016,7 +1853,7 @@ function show_info() {
   fi
 
   if [[ "$migration_title" ]]; then
-    theme_header "MIGRATION"
+    echo_heading "Migration"
     table_add_row "From" "$migration_title"
     [[ "$migration_database_path" ]] && table_add_row "Database" "$migration_database_user@$migration_database_host:$migration_database_path"
     [[ "$migration_files_path" ]] && table_add_row "Files" "$migration_files_user@$migration_files_host:$migration_files_path"
@@ -2025,19 +1862,17 @@ function show_info() {
     echo_slim_table
   fi
 
-  echo
-  echo "Loft Deploy Ver. $ld_version"
+  echo && echo "$(get_title) VER $(get_version)"
 }
 
 function warning() {
   echo
-  #echo "!!!!!!WARNING!!!!!!"
   echo "`tty -s && tput setaf 3`$1`tty -s && tput op`"
   if [ "$2" ]; then
     echo_fix "$2"
   fi
   confirm 'Disregard warning' && return 0
-  did_not_complete "Tests did not complete" && exit 2
+  exit_with_failure --status=2 "Tests did not complete"
 }
 
 ##
@@ -2098,11 +1933,11 @@ function _handle_hook() {
 
     for hook_stub in "${hooks[@]}"; do
         local hook="$config_dir/hooks/$hook_stub.sh"
-        has_flag v && echo "├──  Looking for hook: ${hook##*/}"
+        has_option v && echo "├──  Looking for hook: ${hook##*/}"
         local basename=$(basename $hook)
         declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "$op_status" "" "" "" "" "" "$config_dir/hooks/");
         if test -e "$hook"; then
-          echo "🔶 Calling hook: $basename"
+          echo_heading "Calling hook: $basename"
           source "$hook" "${hook_args[@]}"
           [[ $? -ne 0 ]] && echo_red "└── Hook failed." && status=false
         fi

@@ -1,5 +1,12 @@
 {
     "definitions": {
+        "title": {
+            "type": "string"
+        },
+        "url": {
+            "type": "string",
+            "pattern": "^http"
+        },
         "migration_resource": {
             "type": "object",
             "properties": {
@@ -15,7 +22,11 @@
                 }
             },
             "additionalProperties": false,
-            "required": ["user", "host", "path"]
+            "required": [
+                "user",
+                "host",
+                "path"
+            ]
         },
         "user": {
             "type": "string",
@@ -45,6 +56,9 @@
         "local": {
             "type": "object",
             "properties": {
+                "title": {
+                    "$ref": "#/definitions/title"
+                },
                 "copy_source": {
                     "type": "array",
                     "uniqueItems": false
@@ -65,8 +79,7 @@
                     "type": "string"
                 },
                 "url": {
-                    "type": "string",
-                    "pattern": "^http"
+                    "$ref": "#/definitions/url"
                 },
                 "basepath": {
                     "$ref": "#/definitions/basepath"
@@ -256,9 +269,8 @@
         "migration": {
             "type": "object",
             "properties": {
-                "role": {
-                    "type": "string",
-                    "enum": ["prod", "stage"]
+                "title": {
+                    "$ref": "#/definitions/title"
                 },
                 "database": {
                     "$ref": "#/definitions/migration_resource"
@@ -268,8 +280,22 @@
                     "items": {
                         "$ref": "#/definitions/migration_resource"
                     }
+                },
+                "push_to": {
+                    "type": "object",
+                    "properties": {
+                        "host": {
+                            "$ref": "/#/definitions/host"
+                        },
+                        "user": {
+                            "$ref": "/#/definitions/user"
+                        }
+                    }
                 }
-            }
+            },
+            "required": [
+                "title"
+            ]
         },
         "bin": {
             "type": "object",
