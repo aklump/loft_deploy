@@ -177,6 +177,9 @@ has_option v && ld_remote_rsync_cmd="rsync -azPv"
  # Begin Controller
  #
 
+# Input validation.
+validate_input || exit_with_failure "Something didn't work..."
+
 implement_cloudy_basic
 
 
