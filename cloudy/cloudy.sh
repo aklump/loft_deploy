@@ -513,16 +513,28 @@ function echo_heading() {
     echo "🔸  ${headline}"
 }
 
+function list_clear() {
+    echo_list__array=()
+}
+
+function list_add_item() {
+    local item="$1"
+    echo_list__array=("${echo_list__array[@]}" "$item")
+    return 0
+}
+
 ##
  # Echo an array as a bulletted list.
  #
  # @param $echo_list__array
  #
- # You must provide your list array as $echo_list__array like so:
+ # You must add items to your list first:
  # @code
- #   echo_list__array=("${some_array_to_echo[@]}")
+ #   list_add_item "List item"
  #   echo_list
  # @endcode
+ #
+ # @see echo_list__array=("${some_array_to_echo[@]}")
  #
 function echo_list() {
     _cloudy_echo_list
