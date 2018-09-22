@@ -27,7 +27,7 @@
 
 <section>
 
-<p>You may wish to migrate a database and/or files from another server, which does not have Loft Deploy installed.  As long as you can <code>scp</code> and <code>rsync</code> into this other server you can use this feature.</p>
+<p>You may wish to migrate a database and/or files from another server, which does not have Loft Deploy installed.  As long as you can <code>scp</code> and <code>rsync</code> from this other server you can use this feature.  If you cannot then see the section <em>The Push Option</em> for a method to push the files to your destination server.</p>
 
 <p>Migrations are unique in that they do implement the file excludes or the database filters.  In other words, all tables, and all files.</p>
 
@@ -67,6 +67,18 @@
 <li>Check your configration with <code>ldp info</code>; you should see a migration section with the paths to the assets you can migrate.</li>
 <li>When you are ready call <code>ldp migrate</code>.  You will asked to confirm each step.</li>
 </ol>
+
+<h2>The Push Option</h2>
+
+<p>If you try to migrate and the process hangs, <a href="https://superuser.com/questions/395356/scp-doesnt-work-but-ssh-does#396667">one issue</a> may be that there is a problem with the SSH tunnel made during the <code>scp</code> operation.  In any event you can use the <code>--push</code> option to create a markdown file with step by step instructions and code snippets to run <strong>on the source server</strong> to push the files to your destination by hand.</p>
+
+<p>The second part of this method requires the you do a manual <code>ldp import</code> of the database file <strong>on the destination server</strong>, so don't miss that step.</p>
+
+<p>Simply call <code>ldp migrate --push</code> to see the output on the screen.  As a sidenote, the configuration is the same as above, you still need to add the <code>migration</code> array to your configuration file.</p>
+
+<p>Or pipe it to a file like this <code>ldp migrate --push &gt; migrate.md</code>.</p>
+
+<p>Follow the instructions therein.</p>
 </section>
 
 <div class="search__results">
@@ -81,7 +93,7 @@
 </div>
   
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 21 Sep 2018 11:56:07 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 22 Sep 2018 11:06:06 -0700</p>
   </div>
 </footer>
 
