@@ -698,7 +698,7 @@ function _fetch_db_production() {
   fi
 
   # record the fetch date
-  echo $now > $config_dir/prod/cached_db
+  echo "$(date8601)" > $config_dir/prod/cached_db
 }
 
 ##
@@ -729,7 +729,7 @@ function _fetch_db_staging() {
   scp "$staging_server:$_remote_file" "$_local_file"
 
   # record the fetch date
-  echo $now > $config_dir/staging/cached_db
+  echo "$(date8601)" > $config_dir/staging/cached_db
 
   # delete it from remote
   echo "Deleting the staging copy..."
@@ -771,7 +771,7 @@ function fetch_files() {
 #        ;;
     esac
 
-    [[ "$status" == true ]] && echo $now > "$config_dir/$source_server/cached_files" && return 0
+    [[ "$status" == true ]] && echo "$(date8601)" > "$config_dir/$source_server/cached_files" && return 0
     return 1
 }
 
@@ -1095,7 +1095,7 @@ function reset_db() {
         end "Please fetch_db first"
     fi
 
-    has_option nobu || export_db "reset_backup_$now" '' 'Creating a backup of the local db...'
+    has_option nobu || export_db "reset_backup-$(date8601 -c)" '' 'Creating a backup of the local db...'
 
     import_db_silent=true
     import_db "$fetched_db_dump"

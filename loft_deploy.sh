@@ -156,9 +156,6 @@ current_db_filename=''
 # holds the result of connect()
 mysql_check_result=false
 
-# holds a timestamp for backups, etc.
-now=$(date +"%Y%m%d_%H%M")
-
 # theme color definitions
 color_red=1
 color_green=2
@@ -179,7 +176,6 @@ has_option v && ld_remote_rsync_cmd="rsync -azPv"
 validate_input || exit_with_failure "Something didn't work..."
 
 implement_cloudy_basic
-
 
 # init has to come before configuration loading
 if [ "$op" == 'init' ]; then
