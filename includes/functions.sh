@@ -1781,9 +1781,8 @@ function show_info() {
 
   echo_slim_table
 
-  echo "Some files are $(echo_yellow "ignored") because of these file(s):"
-  list_clear
   if _access_check 'fetch_files'; then
+    list_clear
     if [[ "$ld_rsync_ex" ]] && [[ "$(cat $ld_rsync_exclude_file)" ]]; then
         list_add_item "$ld_rsync_exclude_file"
     fi
@@ -1795,8 +1794,11 @@ function show_info() {
     if [[ "$ld_rsync_ex3" ]] && [[ "$(cat $ld_rsync_exclude_file3)" ]]; then
         list_add_item "$ld_rsync_exclude_file3"
     fi
+    if list_has_items; then
+        echo "Some files are $(echo_yellow "ignored") because of these file(s):"
+        echo_list && echo && echo
+    fi
   fi
-  echo_list && echo && echo
 
   # Fetch Dates.
   if _access_check 'fetch_db'; then
@@ -1817,8 +1819,10 @@ function show_info() {
       table_add_row "Staging Files" "$(cat $config_dir/staging/cached_files.txt)"
     fi
   fi
-  echo_heading 'Last Fetches'
-  echo_slim_table && echo
+  if table_has_rows; then
+    echo_heading 'Last Fetches'
+    echo_slim_table && echo
+  fi
 
   if [ "$local_role" == 'dev' ]; then
     load_staging_config
