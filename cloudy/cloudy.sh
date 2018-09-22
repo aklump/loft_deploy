@@ -744,6 +744,14 @@ function has_failed() {
     return 1
 }
 
+##
+ # Echo the host portion an URL.
+ #
+function url_host() {
+    local url_path="$1"
+    echo "$url_path" | awk -F/ '{print $3}'
+}
+
 #
 # Filepaths
 #
