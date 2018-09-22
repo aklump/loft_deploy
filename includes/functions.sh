@@ -293,9 +293,7 @@ function load_config() {
   # these are defaults
   local_role="prod"
   local_db_host='localhost'
-  production_pass=''
   production_root=''
-  staging_pass=''
 
   ld_mysql=$(type mysql >/dev/null 2>&1 && which mysql)
   ld_mysqldump=$(type mysqldump >/dev/null 2>&1 && which mysqldump)
@@ -1683,9 +1681,9 @@ function configtest() {
   fi
 
   # Test for prod server password in prod environments
-  if ([ "$local_role" == 'prod' ] && [ "$production_pass" ]) || ([ "$local_role" == 'staging' ] && [ "$staging_pass" ]); then
+  if [[ "$production_pass" ]] || [[ "$staging_pass" ]]; then
     configtest_return=false;
-    warning "For security purposes you should remove the $local_role server password from your config file in a $local_role environment."
+    warning "You should no longer include production_pass nor staging_pass in your configuration; you must use key-based authentication instead.  Remove those values from your configuration files."
   fi
 
   # Test for other environments than prod, in prod environment
@@ -1812,24 +1810,6 @@ function configtest() {
 
   [[ $configtest_return == false ]] && return 1
   return 0
-}
-
-##
- # Show the password information
- #
- # @param string $1
- #   description of param
- #
- # @return NULL
- #   Sets the value of global $func_name_return
- #
-function show_pass() {
-  if has_option all || has_option prod || [ ${#params[@]} -eq 0 ]; then
-    complete "Production Password: `tty -s && tput setaf 2`$production_pass`tty -s && tput op`"
-  fi
-  if has_option all || has_option staging; then
-    complete "Staging Password: `tty -s && tput setaf 2`$staging_pass`tty -s && tput op`"
-  fi
 }
 
 #

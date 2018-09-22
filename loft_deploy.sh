@@ -369,12 +369,6 @@ case $op in
     exit_with_failure
     ;;
 
-  'pass')
-    show_pass
-    handle_post_hook $op
-    end
-    ;;
-
   'terminus')
     cmd="auth:login --machine-token=$terminus_machine_token"
 
