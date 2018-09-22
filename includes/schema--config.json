@@ -1,5 +1,12 @@
 {
     "definitions": {
+        "title": {
+            "type": "string"
+        },
+        "url": {
+            "type": "string",
+            "pattern": "^http"
+        },
         "migration_resource": {
             "type": "object",
             "properties": {
@@ -256,9 +263,8 @@
         "migration": {
             "type": "object",
             "properties": {
-                "role": {
-                    "type": "string",
-                    "enum": ["prod", "stage"]
+                "title": {
+                    "$ref": "#/definitions/title"
                 },
                 "database": {
                     "$ref": "#/definitions/migration_resource"
@@ -268,8 +274,22 @@
                     "items": {
                         "$ref": "#/definitions/migration_resource"
                     }
+                },
+                "push_to": {
+                    "type": "object",
+                    "properties": {
+                        "host": {
+                            "$ref": "/#/definitions/host"
+                        },
+                        "user": {
+                            "$ref": "/#/definitions/user"
+                        }
+                    }
                 }
-            }
+            },
+            "required": [
+                "title"
+            ]
         },
         "bin": {
             "type": "object",

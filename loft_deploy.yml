@@ -121,10 +121,4 @@ commands:
     aliases: [clearcache, cc]
     help: Clear all cached data.
   migrate:
-    help: Migrate database and/or files from another server that does not have Loft Deploy installed.
-    options:
-      push:
-        type: boolean
-        help: "Output instruction and code snippets to push the files to the destination server when migrate fails.  Save instructions to a file like this: loft_deploy migrate --push > push-instructions.md"
-
-
+    help: Migrate database and/or files from another server that does not have Loft Deploy installed.  See online help for more info.

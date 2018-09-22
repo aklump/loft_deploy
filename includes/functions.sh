@@ -418,7 +418,73 @@ function _upsearch () {
   test / == "$PWD" && echo && echo "`tty -s && tput setaf 1`NO CONFIG FILE FOUND!`tty -s && tput op`" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
 }
 
+function get_migration_type() {
+    eval $(get_config_as "host" "migration.push_to.host")
+    eval $(get_config_as "user" "migration.push_to.user")
+    if [[ "$host" ]] || [[ "$user" ]]; then
+        echo "push";
+    else
+        echo "pull";
+    fi
+    return 0
+}
+
 function do_migrate() {
+    if [[ $(get_migration_type) == "push" ]]; then
+        _do_migrate_push
+        exit
+    else
+        _do_migrate_pull
+    fi
+    return $?
+}
+
+##
+ # Echo the instructions for a remote push migration.
+ # This will also exit the app.
+ #
+function _do_migrate_push() {
+    eval $(get_config_as "host" "migration.push_to.host")
+    eval $(get_config_as "user" "migration.push_to.user")
+
+    echo "# Manual Push Migration Instructions"
+    echo "## $migration_title -> ${local_url:-$host}"
+    echo
+    echo "1. SSH into the source server:"
+    echo "1. Push your database dump to destination server:"
+    echo
+
+    filepath=$(_get_path_with_user_and_host $user $host ${config_dir}/migrate/db/$(basename $migration_database_path))
+    echo "        scp ${migration_database_path} ${filepath} || echo \"Failed to push database.\""
+    echo
+    echo "1. Push user files to destination server:"
+    echo
+
+    if [[ "$local_files" ]]; then
+        filepath=$(_get_path_with_user_and_host $user $host $local_files)
+        echo "        rsync -azP --delete ${migration_files_path%/}/ ${filepath%/}/ || echo \"Failed to push files.\""
+    fi
+
+    if [[ "$local_files2" ]]; then
+        filepath=$(_get_path_with_user_and_host $user $host $local_files2)
+        echo "        rsync -azP --delete ${migration_files2_path%/}/ ${filepath%/}/ || echo \"Failed to push files2.\""
+    fi
+
+    if [[ "$local_files3" ]]; then
+        filepath=$(_get_path_with_user_and_host $user $host $local_files3)
+        echo "        rsync -azP --delete ${migration_files3_path%/}/ ${filepath%/}/ || echo \"Failed to push files3.\""
+    fi
+
+    echo
+    echo "1. Log in to destination server"
+    echo "1. Import the database dump:"
+    echo
+    echo "        ldp import ${config_dir}/migrate/db/$(basename $migration_database_path)"
+
+    CLOUDY_EXIT_STATUS=0 && _cloudy_exit
+}
+
+function _do_migrate_pull() {
     local db_command="scp"
     local files_command="$ld_remote_rsync_cmd --delete"
     ! has_option 'v' && db_command="$db_command -q"

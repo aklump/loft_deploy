@@ -219,8 +219,10 @@ if [ $op == "get" ]; then
   exit 1
 fi
 
-print_header
-update_needed
+if [[ "$op" != 'migration' ]] || [[ $(get_migration_type) != "push" ]]; then
+    print_header
+    update_needed
+fi
 
 #
 # status will go to false at any time that an operation fails, e.g. hook, or step, etc.
