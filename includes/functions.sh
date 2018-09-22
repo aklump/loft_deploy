@@ -129,11 +129,11 @@ function _update_0_7_0() {
     fi
 
     if [[ -f "$config_dir/cached_db" ]]; then
-      mv "$config_dir/cached_db" "$config_dir/prod/cached_db"
+      mv "$config_dir/cached_db" "$config_dir/prod/cached_db.txt"
     fi
 
     if [[ -f "$config_dir/cached_files" ]]; then
-      mv "$config_dir/cached_files" "$config_dir/prod/cached_files"
+      mv "$config_dir/cached_files" "$config_dir/prod/cached_files.txt.txt"
     fi
   fi
 
@@ -418,6 +418,8 @@ function _upsearch () {
 }
 
 function get_migration_type() {
+    local command=$(get_command)
+    [[ "$command" != "migrate" ]] && return 0
     eval $(get_config_as "host" "migration.push_to.host")
     eval $(get_config_as "user" "migration.push_to.user")
     if [[ "$host" ]] || [[ "$user" ]]; then
@@ -429,7 +431,7 @@ function get_migration_type() {
 }
 
 function do_migrate() {
-    if [[ $(get_migration_type) == "push" ]]; then
+    if [[ "$(get_migration_type)" == "push" ]]; then
         _do_migrate_push
         exit
     else
@@ -446,10 +448,12 @@ function _do_migrate_push() {
     eval $(get_config_as "host" "migration.push_to.host")
     eval $(get_config_as "user" "migration.push_to.user")
 
+    local destination=$(url_host $local_url)
+
     echo "# Manual Push Migration Instructions"
-    echo "## $migration_title -> $(url_host $local_url)"
+    echo "## $migration_title ---> $destination"
     echo
-    echo "1. SSH into the source server:"
+    echo "1. SSH into the source server, _${migration_title}_."
     echo "1. Push your database dump to destination server:"
     echo
 
@@ -475,7 +479,7 @@ function _do_migrate_push() {
     fi
 
     echo
-    echo "1. Log in to destination server"
+    echo "1. SSH in to destination server, _${destination}_."
     echo "1. Import the database dump:"
     echo
     echo "        ldp import ${config_dir}/migrate/db/$(basename $migration_database_path)"
@@ -697,7 +701,7 @@ function _fetch_db_production() {
   fi
 
   # record the fetch date
-  echo "$(date8601)" > $config_dir/prod/cached_db
+  echo "$(date8601)" > $config_dir/prod/cached_db.txt
 }
 
 ##
@@ -728,7 +732,7 @@ function _fetch_db_staging() {
   scp "$staging_server:$_remote_file" "$_local_file"
 
   # record the fetch date
-  echo "$(date8601)" > $config_dir/staging/cached_db
+  echo "$(date8601)" > $config_dir/staging/cached_db.txt
 
   # delete it from remote
   echo "Deleting the staging copy..."
@@ -770,7 +774,7 @@ function fetch_files() {
 #        ;;
     esac
 
-    [[ "$status" == true ]] && echo "$(date8601)" > "$config_dir/$source_server/cached_files" && return 0
+    [[ "$status" == true ]] && echo "$(date8601)" > "$config_dir/$source_server/cached_files.txt" && return 0
     return 1
 }
 
@@ -1770,37 +1774,51 @@ function show_info() {
   table_add_row "DB User" "$local_db_user"
   [ "$local_db_port" ] && table_add_row "DB Port" "$local_db_port"
   table_add_row "DB Dumps" "$local_db_dir"
-  if _access_check 'fetch_db'; then
-    if [[ -f "$config_dir/cached_db" ]]; then
-      table_add_row "DB Fetched" "$(cat $config_dir/cached_db)"
+
+  table_add_row "Files" "$local_files"
+  [ "$local_files2" ] && table_add_row "Files2" "$local_files2"
+  [   "$local_files3" ] && table_add_row "Files3" "$local_files3"
+
+  echo_slim_table
+
+  echo "Some files are $(echo_yellow "ignored") because of these file(s):"
+  list_clear
+  if _access_check 'fetch_files'; then
+    if [[ "$ld_rsync_ex" ]] && [[ "$(cat $ld_rsync_exclude_file)" ]]; then
+        list_add_item "$ld_rsync_exclude_file"
+    fi
+
+    if [[ "$ld_rsync_ex2" ]] && [[ "$(cat $ld_rsync_exclude_file2)" ]]; then
+        list_add_item "$ld_rsync_exclude_file2"
+    fi
+
+    if [[ "$ld_rsync_ex3" ]] && [[ "$(cat $ld_rsync_exclude_file3)" ]]; then
+        list_add_item "$ld_rsync_exclude_file3"
     fi
   fi
-    table_add_row "Files" "$local_files"
-    [ "$local_files2" ] && table_add_row "Files2" "$local_files2"
-    [ "$local_files3" ] && table_add_row "Files3" "$local_files3"
+  echo_list && echo && echo
+
+  # Fetch Dates.
+  if _access_check 'fetch_db'; then
+    if [[ -f "$config_dir/prod/cached_db.txt" ]]; then
+      table_add_row "Production Database" "$(cat $config_dir/prod/cached_db.txt)"
+    fi
+    if [[ -f "$config_dir/staging/cached_db.txt" ]]; then
+      table_add_row "Staging Database" "$(cat $config_dir/staging/cached_db.txt)"
+    fi
+  fi
 
   if _access_check 'fetch_files'; then
-    if [[ "$ld_rsync_ex" ]]; then
-      echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file are being ignored.`tty -s && tput op`"
+    if [[ -f "$config_dir/prod/cached_files.txt" ]]; then
+      table_add_row "Production Files" "$(cat $config_dir/prod/cached_files.txt)"
     fi
 
-    if [[ "$ld_rsync_ex2" ]]; then
-      echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file2 are being ignored.`tty -s && tput op`"
-    fi
-
-    if [[ "$ld_rsync_ex3" ]]; then
-      echo "`tty -s && tput setaf 3`Files listed in $ld_rsync_exclude_file3 are being ignored.`tty -s && tput op`"
-    fi
-
-    if [[ -f "$config_dir/prod/cached_files" ]]; then
-      table_add_row "Prod files" "$(cat $config_dir/prod/cached_files)"
-    fi
-
-    if [[ -f "$config_dir/staging/cached_files" ]]; then
-      table_add_row "Staging files" "$(cat $config_dir/staging/cached_files)"
+    if [[ -f "$config_dir/staging/cached_files.txt" ]]; then
+      table_add_row "Staging Files" "$(cat $config_dir/staging/cached_files.txt)"
     fi
   fi
-  echo_slim_table
+  echo_heading 'Last Fetches'
+  echo_slim_table && echo
 
   if [ "$local_role" == 'dev' ]; then
     load_staging_config

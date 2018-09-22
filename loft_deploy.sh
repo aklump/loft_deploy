@@ -219,8 +219,7 @@ if [ $op == "get" ]; then
   get_var $2 && exit 0
   exit 1
 fi
-
-if [[ "$op" != 'migration' ]] || [[ $(get_migration_type) != "push" ]]; then
+if [[ "$(get_migration_type)" != "push" ]]; then
     print_header
     update_needed
 fi
