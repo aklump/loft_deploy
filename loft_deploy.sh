@@ -166,9 +166,6 @@ color_blue=4
 color_magenta=5
 color_cyan=6
 color_white=7
-color_staging=$color_green
-color_local=$color_yellow
-color_prod=$color_red
 
 lobster_user=$(whoami)
 
@@ -201,16 +198,6 @@ if [ "$op" == 'update' ]; then
     echo "`tty -s && tput setaf 1`ACCESS DENIED!`tty -s && tput op`"
     end "$local_role sites may not invoke: loft_deploy $op"
   fi
-fi
-
-# Help MUST COME AFTER CONFIG FOR ACCESS CHECKING!!!! DON'T MOVE
-if [ ! "$op" ] || [ "$op" == 'help' ]; then
-  show_help
-
-  if [ ! "$op" ]; then
-    echo "Please call with one or more arguments."
-  fi
-  end
 fi
 
 ##
@@ -355,12 +342,6 @@ case $op in
     fi
     handle_post_hook $op
     end
-    ;;
-
-  'help')
-    show_help || status=false
-    handle_post_hook $op $status && complete && exit 0
-    exit_with_failure
     ;;
 
   'info')

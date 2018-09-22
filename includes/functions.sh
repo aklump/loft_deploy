@@ -1371,104 +1371,6 @@ function confirm() {
   done
 }
 
-##
- # Theme a help topic output
- #
- # @param string $1
- #   Access check arg
- # @param string $2
-#    The destination; expecting local or remote
- # @param string $3
- #   The help description
- #
- # @return NULL
- #
-function theme_help_topic() {
-  indent='    ';
-  if _access_check $1; then
-    left="<<<"
-    right=">>>"
-    case $2 in
-        'l')
-          color=$color_local
-          icon="`tty -s && tput setaf $color_local`local`tty -s && tput op`"
-          icon='';;
-
-        'pl')
-          color=$color_prod
-          icon="`tty -s && tput setaf $color_prod`local $left`tty -s && tput op` prod";;
-        'pld')
-          color=$color_prod
-          icon="`tty -s && tput setaf $color_prod`local db $left`tty -s && tput op` prod db";;
-        'plf')
-          color=$color_prod
-          icon="`tty -s && tput setaf $color_prod`local files $left`tty -s && tput op` prod files";;
-
-        #'lp')
-        #  color=3
-        #  icon="`tty -s && tput setaf 3`local $right`tty -s && tput op` prod";;
-        #'lpd')
-        #  icon="`tty -s && tput setaf 3`local db $right`tty -s && tput op` prod db";;
-        #'lpf')
-        #  icon="`tty -s && tput setaf 3`local files $right`tty -s && tput op` prod files";;
-
-        'sl')
-          icon="`tty -s && tput setaf 3`local $left`tty -s && tput op` staging";;
-        'sld')
-          icon="`tty -s && tput setaf 3`local db$left `tty -s && tput op` staging db";;
-        'slf')
-          icon="`tty -s && tput setaf 3`local files$left `tty -s && tput op` staging files";;
-
-        'lst')
-          color=$color_staging
-          icon="local `tty -s && tput setaf $color_staging`$right staging`tty -s && tput op`";;
-        'lsd')
-          color=$color_staging
-          icon="local db `tty -s && tput setaf $color_staging`$right staging db`tty -s && tput op`";;
-        'lsf')
-          color=$color_staging
-          icon="local files `tty -s && tput setaf $color_staging`$right staging files`tty -s && tput op`";;
-    esac
-
-    echo "`tty -s && tput setaf $color`$1`tty -s && tput op`"
-    i=0
-    for line in "$@"
-    do
-      if [ $i -gt 1 ]
-      then
-        echo "$indent$line"
-        #if [ "$icon" ]
-        #then
-        #  echo "$indent[ $icon ]"
-        #fi
-      fi
-      i+=1
-    done
-  fi
-}
-
-##
- # Theme a header
- #
- # @param string $1
- #   Header text
- # @param int $2
- #   Color
- #
- # @return NULL
- #   Sets the value of global $theme_header_return
- #
-function theme_header() {
-    local header=$1
-
-    if [ $# -eq 1 ]; then
-      color=7
-    else
-      color=$2
-    fi
-    echo "`tty -s && tput setaf $color`$(echo_heading "$header")`tty -s && tput op`"
-}
-
 show_switch_state='remote'
 function show_switch() {
     local title="Connecting to remote..."
@@ -1480,49 +1382,6 @@ function show_switch() {
     fi
     echo_yellow "🌎 $title"
     return 0
-}
-
-##
- # Display help for this script
- #
-function show_help() {
-  clear
-
-  title=$(echo "Commands for a $local_role Environment" | tr "[:lower:]" "[:upper:]")
-  theme_header "$title"
-
-  theme_header 'local' $color_local
-  theme_help_topic export 'l' 'Dump the local db with an optional suffix' 'export [suffix]' '-f to overwrite if exists'
-  theme_help_topic import 'l' 'Import a db export file overwriting local' 'import [suffix]'
-  theme_help_topic 'mysql' 'l' 'Start mysql shell using local credentials'
-  theme_help_topic 'mysql "SQL"' 'l' 'Execute a mysql statement using local credentials'
-  theme_help_topic help 'l' 'Show this help screen'
-  theme_help_topic info 'l' 'Show info'
-  theme_help_topic clearcache 'l' 'Import new configuration after editing config.yml' 'clearcache'
-  theme_help_topic configtest 'l' 'Test configuration'
-  theme_help_topic ls 'l' 'List the contents of various directories' '-d Database exports' '-f Files directory' 'ls can take flags too, e.g. loft_deploy -f ls -la'
-  theme_help_topic pass 'l' 'Display password(s)' '--prod Production' 'staging Staging' '--all All'
-  theme_help_topic terminus 'l' 'Login to terminus with prod credentials'
-  theme_help_topic hook 'l' 'Run the indicated hook, e.g. hook reset'
-
-  if [ "$local_role" != 'prod' ]; then
-    theme_header 'from prod' $color_prod
-  fi
-
-  theme_help_topic fetch 'pl' 'Fetch production assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f' '-d to only fetch database' '--ind Only fetch individual files, skipping file directories'
-  theme_help_topic reset 'pl' 'Reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup' '--local skip remote operations' '--ind Only reset individual files, skipping file directories'
-  theme_help_topic pull 'pl' 'Fetch production assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations' '--ind Only pull individual files, skipping file directories'
-
-  if [ "$local_role" != 'staging' ]; then
-    theme_header 'to/from staging' $color_staging
-  fi
-
-  theme_help_topic push 'lst' 'A push all shortcut' '-f files only' '-d database only'
-
-  theme_help_topic fetch 'pl' 'Use `staging` to fetch staging assets only; do not reset local.' '-f to only fetch files, e.g. fetch -f staging' '-d to only fetch database' '--ind Only fetch individual files, skipping file directories'
-  theme_help_topic reset 'pl' 'Use `staging` to reset local with fetched assets' '-f only reset files' '-d only reset database' '-y to bypass confirmations' '--nobu To bypass local db backup' '--local skip remote operations' '--ind Only reset individual files, skipping file directories'
-  theme_help_topic pull 'pl' 'Use `staging` to fetch staging assets and reset local.' '-f to only pull files' '-d to only pull database' '-y to bypass confirmations' '--ind Only pull individual files, skipping file directories'
-
 }
 
 ##
@@ -1833,7 +1692,7 @@ function get_var() {
  # Display configuation info
  #
 function show_info() {
-  theme_header 'LOCAL' $color_local
+  echo_heading 'Local'
   table_add_row "Role" "$(echo $local_role | tr [:lower:] [:upper:])"
   table_add_row "Config" "$config_dir"
   if [ "$local_drupal_settings" ]; then
@@ -1882,7 +1741,7 @@ function show_info() {
     load_staging_config
     load_production_config
     if [[ "$production_server" ]]; then
-        theme_header 'PRODUCTION' $color_prod
+        echo_heading 'Production'
         table_add_row "Server" "$production_server"
         if [ $production_port ]; then
           table_add_row "Port" "$production_port"
@@ -1897,7 +1756,7 @@ function show_info() {
     fi
 
     if [[ "$staging_server" ]]; then
-        theme_header 'STAGING' $color_staging
+        echo_heading 'Staging'
         table_add_row "Server" "$staging_server"
         if [ $staging_port ]; then
           table_add_row "Port" "$staging_port"
@@ -1911,7 +1770,7 @@ function show_info() {
   fi
 
   if [[ "$migration_title" ]]; then
-    theme_header "MIGRATION"
+    echo_heading "Migration"
     table_add_row "From" "$migration_title"
     [[ "$migration_database_path" ]] && table_add_row "Database" "$migration_database_user@$migration_database_host:$migration_database_path"
     [[ "$migration_files_path" ]] && table_add_row "Files" "$migration_files_user@$migration_files_host:$migration_files_path"

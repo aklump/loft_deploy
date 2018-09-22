@@ -1,5 +1,5 @@
 title: "Loft Deploy"
-default_command: ""
+default_command: "help"
 commands:
   pull:
     help: Combine the fetch and reset commands in one step.
