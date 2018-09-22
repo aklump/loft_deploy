@@ -168,8 +168,6 @@ color_magenta=5
 color_cyan=6
 color_white=7
 
-lobster_user=$(whoami)
-
 ld_remote_rsync_cmd="rsync -azP"
 has_option v && ld_remote_rsync_cmd="rsync -azPv"
 
