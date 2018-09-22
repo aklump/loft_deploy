@@ -66,16 +66,12 @@ try {
 
   foreach ($config['local'] as $key => $item) {
     switch ($key) {
-      case 'location':
-        break;
 
+      // These do not need to print; they are probably imported using cloudy in loft_deploy.sh.
+      case 'role':
       case 'url':
-        $title = array();
-        if (isset($config['local']['location'])) {
-          $title[] = $config['local']['location'];
-        }
-        $data['local_title'][] = preg_replace('/https?:\/\//i', '', $item);
-        $data['local_title'] = implode(' ~ ', $data['local_title']);
+      case 'basepath':
+      case 'location':
         break;
 
       case 'database':
