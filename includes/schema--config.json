@@ -22,7 +22,11 @@
                 }
             },
             "additionalProperties": false,
-            "required": ["user", "host", "path"]
+            "required": [
+                "user",
+                "host",
+                "path"
+            ]
         },
         "user": {
             "type": "string",
@@ -52,6 +56,9 @@
         "local": {
             "type": "object",
             "properties": {
+                "title": {
+                    "$ref": "#/definitions/title"
+                },
                 "copy_source": {
                     "type": "array",
                     "uniqueItems": false
@@ -72,8 +79,7 @@
                     "type": "string"
                 },
                 "url": {
-                    "type": "string",
-                    "pattern": "^http"
+                    "$ref": "#/definitions/url"
                 },
                 "basepath": {
                     "$ref": "#/definitions/basepath"

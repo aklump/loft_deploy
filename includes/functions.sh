@@ -595,7 +595,7 @@ function do_pull() {
     load_production_config
 
     if [[ ! "$production_server" ]] && [[ ! "$terminus_site" ]]; then
-        echo_red "You cannot pull unless you define a production environment." && return 1
+        fail_because "You cannot pull unless you define a production environment." && return 1
     fi
 
     if [[ "$status" == true ]]; then handle_pre_hook fetch || status=false; fi
@@ -1481,7 +1481,7 @@ function mysql_check_local() {
  #
  #
 function print_header() {
-    echo_title "$local_title 🔸  $local_role"
+    echo_title "$local_location ~ $(url_host $local_url) 🔸  $local_role"
     if [[ "$op" != 'terminus' ]]; then
         if [[ "$motd" ]]; then
             echo
@@ -1920,7 +1920,7 @@ function _handle_hook() {
         local basename=$(basename $hook)
         declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "$op_status" "" "" "" "" "" "$config_dir/hooks/");
         if test -e "$hook"; then
-          echo "🔶 Calling hook: $basename"
+          echo_heading "Calling hook: $basename"
           source "$hook" "${hook_args[@]}"
           [[ $? -ne 0 ]] && echo_red "└── Hook failed." && status=false
         fi
