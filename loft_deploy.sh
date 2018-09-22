@@ -119,7 +119,7 @@ eval $(get_config_as -a "migration_files2" "migration.files.1")
 eval $(get_config_as -a "migration_files3" "migration.files.2")
 eval $(get_config "local.url")
 eval $(get_config "local.location")
-eval $(get_config "local.role")
+eval $(get_config "local.role" "prod")
 eval $(get_config "local.basepath")
 
 declare -a SCRIPT_ARGS=()
@@ -166,7 +166,7 @@ color_cyan=6
 color_white=7
 
 ld_remote_rsync_cmd="rsync -azP"
-has_option v && ld_remote_rsync_cmd="rsync -azPv"
+has_option "v" && ld_remote_rsync_cmd="rsync -azPv"
 
 ##
  # Begin Controller

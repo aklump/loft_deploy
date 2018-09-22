@@ -291,7 +291,6 @@ function load_config() {
   fi
 
   # these are defaults
-  local_role="prod"
   local_db_host='localhost'
   production_root=''
 
@@ -448,7 +447,7 @@ function _do_migrate_push() {
     eval $(get_config_as "user" "migration.push_to.user")
 
     echo "# Manual Push Migration Instructions"
-    echo "## $migration_title -> ${local_url:-$host}"
+    echo "## $migration_title -> $(url_host $local_url)"
     echo
     echo "1. SSH into the source server:"
     echo "1. Push your database dump to destination server:"
