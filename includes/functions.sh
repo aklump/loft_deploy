@@ -1779,8 +1779,7 @@ function show_info() {
     echo_slim_table
   fi
 
-  echo
-  echo "Loft Deploy Ver. $ld_version"
+  echo && echo "$(get_title) VER $(get_version)"
 }
 
 function warning() {

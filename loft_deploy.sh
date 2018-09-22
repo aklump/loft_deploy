@@ -155,9 +155,6 @@ mysql_check_result=false
 # holds a timestamp for backups, etc.
 now=$(date +"%Y%m%d_%H%M")
 
-# Current version of this script (auto-updated during build).
-ld_version=0.14.20
-
 # theme color definitions
 color_red=1
 color_green=2
