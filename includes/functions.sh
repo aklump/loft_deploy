@@ -80,21 +80,16 @@ function _mysql_local() {
   eval $cmd
 }
 
-function update_needed() {
+function auto_update() {
   local need=0
   # Test for _update_0_7_0
   if [[ ! -d "$config_dir/prod" ]]; then
-    need=1
+    _update_0_7_0
   fi
 
   # Test for _update_0_7_6
   if [[ -d "$config_dir/production" ]]; then
-    need=1
-  fi
-
-  if [[ $need -eq 1 ]]; then
-    echo "`tty -s && tput setaf 3`An update is necessary; the script may not perform as expected; please execute 'loft_deploy update' when ready.`tty -s && tput op`"
-    echo ""
+    _update_0_7_6
   fi
 }
 
@@ -269,7 +264,10 @@ function get_sql_ready_db_tables_data() {
  # Load the configuration file
  #
 function load_config() {
-  _upsearch $(basename $config_dir)
+  if ! _upsearch $(basename $config_dir); then
+    fail_because "Please create .loft_deploy or make sure you are in a child directory."
+    exit_with_failure "No configuration file found"
+  fi
 
   motd=''
   if [[ -f "$config_dir/motd" ]]; then
@@ -414,7 +412,8 @@ function load_staging_config() {
  # Recursive search for file in parent dirs
  #
 function _upsearch () {
-  test / == "$PWD" && echo && echo "`tty -s && tput setaf 1`NO CONFIG FILE FOUND!`tty -s && tput op`" && end "Please create .loft_deploy or make sure you are in a child directory." || test -e "$1" && config_dir=${PWD}/.loft_deploy && return || cd .. && _upsearch "$1"
+    test / == "$PWD" && return 1
+    test -e "$1" && config_dir=${PWD}/.loft_deploy && return 0 || cd .. && _upsearch "$1"
 }
 
 function get_migration_type() {
@@ -1973,7 +1972,7 @@ function end() {
 function _access_check() {
 
   # List out helper commands, with universal access regardless of local_role
-  if [ "$1" == '' ] || [ "$1" == 'clearcache' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'configtest' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ] || [ "$1" == 'update' ] || [ "$1" == 'mysql' ] || [ "$1" == 'hook' ]; then
+  if [ "$1" == '' ] || [ "$1" == 'config' ] || [ "$1" == 'clearcache' ] || [ "$1" == 'help' ] || [ "$1" == 'info' ] || [ "$1" == 'configtest' ] || [ "$1" == 'ls' ] || [ "$1" == 'init' ] || [ "$1" == 'update' ] || [ "$1" == 'mysql' ] || [ "$1" == 'hook' ]; then
     return 0
   fi
 

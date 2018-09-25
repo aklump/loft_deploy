@@ -66,7 +66,7 @@ LOGFILE="loft_deploy.log"
 
 function on_compile_config() {
     # Make the instance configuration accessible to Cloudy.
-    echo "$config_dir/config.yml"
+    [ -f "$config_dir/config.yml" ] && echo "$config_dir/config.yml"
 }
 
 function on_clear_cache() {
@@ -139,7 +139,7 @@ done
  #
 
 # The user's operation
-op=${SCRIPT_ARGS[0]}
+op=$(get_command)
 
 # The target of the operation
 target=${SCRIPT_ARGS[1]}
@@ -173,9 +173,9 @@ has_option "v" && ld_remote_rsync_cmd="rsync -azPv"
  #
 
 # Input validation.
-validate_input || exit_with_failure "Something didn't work..."
-
+validate_input || exit_with_failure "Unknown command."
 implement_cloudy_basic
+
 
 # init has to come before configuration loading
 if [ "$op" == 'init' ]; then
@@ -219,9 +219,11 @@ if [ $op == "get" ]; then
   get_var $2 && exit 0
   exit 1
 fi
+
+
 if [[ "$(get_migration_type)" != "push" ]]; then
     print_header
-    update_needed
+    auto_update
 fi
 
 #
@@ -231,6 +233,10 @@ status=true
 handle_pre_hook $op || status=false
 
 case $op in
+  'config')
+      $EDITOR "$config_dir/config.yml" && exit_with_cache_clear
+    ;;
+
   'migrate')
     [[ "$status" == true ]] && do_migrate || status=false
     handle_post_hook $op $status || status=false

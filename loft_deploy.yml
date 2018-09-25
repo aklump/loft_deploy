@@ -1,6 +1,17 @@
 title: "Loft Deploy"
 default_command: "help"
 commands:
+  config:
+    help: Open $EDITOR with the configuration file to make changes.
+  init:
+    help: Initialize the current directory with a .loft_deploy folder.
+    arguments:
+      prod:
+        help: Configure the current directory as a production source.
+      staging:
+        help: Configure the current directory as a staging source.
+      dev:
+        help: Configure the current directory as a development source.
   get:
     help: Print out an individual configuration value.
   pull:
