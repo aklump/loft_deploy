@@ -419,8 +419,7 @@ function _upsearch () {
 function get_migration_type() {
     local command=$(get_command)
     [[ "$command" != "migrate" ]] && return 0
-    eval $(get_config "migration")
-    [[ "$migration" ]] || return 0
+    [[ "$migration_title" ]] || return 0
     eval $(get_config_as "host" "migration.push_to.host")
     eval $(get_config_as "user" "migration.push_to.user")
     if [[ "$host" ]] || [[ "$user" ]]; then
