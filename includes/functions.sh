@@ -522,7 +522,9 @@ function _do_migrate_pull() {
         $db_command $from $to || fail_because "Could not migrate database $(basename $migration_database_path)"
 
         reset_db --source=migrate -y  || fail_because "Could not import the database."
-        rm $to || fail_because "Could not remove $to"
+
+        [ -f $to ] && ! rm $to && fail_because "Could not remove $to"
+        [ -f ${to/.gz/ } ] && ! rm ${to/.gz/ } && fail_because "Could not remove $to"
 
         ! has_failed && echo_green "$LIL db done."
     fi
