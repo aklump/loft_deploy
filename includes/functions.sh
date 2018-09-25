@@ -519,7 +519,7 @@ function _do_migrate_pull() {
             local to="$base/db/fetched.sql.gz"
         fi
 
-#        $db_command $from $to || fail_because "Could not migrate database $(basename $migration_database_path)"
+        $db_command $from $to || fail_because "Could not migrate database $(basename $migration_database_path)"
 
         reset_db --source=migrate -y  || fail_because "Could not import the database."
         rm $to || fail_because "Could not remove $to"
