@@ -60,7 +60,7 @@
 CONFIG="loft_deploy.yml";
 
 # Uncomment this line to enable file logging.
-LOGFILE="loft_deploy.log"
+#LOGFILE="loft_deploy.log"
 
 # TODO: Event handlers and other functions go here or source another file.
 
