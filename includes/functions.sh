@@ -419,6 +419,8 @@ function _upsearch () {
 function get_migration_type() {
     local command=$(get_command)
     [[ "$command" != "migrate" ]] && return 0
+    eval $(get_config "migration")
+    [[ "$migration" ]] || return 0
     eval $(get_config_as "host" "migration.push_to.host")
     eval $(get_config_as "user" "migration.push_to.user")
     if [[ "$host" ]] || [[ "$user" ]]; then
@@ -433,10 +435,11 @@ function do_migrate() {
     if [[ "$(get_migration_type)" == "push" ]]; then
         _do_migrate_push
         exit
-    else
+    elif [[ "$(get_migration_type)" == "pull" ]]; then
         _do_migrate_pull
-    fi
     return $?
+    fi
+    fail_because "A migration resource has not been configured in $config_dir/config.yml." && return 1
 }
 
 ##
