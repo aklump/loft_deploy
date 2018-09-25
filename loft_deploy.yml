@@ -1,6 +1,8 @@
 title: "Loft Deploy"
 default_command: "help"
 commands:
+  get:
+    help: Print out an individual configuration value.
   pull:
     help: Combine the fetch and reset commands in one step.
     arguments:
