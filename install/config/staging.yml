@@ -4,7 +4,9 @@ local:
   basepath: /path/to/staging/branch
   role: staging
   copy_source:
-  - web/.htaccess
+    - web/.htaccess
+    - web/sites/default/settings.local.php
+    - web/sites/default/settings.local.php
   files:
     - web/sites/default/files
     - private/default/files
