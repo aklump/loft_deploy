@@ -660,6 +660,7 @@ CLOUDY_EXIT_STATUS=0
 # For scope reasons we have to source these here and not inside _cloudy_bootstrap.
 CACHE_DIR="$CLOUDY_ROOT/cache"
 CACHED_CONFIG_FILEPATH="$CACHE_DIR/_cached.$(path_filename $SCRIPT).config.sh"
+CACHED_CONFIG_JSON_FILEPATH="$CACHE_DIR/_cached.$(path_filename $SCRIPT).config.json"
 CACHED_CONFIG_MTIME_FILEPATH="${CACHED_CONFIG_FILEPATH/.sh/.modified.txt}"
 
 # Ensure the configuration cache environment is present and writeable.
@@ -671,13 +672,20 @@ fi
 _cloudy_auto_purge_config
 
 # Generate the cached configuration file.
-if [ ! -f "$CACHED_CONFIG_FILEPATH" ]; then
-    touch $CACHED_CONFIG_FILEPATH || exit_with_failure  "Unable to write cache file: $CACHED_CONFIG_FILEPATH"
-
+if [ ! -f "$CACHED_CONFIG_JSON_FILEPATH" ]; then
     # Normalize the config file to JSON.
     additional_config=$(_cloudy_trigger_event "compile_config")
     CLOUDY_CONFIG_JSON="$(php $CLOUDY_ROOT/php/config_to_json.php "$ROOT" "$CONFIG" "$cloudy_development_skip_config_validation" "$additional_config")"
+    [[ "$CLOUDY_CONFIG_JSON" ]] || exit_with_failure "\$CLOUDY_CONFIG_JSON cannot be empty in $LINENO"
     [ $? -ne 0 ] && exit_with_failure "$CLOUDY_CONFIG_JSON"
+    echo "$CLOUDY_CONFIG_JSON" > "$CACHED_CONFIG_JSON_FILEPATH"
+else
+    CLOUDY_CONFIG_JSON=$(cat $CACHED_CONFIG_JSON_FILEPATH)
+fi
+
+# Generate the cached configuration file.
+if [ ! -f "$CACHED_CONFIG_FILEPATH" ]; then
+    touch $CACHED_CONFIG_FILEPATH || exit_with_failure  "Unable to write cache file: $CACHED_CONFIG_FILEPATH"
 
     [[ "$cloudy_development_skip_config_validation" == true ]] && write_log_dev_warning "Configuration validation is disabled due to \$cloudy_development_skip_config_validation == true."
 

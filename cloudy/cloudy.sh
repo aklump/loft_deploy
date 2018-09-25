@@ -55,6 +55,8 @@ function date8601() {
 function validate_input() {
     local command
 
+    [[ "$CLOUDY_CONFIG_JSON" ]] || fail_because "$FUNCNAME() cannot be called if \$CLOUDY_CONFIG_JSON is empty."
+
     command=$(get_command)
 
     # Assert only defined operations are valid.
