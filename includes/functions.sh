@@ -504,7 +504,6 @@ function _do_migrate_pull() {
         return 1
     fi
 
-
     local base="$config_dir/migrate"
 
     # Database
@@ -520,9 +519,9 @@ function _do_migrate_pull() {
             local to="$base/db/fetched.sql.gz"
         fi
 
-        $db_command $from $to || fail_because "Could not migrate database $(basename $migration_database_path)"
+#        $db_command $from $to || fail_because "Could not migrate database $(basename $migration_database_path)"
 
-        reset_db -y --source=migrate || fail_because "Could not import the database."
+        reset_db --source=migrate -y  || fail_because "Could not import the database."
         rm $to || fail_because "Could not remove $to"
 
         ! has_failed && echo_green "$LIL db done."
@@ -1092,14 +1091,14 @@ function reset_db() {
         echo
         echo "`tty -s && tput setaf 3`End result: Your local database will match the $source database.`tty -s && tput op`"
     fi
-    [[ "$parse_args__option__y" ]] || has_option 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source db" || return 2
+    [[ "$parse_args__options__y" ]] || has_option 'y' || confirm "Are you sure you want to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DB`tty -s && tput op` with the $source db" || return 2
 
     local fetched_db_dump=($(find $config_dir/$source/db -name fetched.sql*))
 
     if [[ ${#fetched_db_dump[@]} -gt 1 ]]; then
         end "More than one fetched.sql file found; please remove the incorrect version(s) from $config_dir/$source/db"
     elif [[ ${#fetched_db_dump[@]} -eq 0 ]]; then
-        end "Please fetch_db first"
+        end "Expecting to find $config_dir/$source/db/fetched.sql or fetched.sql.gz; file not found."
     fi
 
     has_option nobu || export_db "reset_backup-$(date8601 -c)" '' 'Creating a backup of the local db...'

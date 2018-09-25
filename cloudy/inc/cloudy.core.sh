@@ -140,14 +140,14 @@ function _cloudy_get_config() {
     # This is the name of the variable containing the keys for $cached_var_name
     cached_var_name_keys=${cached_var_name/cloudy_config___/cloudy_config_keys___}
 
-    get_array_keys=${parse_args__option__keys}
+    get_array_keys=${parse_args__options__keys}
     [[ "$get_array_keys" ]] && cached_var_name="cloudy_config_keys___${config_path//./___}"
     default_value=${parse_args__args[1]}
     # Use the synonym if --as is passed
-    var_name=${parse_args__option__as:-${config_path//./_}}
+    var_name=${parse_args__options__as:-${config_path//./_}}
 
-    [[ "${parse_args__option__a}" == true ]] && default_type='array'
-    mutator=${parse_args__option__mutator}
+    [[ "${parse_args__options__a}" == true ]] && default_type='array'
+    mutator=${parse_args__options__mutator}
 
     # todo Can we simplify this a bit?
     var_value=$(eval "echo "\$$cached_var_name"")
@@ -556,12 +556,12 @@ function _cloudy_trigger_event() {
  #
 function _cloudy_echo_aligned_columns() {
     parse_args $@
-    local lpad=${parse_args__option__lpad:-1}
-    local rpad=${parse_args__option__rpad:-4}
-    local lborder="${parse_args__option__lborder}"
-    local mborder="${parse_args__option__mborder}"
-    local rborder="${parse_args__option__rborder}"
-    local top="${parse_args__option__top}"
+    local lpad=${parse_args__options__lpad:-1}
+    local rpad=${parse_args__options__rpad:-4}
+    local lborder="${parse_args__options__lborder}"
+    local mborder="${parse_args__options__mborder}"
+    local rborder="${parse_args__options__rborder}"
+    local top="${parse_args__options__top}"
 
     # Draw a line
     local width=${#lborder}
@@ -645,7 +645,7 @@ parse_args $@
 declare -a CLOUDY_ARGS=("${parse_args__args[@]}")
 declare -a CLOUDY_OPTIONS=("${parse_args__options[@]}")
 for option in "${CLOUDY_OPTIONS[@]}"; do
-    eval "CLOUDY_OPTION__$(string_upper $option)=\"\$parse_args__option__${option}\""
+    eval "CLOUDY_OPTION__$(string_upper $option)=\"\$parse_args__options__${option}\""
 done
 
 # Define shared variables
