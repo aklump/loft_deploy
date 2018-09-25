@@ -1319,7 +1319,8 @@ function export_db() {
       status=$?
   fi
 
-  [[ $status -eq 0 ]] && echo_green "└── Created file: ${file_gz##*/}"
+  # Keep this as a full path as it's easier to copy and paste for user.
+  [[ $status -eq 0 ]] && echo_green "└── Created file: ${file_gz}"
 
   return $status
 }
