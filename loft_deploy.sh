@@ -60,7 +60,7 @@
 CONFIG="loft_deploy.yml";
 
 # Uncomment this line to enable file logging.
-LOGFILE="loft_deploy.log"
+#LOGFILE="loft_deploy.log"
 
 # TODO: Event handlers and other functions go here or source another file.
 
@@ -235,7 +235,7 @@ handle_pre_hook $op || status=false
 case $op in
   'config')
       [[ "$EDITOR" ]] && $EDITOR "$config_dir/config.yml" && exit_with_cache_clear
-      exit_with_failure "You must set environment variable \$EDITOR with a command first, e.g. in ~/.bash_profile, EDITOR=nano"
+      exit_with_failure "You must set environment variable \$EDITOR with a command first, e.g. in ~/.bash_profile, export EDITOR=nano"
     ;;
 
   'migrate')

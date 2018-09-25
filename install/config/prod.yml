@@ -5,6 +5,8 @@ local:
   role: prod
   copy_source:
   - web/.htaccess
+  - web/sites/default/settings.local.php
+  - web/sites/default/settings.local.php
   files:
   - web/sites/default/files
   - private/default/files
