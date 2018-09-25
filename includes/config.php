@@ -47,11 +47,12 @@ try {
   $validator = new Validator;
   $_config = json_decode(json_encode($config));
   $validator->validate($_config, $schema_json);
+  $error_items = [];
   if (!$validator->isValid()) {
     $error_items = array_map(function ($error) {
       return sprintf("[%s] %s", $error['property'], $error['message']);
     }, $validator->getErrors());
-    throw new \RuntimeException("Schema validation problem.");
+    throw new \RuntimeException("Schema validation failed.");
   }
 
   $local_path = function ($path) use ($config) {
@@ -214,8 +215,8 @@ try {
   exit(0);
 }
 catch (\Exception $exception) {
-  print Color::wrap('red', 'Configuration Problem in: ' . $config_file->getBasename()) . PHP_EOL;
-  $error_items = array($exception->getMessage());
+  print Color::wrap('red', 'Configuration problem in: ' . $config_file->getBasename()) . PHP_EOL;
+  $error_items[] = $exception->getMessage();
   print Output::tree($error_items) . PHP_EOL;
   exit(1);
 }

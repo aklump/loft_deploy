@@ -23,7 +23,6 @@ if ($g->get($schema, 'type') === 'boolean') {
   $value = $value === 'true' ? TRUE : $value;
   $value = $value === 'false' ? FALSE : $value;
 }
-$value = Configuration::typecast($value);
 
 $validator = new Validator();
 $validator->validate($value, (object) $schema);
