@@ -37,7 +37,7 @@ function timestamp() {
  #
 function date8601() {
     parse_args $@
-    if [[ "$parse_args__option__c" ]]; then
+    if [[ "$parse_args__options__c" ]]; then
         echo $(date -u +%Y%m%dT%H%M%S)
     else
         echo $(date -u +%Y-%m-%dT%H:%M:%S)
@@ -99,9 +99,9 @@ function validate_input() {
  #
  # - parse_args__args=(do re)
  # - parse_args__options=(a b tree)
- # - parse_args__option__a=true
- # - parse_args__option__b=true
- # - parse_args__option__tree=life
+ # - parse_args__options__a=true
+ # - parse_args__options__b=true
+ # - parse_args__options__tree=life
  # - parse_args__options_passthru="-a -b -tree=life"
  #
 function parse_args() {
@@ -110,7 +110,7 @@ function parse_args() {
 
     # Purge any previous values.
     for name in "${parse_args__options[@]}"; do
-        eval "unset parse_args__option__${name}"
+        eval "unset parse_args__options__${name}"
     done
     parse_args__options=()
     parse_args__args=()
@@ -130,7 +130,7 @@ function parse_args() {
             value="${BASH_REMATCH[2]}"
 
             parse_args__options=("${parse_args__options[@]}" "$name")
-            eval "parse_args__option__${name}=\"${value}\""
+            eval "parse_args__options__${name}=\"${value}\""
             parse_args__options_passthru="$parse_args__options_passthru $arg"
 
         # bc, tree
@@ -142,7 +142,7 @@ function parse_args() {
             fi
             for name in "${options[@]}"; do
                 parse_args__options=("${parse_args__options[@]}" "$name")
-                eval "parse_args__option__${name}=true"
+                eval "parse_args__options__${name}=true"
                 parse_args__options_passthru="$parse_args__options_passthru -${name}"
             done
         fi
@@ -687,8 +687,8 @@ function succeed_because() {
  #
 function exit_with_failure_if_empty_config() {
     parse_args $@
-    if [[ "$parse_args__option__status" ]]; then
-      CLOUDY_EXIT_STATUS=$parse_args__option__status
+    if [[ "$parse_args__options__status" ]]; then
+      CLOUDY_EXIT_STATUS=$parse_args__options__status
     fi
     local variable=${1//./_}
 
@@ -722,8 +722,8 @@ function exit_with_failure() {
       CLOUDY_EXIT_STATUS=1
     fi
 
-    if [[ "$parse_args__option__status" ]]; then
-      CLOUDY_EXIT_STATUS=$parse_args__option__status
+    if [[ "$parse_args__options__status" ]]; then
+      CLOUDY_EXIT_STATUS=$parse_args__options__status
     fi
 
     _cloudy_exit
@@ -740,8 +740,8 @@ function exit_with_failure() {
  #
 function fail() {
     parse_args $@
-    if [[ "$parse_args__option__status" ]]; then
-      CLOUDY_EXIT_STATUS=$parse_args__option__status && return 0
+    if [[ "$parse_args__options__status" ]]; then
+      CLOUDY_EXIT_STATUS=$parse_args__options__status && return 0
     fi
     CLOUDY_EXIT_STATUS=1 && return 0
 }

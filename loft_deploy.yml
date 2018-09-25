@@ -136,6 +136,10 @@ commands:
   migrate:
     help: Migrate database and/or files from another server that does not have Loft Deploy installed.  See online help for more info.
     options:
+      verbose:
+        help: Display verbose output.
+        type: boolean
+        aliases: [v]
       nobu:
         type: boolean
         help: Do not perform a backup of the local database.
