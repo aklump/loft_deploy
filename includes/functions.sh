@@ -496,7 +496,10 @@ function _do_migrate_pull() {
 
     echo_title "Migration from \"$migration_title\""
 
-    if ! confirm "$(echo_yellow "Migration will overwrite your local files and database.")  Your database will be backed up, but your files will not.  Are you sure?"; then
+    local backup_message="Your database will be backed up, but your files will not."
+    has_option "nobu" && backup_message=$(echo_red "Nothing will be backed up.")
+
+    if ! confirm "$(echo_yellow "Migration will overwrite your local files and database.")  ${backup_message}  Do you want to continue?"; then
         fail_because "User cancelled."
         return 1
     fi
