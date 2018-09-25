@@ -234,6 +234,7 @@ handle_pre_hook $op || status=false
 
 case $op in
   'config')
+      [[ ! "$EDITOR" ]] && exit_with_failure "You must set environment variable $EDITOR with a command first"
       $EDITOR "$config_dir/config.yml" && exit_with_cache_clear
     ;;
 
