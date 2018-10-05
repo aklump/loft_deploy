@@ -295,7 +295,7 @@ case $op in
         reset_db && echo "Local database has been reset to match $source_server." || status=false
     fi
     if [[ "$status" == true ]] && has_asset files; then
-        reset_files && echo "Local files has been reset to match $source_server." || status=false
+        reset_files && echo "Local files have been reset to match $source_server." || status=false
     fi
     handle_post_hook $op $status || status=false
     [[ "$status" == true ]] && complete_elapsed "Reset complete." && exit 0

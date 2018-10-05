@@ -140,7 +140,7 @@ function _cloudy_get_config() {
     # Remove trailing / for proper path construction.
     config_path_base=${config_path_base%/}
 
-    parse_args $@
+    parse_args "$@"
     config_path=${parse_args__args[0]/-/_}
     cached_var_name="cloudy_config___${config_path//./___}"
 
@@ -304,21 +304,19 @@ function _cloudy_message() {
 
 # Echo using color
 #
-# $1 - The message to echo.
-# -i - The intensity 0 dark, 1 light.
-# -c - The ANSI color value, e.g. 30-37, 39
-# -b - The background color value. 40-47, 49
+# $1 - The ANSI color value, e.g. 30-37, 39
+# $2 - The message to echo.
+# $3 - The intensity 0 dark, 1 light. Defaults to 1.
+# $4 - The background color value. 40-47, 49
 #
 # @link https://misc.flogisoft.com/bash/tip_colors_and_formatting
 #
 # Returns 0 if .
 function _cloudy_echo_color() {
-    parse_args "$@"
-
-    local message=${parse_args__args[0]}
-    local intensity=${parse_args__options__i:-1}
-    local color=$parse_args__options__c
-    local bg=$parse_args__options__b
+    local color=$1
+    local message="$2"
+    local intensity=${3:-1}
+    local bg=$4
 
     # tput is more portable so we use that and convert to it's colors.
     # https://linux.101hacks.com/ps1-examples/prompt-color-using-tput/
@@ -361,14 +359,15 @@ function _cloudy_echo_list() {
     local intensity=${parse_args__options__i:-1}
     local bullet
     local item
+
     for i in "${echo_list__array[@]}"; do
         bullet="$LI"
         if [[ "$bullets_color" ]]; then
-            bullet=$(_cloudy_echo_color -c=$bullets_color -i=$intensity "$LI")
+            bullet=$(_cloudy_echo_color $bullets_color "$LI")
         fi
         item="$line_item"
         if [[ "$items_color" ]]; then
-            item=$(_cloudy_echo_color -c=$items_color -i=$intensity "$line_item")
+            item=$(_cloudy_echo_color $items_color "$line_item")
         fi
         [[ "$line_item" ]] && echo "$bullet $item"
         line_item="$i"
@@ -376,11 +375,11 @@ function _cloudy_echo_list() {
 
     bullet="$LIL"
     if [[ "$bullets_color" ]]; then
-        bullet=$(_cloudy_echo_color -c=$bullets_color -i=$intensity "$LIL")
+        bullet=$(_cloudy_echo_color $bullets_color "$LIL")
     fi
     item="$line_item"
     if [[ "$items_color" ]]; then
-        item=$(_cloudy_echo_color -c=$items_color -i=$intensity "$line_item")
+        item=$(_cloudy_echo_color $items_color "$line_item")
     fi
     [[ "$line_item" ]] && echo "$bullet $item"
 }
@@ -614,7 +613,7 @@ function _cloudy_trigger_event() {
  # Helper to echo a table-like output.
  #
 function _cloudy_echo_aligned_columns() {
-    parse_args $@
+    parse_args "$@"
     local lpad=${parse_args__options__lpad:-1}
     local rpad=${parse_args__options__rpad:-4}
     local lborder="${parse_args__options__lborder}"
@@ -754,7 +753,7 @@ fi
 _cloudy_define_cloudy_vars
 
 # Store the script options for later use.
-parse_args $@
+parse_args "$@"
 
 declare -a CLOUDY_ARGS=("${parse_args__args[@]}")
 declare -a CLOUDY_OPTIONS=("${parse_args__options[@]}")
