@@ -140,7 +140,7 @@ function _cloudy_get_config() {
     # Remove trailing / for proper path construction.
     config_path_base=${config_path_base%/}
 
-    parse_args $@
+    parse_args "$@"
     config_path=${parse_args__args[0]/-/_}
     cached_var_name="cloudy_config___${config_path//./___}"
 
@@ -305,20 +305,20 @@ function _cloudy_message() {
 # Echo using color
 #
 # $1 - The message to echo.
-# -i - The intensity 0 dark, 1 light.
-# -c - The ANSI color value, e.g. 30-37, 39
-# -b - The background color value. 40-47, 49
+#
+# $_cloudy_echo_color__i - The intensity 0 dark, 1 light.
+# $_cloudy_echo_color__c - The ANSI color value, e.g. 30-37, 39
+# $_cloudy_echo_color__b - The background color value. 40-47, 49
 #
 # @link https://misc.flogisoft.com/bash/tip_colors_and_formatting
 #
 # Returns 0 if .
 function _cloudy_echo_color() {
-    parse_args "$@"
+    local message=$1
 
-    local message=${parse_args__args[0]}
-    local intensity=${parse_args__options__i:-1}
-    local color=$parse_args__options__c
-    local bg=$parse_args__options__b
+    local intensity=${_cloudy_echo_color__i:-1}
+    local color=$_cloudy_echo_color__c
+    local bg=$_cloudy_echo_color__b
 
     # tput is more portable so we use that and convert to it's colors.
     # https://linux.101hacks.com/ps1-examples/prompt-color-using-tput/
@@ -614,7 +614,7 @@ function _cloudy_trigger_event() {
  # Helper to echo a table-like output.
  #
 function _cloudy_echo_aligned_columns() {
-    parse_args $@
+    parse_args "$@"
     local lpad=${parse_args__options__lpad:-1}
     local rpad=${parse_args__options__rpad:-4}
     local lborder="${parse_args__options__lborder}"
@@ -754,7 +754,7 @@ fi
 _cloudy_define_cloudy_vars
 
 # Store the script options for later use.
-parse_args $@
+parse_args "$@"
 
 declare -a CLOUDY_ARGS=("${parse_args__args[@]}")
 declare -a CLOUDY_OPTIONS=("${parse_args__options[@]}")

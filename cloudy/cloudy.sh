@@ -71,7 +71,7 @@ function timestamp() {
 #
 # Returns 0 if .
 function date8601() {
-    parse_args $@
+    parse_args "$@"
     if [[ "$parse_args__options__c" ]]; then
         echo $(date -u +%Y%m%dT%H%M%S)
     else
@@ -389,7 +389,7 @@ function get_config() {
     local config_path=$1
     local default_value=$2
 
-    parse_args $@
+    parse_args "$@"
     local config_path="${parse_args__args[0]}"
     local default_value="${parse_args__args[1]}"
     _cloudy_get_config "$config_path" "$default_value" $parse_args__options_passthru
@@ -408,7 +408,7 @@ function get_config_as() {
     local config_path=$2
     local default_value=$3
 
-    parse_args $@
+    parse_args "$@"
     local custom_var_name="${parse_args__args[0]}"
     local config_path="${parse_args__args[1]}"
     local default_value="${parse_args__args[2]}"
@@ -435,7 +435,7 @@ function get_config_keys_as() {
     local custom_var_name=$1
     local config_key_path=$2
 
-    parse_args $@
+    parse_args "$@"
     custom_var_name="${parse_args__args[0]}"
     config_key_path="${parse_args__args[1]}"
     _cloudy_get_config -a --keys "$config_key_path" "" --as="$custom_var_name"
@@ -451,7 +451,7 @@ function get_config_path() {
     local config_key_path=$1
     local default_value=$2
 
-    parse_args $@
+    parse_args "$@"
     config_key_path="${parse_args__args[0]}"
     local default_value="${parse_args__args[1]}"
     _cloudy_get_config "$config_key_path" "$default_value" --mutator=_cloudy_realpath $parse_args__options_passthru
@@ -468,7 +468,7 @@ function get_config_path_as() {
     local config_key_path=$2
     local default_value=$3
 
-    parse_args $@
+    parse_args "$@"
     custom_var_name="${parse_args__args[0]}"
     config_key_path="${parse_args__args[1]}"
     default_value="${parse_args__args[2]}"
@@ -504,7 +504,8 @@ function translate() {
 #
 # Returns nothing.
 function echo_white() {
-    _cloudy_echo_color -c=37 "$1"
+    _cloudy_echo_color__c=37
+    _cloudy_echo_color "$1"
 }
 
 # Echo a string with red text.
@@ -513,7 +514,8 @@ function echo_white() {
 #
 # Returns nothing.
 function echo_red() {
-    _cloudy_echo_color -c=31 "$1"
+    _cloudy_echo_color__c=31
+    _cloudy_echo_color "$1"
 }
 
 # Echo a string with a red background.
@@ -522,7 +524,9 @@ function echo_red() {
 #
 # Returns nothing.
 function echo_red_highlight() {
-    _cloudy_echo_color -b=41 -c=37 "$1"
+    _cloudy_echo_color__b=41
+    _cloudy_echo_color__c=37
+    _cloudy_echo_color "$1"
 }
 
 # Echo an error message
@@ -531,7 +535,9 @@ function echo_red_highlight() {
 #
 # Returns nothing.
 function echo_error() {
-    _cloudy_echo_color -b=41 -c=37 "$1"
+    _cloudy_echo_color__b=41
+    _cloudy_echo_color__c=37
+    _cloudy_echo_color "$1"
 }
 
 # Echo a warning message
@@ -540,7 +546,9 @@ function echo_error() {
 #
 # Returns nothing.
 function echo_warning() {
-    _cloudy_echo_color -b=43 -c=30 "$1"
+    _cloudy_echo_color__b=43
+    _cloudy_echo_color__c=30
+    _cloudy_echo_color "$1"
 }
 
 # Echo a string with green text.
@@ -549,7 +557,9 @@ function echo_warning() {
 #
 # Returns nothing.
 function echo_green() {
-    _cloudy_echo_color -c=32 "$1" -i=0
+    _cloudy_echo_color__c=32
+    _cloudy_echo_color__i=0
+    _cloudy_echo_color "$1"
 }
 
 # Echo a string with yellow text.
@@ -558,7 +568,9 @@ function echo_green() {
 #
 # Returns nothing.
 function echo_yellow() {
-    _cloudy_echo_color -i=0 -c=33 "$1"
+    _cloudy_echo_color__c=33
+    _cloudy_echo_color__i=0
+    _cloudy_echo_color "$1"
 }
 
 # Echo a string with a yellow background.
@@ -567,7 +579,9 @@ function echo_yellow() {
 #
 # Returns nothing.
 function echo_yellow_highlight() {
-    _cloudy_echo_color -b=43 -c=30 "$1"
+    _cloudy_echo_color__b=43
+    _cloudy_echo_color__c=30
+    _cloudy_echo_color "$1"
 }
 
 # Echo a string with blue text.
@@ -576,7 +590,9 @@ function echo_yellow_highlight() {
 #
 # Returns nothing.
 function echo_blue() {
-    _cloudy_echo_color -i=0 -c=34 "$1"
+    _cloudy_echo_color__c=34
+    _cloudy_echo_color__i=0
+    _cloudy_echo_color "$1"
 }
 
 # Echo a title string.
@@ -860,7 +876,7 @@ function succeed_because() {
 function exit_with_failure_if_config_is_not_path() {
     local config_path="$1"
 
-    parse_args $@
+    parse_args "$@"
     if [[ "$parse_args__options__status" ]]; then
       CLOUDY_EXIT_STATUS=$parse_args__options__status
     fi
@@ -892,7 +908,7 @@ function exit_with_failure_if_config_is_not_path() {
  #   If the configuration has been renamed, send the memory var name --as=varname.
  #
 function exit_with_failure_if_empty_config() {
-    parse_args $@
+    parse_args "$@"
     if [[ "$parse_args__options__status" ]]; then
       CLOUDY_EXIT_STATUS=$parse_args__options__status
     fi
@@ -966,7 +982,7 @@ function get_installed() {
  # @see exit_with_failure
  #
 function fail() {
-    parse_args $@
+    parse_args "$@"
     if [[ "$parse_args__options__status" ]]; then
       CLOUDY_EXIT_STATUS=$parse_args__options__status && return 0
     fi
