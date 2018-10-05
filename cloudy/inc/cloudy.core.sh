@@ -36,7 +36,7 @@ function _cloudy_bootstrap() {
     for option in "${CLOUDY_OPTIONS[@]}"; do
         value="true"
         [[ "$option" =~ ^(.*)\=(.*) ]] && option=${BASH_REMATCH[1]} && value=${BASH_REMATCH[2]}
-        eval $(get_config_keys_as 'aliases' "commands.${command}.options.${option}.aliases")
+        eval $(get_config_as 'aliases' "commands.${command}.options.${option}.aliases")
         for alias in ${aliases[@]}; do
            if ! has_option $alias; then
                CLOUDY_OPTIONS=("${CLOUDY_OPTIONS[@]}" "$alias")
