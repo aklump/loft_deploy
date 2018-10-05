@@ -897,7 +897,10 @@ function reset_files() {
             _reset_local_copy "$local_copy_source" "$local_copy_local_to" || status=false
         fi
 
-        has_option "local" && return 0
+        if has_option "local"; then
+            [[ "$status" == false ]] && return 1
+            return 0
+        fi
 
         if [ "$status" == true ] && [ "$source_server" == 'prod' ] && [ "$local_copy_production_to" ]; then
             _reset_copy "$local_copy_production_to" || status=false
@@ -958,7 +961,7 @@ function _reset_copy() {
     local to=''
     local output=''
 
-    has_option 'y' || confirm "`tty -s && tput setaf 3`Reset $source_server individual files, are you sure?`tty -s && tput op`" || return 2
+    has_option 'y' || confirm --caution "Reset $source_server individual files, are you sure?" || return 2
 
     echo "Resetting individual $source_server files from cache..."
     for from in "${destination[@]}"; do
@@ -1009,7 +1012,7 @@ function _reset_local_copy() {
     local to=''
     local output=''
 
-    has_option 'y' || confirm "`tty -s && tput setaf 3`Reset local individual files, are you sure?`tty -s && tput op`" || return 2
+    has_option 'y' || confirm --caution "Reset local individual files, are you sure?" || return 2
 
     echo "Copying individual local files..."
     for from in "${source[@]}"; do
@@ -1069,7 +1072,7 @@ function _reset_dir() {
 
     # Have to exclude here because there might be some lingering files in the cache
     # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
-    has_option 'y' || confirm "`tty -s && tput setaf 3`Reset local \"$title\", are you sure?`tty -s && tput op`" || return 2
+    has_option 'y' || confirm --danger "Reset local \"$title\", are you sure?" || return 2
 
     has_option v && echo $cmd && echo
     eval $cmd
