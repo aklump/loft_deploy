@@ -10,11 +10,15 @@
  * @group configuration
  * @see config_to_json.php
  */
+use AKlump\LoftLib\Bash\Configuration;
 
 require_once __DIR__ . '/bootstrap.php';
 
+$config_prefix = $g->get($argv, 2, 'cloudy_config');
+$var_service = new Configuration($config_prefix);
+
 try {
-  $json = $g->get($argv, 2, '{}');
+  $json = $g->get($argv, 3, '{}');
   if (empty($json)) {
     throw new \RuntimeException("JSON is empty; cannot parse an empty configuration string.");
   }

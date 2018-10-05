@@ -16,53 +16,26 @@ use JsonSchema\Validator;
 use Symfony\Component\Yaml\Yaml;
 
 require_once __DIR__ . '/bootstrap.php';
-$filepath_to_config_file = $argv[2];
-$skip_config_validation = $argv[3] === 'true';
-$additional_config = array_filter(explode("\n", trim($g->get($argv, '4', ''))));
-
+$filepath_to_schema_file = $argv[2];
+$filepath_to_config_file = $argv[3];
+$skip_config_validation = $g->get($argv, 4, FALSE) === 'true';
+$runtime = array_filter(explode("\n", trim($g->get($argv, 5, ''))));
 try {
-  $data = [];
-  if (!file_exists($filepath_to_config_file)) {
-    throw new \RuntimeException("Missing configuration file: $filepath_to_config_file");
-  }
-  if (!($contents = file_get_contents($filepath_to_config_file))) {
-    throw new \RuntimeException("Empty configuration files: $filepath_to_config_file");
-  }
-  switch (($extension = pathinfo($filepath_to_config_file, PATHINFO_EXTENSION))) {
-    case 'yml':
-    case 'yaml':
-      if ($yaml = Yaml::parse($contents)) {
-        $data += $yaml;
-      }
-      break;
-
-    case 'json':
-      if ($json = json_decode($contents, TRUE)) {
-        $data += $json;
-      }
-      break;
-
-    default:
-      throw new \RuntimeException("Configuration files of type \"$extension\" are not supported.");
-
-  }
-
-  // TODO There is no support for JSON additional config yet.
-  $additional_config += $g->get($data, 'additional_config', []);
-  foreach ($additional_config as $basename) {
+  $data = load_configuration_data($filepath_to_config_file);
+  $additional_config = $g->get($data, 'additional_config', []);
+  $merge_config = array_merge($additional_config, $runtime);
+  foreach ($merge_config as $basename) {
     $path = strpos($basename, '/') !== 0 ? ROOT . "/$basename" : $basename;
-    if (!file_exists($path)) {
-      throw new \RuntimeException("Missing configuration file: $path");
-    }
-    $data = array_merge_recursive($data, Yaml::parse(file_get_contents($path)));
+    $additional_data = load_configuration_data($path);
+    $data = merge_config($data, $additional_data);
   }
 
   // Validate against cloudy_config.schema.json.
   $validator = new Validator();
   $validate_data = json_decode(json_encode($data));
   try {
-    if (!($schema = json_decode(file_get_contents(CLOUDY_ROOT . '/cloudy_config.schema.json')))) {
-      throw new \RuntimeException("Invalid JSON in cloudy_config.schema.json");
+    if (!($schema = json_decode(file_get_contents($filepath_to_schema_file)))) {
+      throw new \RuntimeException("Invalid JSON in $filepath_to_schema_file");
     }
     if (!$skip_config_validation) {
       $validator->validate($validate_data, $schema, Constraint::CHECK_MODE_EXCEPTIONS);

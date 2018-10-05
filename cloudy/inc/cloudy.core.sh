@@ -65,16 +65,19 @@ function _cloudy_bootstrap() {
  #
 function _cloudy_auto_purge_config() {
     local cache_mtime_filepath="${CACHED_CONFIG_FILEPATH/.sh/.modified.txt}"
-
     if [[ "$cloudy_development_do_not_cache_config" == true ]] || _cloudy_has_config_changed; then
         if [[ "$cloudy_development_do_not_cache_config" == true ]]; then
             write_log_dev_warning "Configuration purge detected due to \$cloudy_development_do_not_cache_config = true."
         else
-            write_log_notice "Config changes detected.  $CACHED_CONFIG_FILEPATH is out of date."
+            write_log_notice "Config changes detected in \"$(basename $_cloudy_has_config_changed__file)\"."
         fi
         if ! rm -f "$CACHED_CONFIG_FILEPATH"; then
             fail_because "Could not rm $CACHED_CONFIG_FILEPATH during purge."
             write_log_critical "Cannot delete $CACHED_CONFIG_FILEPATH.  Cached configuration may be stale."
+        fi
+        if ! rm -f "$CACHED_CONFIG_JSON_FILEPATH"; then
+            fail_because "Could not rm $CACHED_CONFIG_JSON_FILEPATH during purge."
+            write_log_critical "Cannot delete $CACHED_CONFIG_JSON_FILEPATH.  Cached configuration may be stale."
         fi
     fi
 
@@ -88,13 +91,10 @@ function _cloudy_auto_purge_config() {
 function _cloudy_has_config_changed() {
     local cache_mtime_filepath="${CACHED_CONFIG_FILEPATH/.sh/.modified.txt}"
     [ -f "$CACHED_CONFIG_MTIME_FILEPATH" ] || touch "$CACHED_CONFIG_MTIME_FILEPATH" || fail
-
-    local cache_mtime=$(cat "$CACHED_CONFIG_MTIME_FILEPATH")
-    [[ "$cache_mtime" ]] || write_log_error "Missing timestamp in $CACHED_CONFIG_MTIME_FILEPATH"
-
-    # Test if the yaml file was modified and automatically rebuild config.yml.sh
-    [[ $(_cloudy_get_file_mtime $CONFIG) -gt "$cache_mtime" ]]
-    return $?
+    while read path cached_mtime; do
+        [[ $(_cloudy_get_file_mtime $path) -gt "$cached_mtime" ]] && _cloudy_has_config_changed__file="$path" && return 0
+    done < $cache_mtime_filepath
+    return 1
 }
 
 function _cloudy_get_file_mtime() {
@@ -132,6 +132,13 @@ function _cloudy_get_config() {
     local cached_var_name
     local cached_var_name_keys
     local file_list
+    local config_path_base=${cloudy_config___config_path_base}
+
+    # Determine if we have an absolute relative path base or, if not prepent $ROOT.
+    [[ "${config_path_base:0:1}" != '/' ]] && config_path_base="${ROOT}/$config_path_base"
+
+    # Remove trailing / for proper path construction.
+    config_path_base=${config_path_base%/}
 
     parse_args $@
     config_path=${parse_args__args[0]/-/_}
@@ -151,6 +158,7 @@ function _cloudy_get_config() {
 
     # todo Can we simplify this a bit?
     var_value=$(eval "echo "\$$cached_var_name"")
+
     if [[ "$var_value" ]]; then
         code=$(declare -p "$cached_var_name")
         code="${code/$cached_var_name=/var_value=}"
@@ -192,24 +200,62 @@ function _cloudy_get_config() {
     elif [[ "$var_type" == "associative_array" ]]; then
         code=''
         for key in "${var_keys[@]}"; do
+
+            if [[ "$mutator" == "_cloudy_realpath" ]]; then
+                local path=$(eval "echo \$${cached_var_name}___${key}")
+
+                # On first pass we will try to expand globbed filenames, which will
+                # cause file_list to be longer than var_value.
+                file_list=()
+
+                # Make relative to $ROOT.
+                [[ "$path" ]] && [[ "$path" != null ]] && [[ "${path:0:1}" != "/" ]] && path=${config_path_base}/${path}
+
+                # This will expand a glob finder.
+                if [ -d "$path" ]; then
+                    file_list=("${file_list[@]}" $path)
+                elif [ -f "$path" ]; then
+                    file_list=("${file_list[@]}" $(ls $path))
+                elif [[ "$path" != null ]]; then
+                    file_list=("${file_list[@]}" $path)
+                fi
+
+                # Glob may have increased our file_list so we apply realpath to all
+                # of them here.
+                local i=0
+                for path in "${file_list[@]}"; do
+                    if [ -e "$path" ]; then
+                        file_list[$i]=$(realpath "$path")
+                    fi
+                    let i++
+                done
+                if [[ ${#file_list[@]} -eq 1 ]]; then
+                    eval "${cached_var_name}___${key}="${file_list[0]}""
+                else
+                    eval "${cached_var_name}___${key}=("${file_list[@]}")"
+                fi
+            fi
+
             var_code=$(declare -p ${cached_var_name}___${key})
             code="${code}${var_code/${cached_var_name}___${key}/${var_name}_${key}};"
-            # todo mutator for array values.
         done
     else
-
         if [[ "$mutator" == "_cloudy_realpath" ]]; then
 
             # On first pass we will try to expand globbed filenames, which will
             # cause file_list to be longer than var_value.
             file_list=()
             for path in "${var_value[@]}"; do
+
+                # Make relative to $ROOT.
+                [[ "$var_value" ]] && [[ "$var_value" != null ]] && [[ "${path:0:1}" != "/" ]] && path=${config_path_base}/${path}
+
                 # This will expand a glob finder.
                 if [ -d "$path" ]; then
                     file_list=("${file_list[@]}" $path)
                 elif [ -f "$path" ]; then
                     file_list=("${file_list[@]}" $(ls $path))
-                else
+                elif [[ "$path" != null ]]; then
                     file_list=("${file_list[@]}" $path)
                 fi
             done
@@ -236,7 +282,7 @@ function _cloudy_get_config() {
 
 
 function _cloudy_exit() {
-    exit $CLOUDY_EXIT
+    exit $CLOUDY_EXIT_STATUS
 }
 
 ##
@@ -256,16 +302,47 @@ function _cloudy_message() {
     echo ${default%.}${suffix} && return 2
 }
 
+# Echo using color
+#
+# $1 - The message to echo.
+# -i - The intensity 0 dark, 1 light.
+# -c - The ANSI color value, e.g. 30-37, 39
+# -b - The background color value. 40-47, 49
+#
+# @link https://misc.flogisoft.com/bash/tip_colors_and_formatting
+#
+# Returns 0 if .
 function _cloudy_echo_color() {
-    local color=$1
-    local message=$2
-    local bg=$3
+    parse_args "$@"
 
+    local message=${parse_args__args[0]}
+    local intensity=${parse_args__options__i:-1}
+    local color=$parse_args__options__c
+    local bg=$parse_args__options__b
+
+    # tput is more portable so we use that and convert to it's colors.
+    # https://linux.101hacks.com/ps1-examples/prompt-color-using-tput/
+    let color-=30
+    [ $intensity -eq 1 ] && echo -n $(tput bold)
     if [[ "$bg" ]]; then
-        echo "$(tput setaf $color)$(tput setab $bg)$message$(tput sgr0)"
-    else
-        echo "$(tput setaf $color)$message$(tput sgr0)"
+        let bg-=40
+        echo -n $(tput setab $bg)
     fi
+    echo -n $(tput setaf $color)
+    echo -n "${message}"
+    echo -n $(tput sgr0)
+    echo
+}
+
+# Echo a demonstration of the ANSI color rainbow.
+#
+# Returns nothing.
+function _cloudy_echo_ansi_rainbow() {
+    for (( i = 30; i < 38; i++ )); do echo -e "\033[0;"$i"m Normal: (0;$i); \033[1;"$i"m Light: (1;$i)"; done
+}
+
+function _cloudy_echo_tput_rainbow() {
+    for c in {0..255}; do tput setaf $c; tput setaf $c | cat -v; echo =$c; done
 }
 
 function _cloudy_echo_credits() {
@@ -276,31 +353,34 @@ function _cloudy_echo_credits() {
  # Echo a list of items with bullets in color
  #
 function _cloudy_echo_list() {
+    parse_args "$@"
+
     local line_item
-    local color_items=$1
-    local color_bullets=$2
+    local items_color=$1
+    local bullets_color=$2
+    local intensity=${parse_args__options__i:-1}
     local bullet
     local item
     for i in "${echo_list__array[@]}"; do
         bullet="$LI"
-        if [[ "$color_bullets" ]]; then
-            bullet=$(_cloudy_echo_color $color_bullets "$LI")
+        if [[ "$bullets_color" ]]; then
+            bullet=$(_cloudy_echo_color -c=$bullets_color -i=$intensity "$LI")
         fi
         item="$line_item"
-        if [[ "$color_items" ]]; then
-            item=$(_cloudy_echo_color $color_items "$line_item")
+        if [[ "$items_color" ]]; then
+            item=$(_cloudy_echo_color -c=$items_color -i=$intensity "$line_item")
         fi
         [[ "$line_item" ]] && echo "$bullet $item"
         line_item="$i"
     done
 
     bullet="$LIL"
-    if [[ "$color_bullets" ]]; then
-        bullet=$(_cloudy_echo_color $color_bullets "$LIL")
+    if [[ "$bullets_color" ]]; then
+        bullet=$(_cloudy_echo_color -c=$bullets_color -i=$intensity "$LIL")
     fi
     item="$line_item"
-    if [[ "$color_items" ]]; then
-        item=$(_cloudy_echo_color $color_items "$line_item")
+    if [[ "$items_color" ]]; then
+        item=$(_cloudy_echo_color -c=$items_color -i=$intensity "$line_item")
     fi
     [[ "$line_item" ]] && echo "$bullet $item"
 }
@@ -359,16 +439,6 @@ function _cloudy_get_valid_operations_by_command() {
     done
 
     _cloudy_get_valid_operations_by_command__array=("${options[@]}")
-}
-
-function _cloudy_validate_against_scheme() {
-    local config_path_to_schema=$1
-    local name=$2
-    local value=$3
-
-    local errors
-    echo $(php $CLOUDY_ROOT/php/validate_against_schema.php "$CLOUDY_CONFIG_JSON" "$config_path_to_schema" "$name" "$value")
-    return $?
 }
 
 function _cloudy_help_commands() {
@@ -482,27 +552,6 @@ function _cloudy_help_for_single_command() {
     fi
 }
 
-function _cloudy_validate_command() {
-    local command=$1
-
-    local commands
-
-    # See if it's a master command.
-    eval $(get_config_keys "commands")
-    array_has_value__array=(${commands[@]})
-    array_has_value "$command" && return 0
-
-    # Look for command as an alias.
-    for c in "${commands[@]}"; do
-        eval $(get_config_as -a "aliases" "commands.$c.aliases")
-        array_has_value__array=(${aliases[@]})
-        array_has_value "$command" && return 0
-    done
-
-    fail_because "You have called $(basename $SCRIPT) using the command \"$command\", which does not exist."
-    return 1
-}
-
 function _cloudy_debug_helper() {
     local sidebar=''
     local IFS=";"; read default fg bg message basename funcname lineno  <<< "$@"
@@ -541,12 +590,22 @@ function _cloudy_write_log() {
     echo "[$(date)] [$level] $@" >> "$LOGFILE"
 }
 
+##
+ # @see event_dispatch
+ #
 function _cloudy_trigger_event() {
-    local hook_name="on_${1}"
+    local event=$1
+    local callback=$2
 
     shift
-    if [[ "$(type -t $hook_name)" == "function" ]]; then
-        eval $hook_name $@ || return 1
+    shift
+    local code=$callback
+    i=1; for var in "$@"; do
+        code=$code" \"\${$i}\""
+        let i++
+    done
+    if [[ "$(type -t $callback)" == "function" ]]; then
+        eval "$code" || return 1
     fi
     return 0
 }
@@ -625,6 +684,61 @@ function _cloudy_echo_aligned_columns() {
     _cloudy_table_rows=()
 }
 
+function _cloudy_validate_command() {
+    local command=$1
+
+    local commands
+
+    # See if it's a master command.
+    eval $(get_config_keys "commands")
+    array_has_value__array=(${commands[@]})
+    array_has_value "$command" && return 0
+
+    # Look for command as an alias.
+    for c in "${commands[@]}"; do
+        eval $(get_config_as -a "aliases" "commands.$c.aliases")
+        array_has_value__array=(${aliases[@]})
+        array_has_value "$command" && return 0
+    done
+
+    fail_because "You have called $(basename $SCRIPT) using the command \"$command\", which does not exist."
+    return 1
+}
+
+function _cloudy_validate_command_arguments() {
+    local command=$1
+
+    command=$(_cloudy_get_master_command $command)
+    local argument_keys
+    local index=1
+    local status=0
+    local key
+    local entered_value
+
+    # See if it's a master command.
+    eval $(get_config_keys_as "argument_keys" -a "commands.$command.arguments")
+    for key in "${argument_keys[@]}"; do
+        eval $(get_config_as "required" "commands.$command.arguments.$key.required")
+        entered_value=$(eval "echo \${CLOUDY_ARGS[$index]}")
+        [[ "$required" == true ]] && [[ ! "$entered_value" ]] && fail_because "Please provide <$key>." && status=1
+    done
+
+    return $status
+}
+
+##
+ # Validate command input against the script's schema.
+ #
+function _cloudy_validate_input_against_schema() {
+    local config_path_to_schema=$1
+    local name=$2
+    local value=$3
+
+    local errors
+    echo $(php $CLOUDY_ROOT/php/validate_against_schema.php "$CLOUDY_CONFIG_JSON" "$config_path_to_schema" "$name" "$value")
+    return $?
+}
+
 #
 # Begin Core Controller Section.
 #
@@ -668,16 +782,19 @@ if [ ! -d "$CACHE_DIR" ]; then
     mkdir -p "$CACHE_DIR" || exit_with_failure "Unable to create cache folder: $CACHE_DIR"
 fi
 
+event_dispatch "pre_config" || exit_with_failure "Non-zero returned by on_pre_config()."
+compile_config__runtime_files=$(event_dispatch "compile_config")
+
 # Detect changes in YAML and purge config cache if necessary.
 _cloudy_auto_purge_config
 
 # Generate the cached configuration file.
 if [ ! -f "$CACHED_CONFIG_JSON_FILEPATH" ]; then
     # Normalize the config file to JSON.
-    additional_config=$(_cloudy_trigger_event "compile_config")
-    CLOUDY_CONFIG_JSON="$(php $CLOUDY_ROOT/php/config_to_json.php "$ROOT" "$CONFIG" "$cloudy_development_skip_config_validation" "$additional_config")"
-    [[ "$CLOUDY_CONFIG_JSON" ]] || exit_with_failure "\$CLOUDY_CONFIG_JSON cannot be empty in $LINENO"
-    [ $? -ne 0 ] && exit_with_failure "$CLOUDY_CONFIG_JSON"
+    CLOUDY_CONFIG_JSON="$(php $CLOUDY_ROOT/php/config_to_json.php "$ROOT" "$CLOUDY_ROOT/cloudy_config.schema.json" "$CONFIG" "$cloudy_development_skip_config_validation" "$compile_config__runtime_files")"
+    json_result=$?
+    [[ "$CLOUDY_CONFIG_JSON" ]] || exit_with_failure "\$CLOUDY_CONFIG_JSON cannot be empty in $(basename $BASH_SOURCE) $LINENO"
+    [ $json_result -ne 0 ] && exit_with_failure "$CLOUDY_CONFIG_JSON"
     echo "$CLOUDY_CONFIG_JSON" > "$CACHED_CONFIG_JSON_FILEPATH"
 else
     CLOUDY_CONFIG_JSON=$(cat $CACHED_CONFIG_JSON_FILEPATH)
@@ -690,13 +807,24 @@ if [ ! -f "$CACHED_CONFIG_FILEPATH" ]; then
     [[ "$cloudy_development_skip_config_validation" == true ]] && write_log_dev_warning "Configuration validation is disabled due to \$cloudy_development_skip_config_validation == true."
 
     # Convert the JSON to bash config.
-    php "$CLOUDY_ROOT/php/json_to_bash.php" "$ROOT" "$CLOUDY_CONFIG_JSON" > "$CACHED_CONFIG_FILEPATH"
+    php "$CLOUDY_ROOT/php/json_to_bash.php" "$ROOT" "cloudy_config" "$CLOUDY_CONFIG_JSON" > "$CACHED_CONFIG_FILEPATH"
     if [ $? -ne 0 ]; then
         compiled=$(cat  "$CACHED_CONFIG_FILEPATH")
         fail_because "$(IFS="|"; read file reason <<< "$compiled"; echo "$reason")"
         exit_with_failure "Cannot create cached config filepath."
     else
-        echo "$(_cloudy_get_file_mtime $CONFIG)" > "$CACHED_CONFIG_MTIME_FILEPATH"
+        source "$CACHED_CONFIG_FILEPATH" || exit_with_failure "Cannot load cached configuration."
+        eval $(get_config -a "additional_config")
+        config_files=("$CONFIG")
+        for file in "${additional_config[@]}"; do
+           [[ "$file" ]] && [ -f "$ROOT/$file" ] && config_files=("${config_files[@]}" "$ROOT/$file")
+        done
+        [ ${#compile_config__runtime_files[@]} -gt 0 ] && config_files=("${config_files[@]}" "${compile_config__runtime_files[@]}")
+        echo -n >  $CACHED_CONFIG_MTIME_FILEPATH
+        for file in "${config_files[@]}"; do
+            [[ "$file" ]] && [ -f "$file" ] && echo "$(realpath "$file") $(_cloudy_get_file_mtime $file)" >> "$CACHED_CONFIG_MTIME_FILEPATH"
+        done
+
         write_log_notice "$(basename $CONFIG) configuration compiled to $CACHED_CONFIG_FILEPATH."
     fi
 fi
@@ -707,8 +835,13 @@ source "$CACHED_CONFIG_FILEPATH" || exit_with_failure "Cannot load cached config
 #
 # End caching setup
 #
-
-_cloudy_trigger_event "boot" || exit_with_failure "Could not bootstrap $(get_title)"
+eval $(get_config -a additional_bootstrap)
+if [[ "$additional_bootstrap" != null ]]; then
+    for include in "${additional_bootstrap[@]}"; do
+       source "$ROOT/$include"
+    done
+fi
+event_dispatch "boot" || exit_with_failure "Could not bootstrap $(get_title)"
 _cloudy_bootstrap $@
 
 
