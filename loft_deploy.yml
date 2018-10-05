@@ -62,6 +62,9 @@ commands:
       staging:
         help: Pull from the staging server rather than the production server.
     options:
+      local:
+        type: boolean
+        help: Limit the file operation to only those files as defined by copy_local_to.  Ignores individual files from prod or staging.  Combine with -f to ignore the database.
       f:
         type: boolean
         help: Fetch only files, skip the database.

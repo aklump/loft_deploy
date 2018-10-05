@@ -897,7 +897,7 @@ function reset_files() {
             _reset_local_copy "$local_copy_source" "$local_copy_local_to" || status=false
         fi
 
-        has_option local && return 0
+        has_option "local" && return 0
 
         if [ "$status" == true ] && [ "$source_server" == 'prod' ] && [ "$local_copy_production_to" ]; then
             _reset_copy "$local_copy_production_to" || status=false
@@ -907,7 +907,7 @@ function reset_files() {
             _reset_copy "$local_copy_staging_to" || status=false
         fi
 
-        if ! has_option ind; then
+        if ! has_option "ind"; then
             if [ "$status" == true ] && [ "$local_files" ]; then
                 _reset_dir "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
                 if [[ "$status" == true ]]; then
