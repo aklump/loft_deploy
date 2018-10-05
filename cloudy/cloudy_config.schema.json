@@ -43,6 +43,9 @@
                 },
                 "help": {
                     "$ref": "#/definitions/help"
+                },
+                "required": {
+                    "type": "boolean"
                 }
             },
             "additionalProperties": false,
@@ -78,7 +81,17 @@
         "title": {
             "type": "string"
         },
+        "config_path_base": {
+            "type": "string"
+        },
         "additional_config": {
+            "type": [
+                "null",
+                "array"
+            ],
+            "uniqueItems": true
+        },
+        "additional_bootstrap": {
             "type": [
                 "null",
                 "array"

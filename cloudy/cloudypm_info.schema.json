@@ -1,0 +1,29 @@
+{
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "pattern": "^\\w+/\\w+$"
+        },
+        "clone_from": {
+            "type": "string"
+        },
+        "entry_script": {
+            "type": "string"
+        },
+        "entry_symlink": {
+            "type": "string"
+        },
+        "on_install": {
+            "type": "string"
+        },
+        "on_update": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "name",
+        "clone_from",
+        "entry_script"
+    ]
+}

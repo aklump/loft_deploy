@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-##
- # Perform all tests in a given file.
- #
+# Perform all tests in a file.
+#
+# $1 - The path to a test file.
+#
+# Returns 0 if all tests pass; 1 otherwise.
 function do_tests_in() {
     local CLOUDY_ACTIVE_TESTFILE=$(path_relative_to_root "$1")
 
@@ -25,6 +27,14 @@ function do_tests_in() {
         fi
     done
 
+    local duplicates=($(printf '%s\n' "${tests[@]}"|awk '!($0 in seen){seen[$0];next} 1'))
+    if [ ${#duplicates[@]} -gt 0 ]; then
+        for duplicate in "${duplicates[@]}"; do
+           fail_because "Duplicated test function \"$duplicate\"."
+        done
+        exit_with_failure "Tests failed due to code problems."
+    fi
+
     for CLOUDY_ACTIVE_TEST in "${tests[@]}"; do
         if [[ "$(type -t $CLOUDY_ACTIVE_TEST)" != "function" ]]; then
           fail_because "Test not found: $CLOUDY_ACTIVE_TEST"
@@ -40,11 +50,17 @@ function do_tests_in() {
     return 0
 }
 
+# Mark a single test as skipped
+#
+# Returns nothing.
 function mark_test_skipped() {
     warn_because "Skipped test: $CLOUDY_ACTIVE_TEST"
     let CLOUDY_SKIPPED_TESTS_COUNT=(CLOUDY_SKIPPED_TESTS_COUNT + 1)
 }
 
+# Echo test results and exit.
+#
+# Returns 0 if all tests pass; 1 otherwise.
 function exit_with_test_results() {
     _cloudy_echo_credits
     echo_title "Test Results"
@@ -72,6 +88,11 @@ function exit_with_test_results() {
     exit_with_failure "Some failures occurred"
 }
 
+# Assert that variable by name is empty.
+#
+# $1 - The name of a global variable.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_empty() {
     local actual="$1"
 
@@ -80,18 +101,27 @@ function assert_empty() {
     _cloudy_assert_failed "variable" "should be empty."
 }
 
+# Assert that variable by name is not empty.
+#
+# $1 - The actual value
+# $2 - A custom message on failure.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_not_empty() {
-    local actual="$1"
-    local variable_name="$2"
-    local custom_message="$3"
+    local actual_value="$1"
+    local custom_message="${3:-Value should not be empty}"
 
     let CLOUDY_ASSERTION_COUNT=(CLOUDY_ASSERTION_COUNT + 1)
-    [ ${#actual} -gt 0 ] && return 0
-    [[ "$variable_name" ]] || variable_name="variable"
-    [[ "$custom_message" ]] || custom_message="should not be empty"
-    _cloudy_assert_failed "$variable_name" "$custom_message"
+    [ ${#actual_value} -gt 0 ] && return 0
+    _cloudy_assert_failed "$actual_value" "$custom_message"
 }
 
+# Assert that two values are not the same.
+#
+# $1 - The expected value.
+# $2 - The value to test.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_not_equals() {
     local expected="$1"
     local actual="$2"
@@ -102,6 +132,14 @@ function assert_not_equals() {
     _cloudy_assert_failed "$actual" "should not equal" "$expected"
 }
 
+# Assert that two values are equal and of the same type.
+#
+# @todo is this needed, since bash is untyped?
+#
+# $1 - The expected value.
+# $2 - The value to test.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_same() {
     local expected="$1"
     local actual="$2"
@@ -111,6 +149,12 @@ function assert_same() {
      _cloudy_assert_failed "$actual" "is not the same as" "$expected"
 }
 
+# Assert that two values are equal in value but not necessarily type.
+#
+# $1 - The expected value.
+# $2 - The value to test.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_equals() {
     local expected="$1"
     local actual="$2"
@@ -120,6 +164,11 @@ function assert_equals() {
      _cloudy_assert_failed "$actual" "does not equal" "$expected"
 }
 
+# Assert that a value equals "true" or "TRUE".
+#
+# $1 - The value to test.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_true() {
     local actual="$1"
     let CLOUDY_ASSERTION_COUNT=(CLOUDY_ASSERTION_COUNT + 1)
@@ -127,6 +176,11 @@ function assert_true() {
      _cloudy_assert_failed "$actual" "should be true."
 }
 
+# Assert that a value equals "false" or "FALSE".
+#
+# $1 - The value to test.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_false() {
     local actual="$1"
     let CLOUDY_ASSERTION_COUNT=(CLOUDY_ASSERTION_COUNT + 1)
@@ -134,6 +188,11 @@ function assert_false() {
      _cloudy_assert_failed "$actual" "should be false."
 }
 
+# Assert that a file exists by path.
+#
+# $1 - The filepath of the expected file.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_file_exists() {
     local filepath="$1"
 
@@ -142,6 +201,11 @@ function assert_file_exists() {
      _cloudy_assert_failed "$filepath" "does not exist, but it should."
 }
 
+# Assert that a file does not exist at path.
+#
+# $1 - The filepath to ensure does not exist.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_file_not_exists() {
     local filepath="$1"
 
@@ -150,6 +214,12 @@ function assert_file_not_exists() {
     _cloudy_assert_failed "$filepath" "exists, but should not."
 }
 
+# Assert that an array does not contain a value.
+#
+# $1 - The value to search for.
+# $2 - The name of a global variable.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_not_contains() {
     local key=$1
     local array_var_name=$2
@@ -160,6 +230,12 @@ function assert_not_contains() {
     _cloudy_assert_failed "$key" "should not exist in array \$$array_var_name, but it does."
 }
 
+# Assert that an array has a given number of elements.
+#
+# $1 - The expected length.
+# $2 - The name of a global array.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_count() {
     local expected="$1"
     local array_var_name="$2"
@@ -170,6 +246,12 @@ function assert_count() {
     assert_same $expected ${#value[@]}
 }
 
+# Assert that an array contains a value.
+#
+# $1 - The value to search for.
+# $2 - The name of a global variable.
+#
+# Returns 0 if assertion is true; 1 otherwise.
 function assert_contains() {
     local key="$1"
     local array_var_name="$2"
@@ -180,18 +262,71 @@ function assert_contains() {
     _cloudy_assert_failed "$key" "should exist in array \$$array_var_name"
 }
 
-##
- # Assert a function returns a given exit code.
- #
- # Here are three examples of how to call...
- # @code
- #   array_sort; assert_exit_status 0
- #   $(has_option 'name'); assert_exit_status 0
- #   has_option 'name' > /dev/null; assert_exit_status 0
- # @endcode
- #
+# Assert a function returns a given exit code.
+#
+# $1 The expected exit code of the previous command.
+#
+# Here are three examples of how to call...
+# @code
+#   array_sort; assert_exit_status 0
+#   $(has_option 'name'); assert_exit_status 0
+#   has_option 'name' > /dev/null; assert_exit_status 0
+# @endcode
+#
 function assert_exit_status() {
     local actual=$?
     local expected=$1
     assert_same $expected $actual
+}
+
+# Assert that an global variable is of a given type.
+#
+# $1 - The expected type.
+# $2 - The name of a global variable.
+#
+# Returns 0 if assertion is true; 1 otherwise.
+function assert_internal_type() {
+    local type=$1
+    local var_name=$2
+
+    case $type in
+    array)
+        [[ "$(declare -p $var_name)" =~ "declare -a" ]] && return 0
+       ;;
+    esac
+
+    _cloudy_assert_failed "$var_name" "should be of type \"$type\"."
+}
+
+# Assert that an global variable is not of a given type.
+#
+# $1 - The expected type.
+# $2 - The name of a global variable.
+#
+# Returns 0 if assertion is true; 1 otherwise.
+function assert_not_internal_type() {
+
+    local type=$1
+    local var_name=$2
+
+    case $type in
+    array)
+        ! [[ "$(declare -p $var_name)" =~ "declare -a" ]] && return 0
+       ;;
+    esac
+
+    _cloudy_assert_failed "$var_name" "should not be of type \"$type\"."
+}
+
+# Assert that a value matches a regular expression.
+#
+# $1 - The regular expression.
+# $2 - The value to match against the regexp.
+#
+# Returns 0 if assertion is true; 1 otherwise.
+function assert_reg_exp() {
+    local pattern="$1"
+    local string="$2"
+
+    [[ "$string" =~ $pattern ]] || _cloudy_assert_failed "$string" "Does not match regular expression \"$pattern\""
 }
