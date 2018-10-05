@@ -917,7 +917,7 @@ function exit_with_failure() {
     [ $CLOUDY_EXIT_STATUS -lt 2 ] && CLOUDY_EXIT_STATUS=1
     CLOUDY_EXIT_STATUS=${parse_args__options__status:-$CLOUDY_EXIT_STATUS}
 
-    echo && echo_error "🔥  $(_cloudy_message "$1" "$CLOUDY_FAILED")"
+    echo && echo_error "🔥  $(_cloudy_message "${parse_args__args[@]}" "$CLOUDY_FAILED")"
 
     ## Write out the failure messages if any.
     if [ ${#CLOUDY_FAILURES[@]} -gt 0 ]; then
