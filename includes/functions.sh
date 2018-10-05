@@ -1081,7 +1081,7 @@ function _reset_dir() {
  # Reset the local database with a previously fetched copy
  #
 function reset_db() {
-    parse_args $@
+    parse_args "$@"
 
     local source=$source_server
     [[ "$parse_args__options__source" ]] && source=$parse_args__options__source

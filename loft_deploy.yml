@@ -62,15 +62,12 @@ commands:
       staging:
         help: Pull from the staging server rather than the production server.
     options:
-      local:
-        type: boolean
-        help: Limit the file operation to only those files as defined by copy_local_to.  Ignores individual files from prod or staging.  Combine with -f to ignore the database.
-      f:
-        type: boolean
-        help: Fetch only files, skip the database.
       d:
         type: boolean
         help: Fetch only database, ignoring files.
+      f:
+        type: boolean
+        help: Fetch only files, skip the database.
       yes:
         type: boolean
         aliases: [y]
@@ -79,6 +76,9 @@ commands:
         type: boolean
         aliases: [i]
         help: Only reset the individual files as defined by copy_production_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you often will pair it with -f, e.g. loft_deploy reset -fi
+      local:
+        type: boolean
+        help: Limit the file operation to only those files as defined by copy_local_to.  Ignores individual files from prod or staging.  Combine with -f to ignore the database.
   export:
     help: Dump the local database to a file.  The file is named after the database, but this can be modified using the suffix and the --time option.
     arguments:
