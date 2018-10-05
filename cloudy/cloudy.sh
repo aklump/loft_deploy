@@ -504,8 +504,7 @@ function translate() {
 #
 # Returns nothing.
 function echo_white() {
-    _cloudy_echo_color__c=37
-    _cloudy_echo_color "$1"
+    _cloudy_echo_color 37 "$1"
 }
 
 # Echo a string with red text.
@@ -514,8 +513,7 @@ function echo_white() {
 #
 # Returns nothing.
 function echo_red() {
-    _cloudy_echo_color__c=31
-    _cloudy_echo_color "$1"
+    _cloudy_echo_color 31 "$1"
 }
 
 # Echo a string with a red background.
@@ -524,9 +522,7 @@ function echo_red() {
 #
 # Returns nothing.
 function echo_red_highlight() {
-    _cloudy_echo_color__b=41
-    _cloudy_echo_color__c=37
-    _cloudy_echo_color "$1"
+    _cloudy_echo_color 37 "$1" 1 41
 }
 
 # Echo an error message
@@ -535,9 +531,7 @@ function echo_red_highlight() {
 #
 # Returns nothing.
 function echo_error() {
-    _cloudy_echo_color__b=41
-    _cloudy_echo_color__c=37
-    _cloudy_echo_color "$1"
+    _cloudy_echo_color 37 "$1" 1 41
 }
 
 # Echo a warning message
@@ -546,9 +540,7 @@ function echo_error() {
 #
 # Returns nothing.
 function echo_warning() {
-    _cloudy_echo_color__b=43
-    _cloudy_echo_color__c=30
-    _cloudy_echo_color "$1"
+    _cloudy_echo_color 30 "$1" 1 43
 }
 
 # Echo a string with green text.
@@ -557,9 +549,7 @@ function echo_warning() {
 #
 # Returns nothing.
 function echo_green() {
-    _cloudy_echo_color__c=32
-    _cloudy_echo_color__i=0
-    _cloudy_echo_color "$1"
+    _cloudy_echo_color 32 "$1" 0
 }
 
 # Echo a string with yellow text.
@@ -568,9 +558,7 @@ function echo_green() {
 #
 # Returns nothing.
 function echo_yellow() {
-    _cloudy_echo_color__c=33
-    _cloudy_echo_color__i=0
-    _cloudy_echo_color "$1"
+    _cloudy_echo_color 33 "$1" 0
 }
 
 # Echo a string with a yellow background.
@@ -579,9 +567,7 @@ function echo_yellow() {
 #
 # Returns nothing.
 function echo_yellow_highlight() {
-    _cloudy_echo_color__b=43
-    _cloudy_echo_color__c=30
-    _cloudy_echo_color "$1"
+    _cloudy_echo_color 30 "$1" 1 43
 }
 
 # Echo a string with blue text.
@@ -590,9 +576,7 @@ function echo_yellow_highlight() {
 #
 # Returns nothing.
 function echo_blue() {
-    _cloudy_echo_color__c=34
-    _cloudy_echo_color__i=0
-    _cloudy_echo_color "$1"
+    _cloudy_echo_color 34 "$1" 0
 }
 
 # Echo a title string.

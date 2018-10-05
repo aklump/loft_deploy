@@ -304,21 +304,19 @@ function _cloudy_message() {
 
 # Echo using color
 #
-# $1 - The message to echo.
-#
-# $_cloudy_echo_color__i - The intensity 0 dark, 1 light.
-# $_cloudy_echo_color__c - The ANSI color value, e.g. 30-37, 39
-# $_cloudy_echo_color__b - The background color value. 40-47, 49
+# $1 - The ANSI color value, e.g. 30-37, 39
+# $2 - The message to echo.
+# $3 - The intensity 0 dark, 1 light. Defaults to 1.
+# $4 - The background color value. 40-47, 49
 #
 # @link https://misc.flogisoft.com/bash/tip_colors_and_formatting
 #
 # Returns 0 if .
 function _cloudy_echo_color() {
-    local message=$1
-
-    local intensity=${_cloudy_echo_color__i:-1}
-    local color=$_cloudy_echo_color__c
-    local bg=$_cloudy_echo_color__b
+    local color=$1
+    local message="$2"
+    local intensity=${3:-1}
+    local bg=$4
 
     # tput is more portable so we use that and convert to it's colors.
     # https://linux.101hacks.com/ps1-examples/prompt-color-using-tput/
@@ -361,14 +359,15 @@ function _cloudy_echo_list() {
     local intensity=${parse_args__options__i:-1}
     local bullet
     local item
+
     for i in "${echo_list__array[@]}"; do
         bullet="$LI"
         if [[ "$bullets_color" ]]; then
-            bullet=$(_cloudy_echo_color -c=$bullets_color -i=$intensity "$LI")
+            bullet=$(_cloudy_echo_color $bullets_color "$LI")
         fi
         item="$line_item"
         if [[ "$items_color" ]]; then
-            item=$(_cloudy_echo_color -c=$items_color -i=$intensity "$line_item")
+            item=$(_cloudy_echo_color $items_color "$line_item")
         fi
         [[ "$line_item" ]] && echo "$bullet $item"
         line_item="$i"
@@ -376,11 +375,11 @@ function _cloudy_echo_list() {
 
     bullet="$LIL"
     if [[ "$bullets_color" ]]; then
-        bullet=$(_cloudy_echo_color -c=$bullets_color -i=$intensity "$LIL")
+        bullet=$(_cloudy_echo_color $bullets_color "$LIL")
     fi
     item="$line_item"
     if [[ "$items_color" ]]; then
-        item=$(_cloudy_echo_color -c=$items_color -i=$intensity "$line_item")
+        item=$(_cloudy_echo_color $items_color "$line_item")
     fi
     [[ "$line_item" ]] && echo "$bullet $item"
 }
