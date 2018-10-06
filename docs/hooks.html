@@ -67,7 +67,7 @@
 <p>The contents of the file could look like this, where $1 is a verbose comment about calling the hook, you should echo it if you care to have it displayed.</p>
 
 <pre><code>#!/bin/bash
-#
+# 
 # @file
 # Clears the drupal cache after the database has been reset
 
@@ -84,7 +84,7 @@ echo "`tty -s &amp;&amp; tput setaf 3`Clearing the drupal cache...`tty -s &amp;&
 <p>You can add mysql commands against the local environment in a hook using <code>loft_deploy_mysql</code> like this:</p>
 
 <pre><code>#!/bin/bash
-#
+# 
 # @file
 # Clears the drupal cache after the database has been reset
 
@@ -100,7 +100,7 @@ loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 <li>Always <code>return</code> 0, or a non-zero if the hook fails.</li>
 <li>Never <code>exit</code> in a hook file.</li>
 <li>Give feedback as to what happened, rather that what is about to happen, e.g. Files downloaded. instead of "Downloading files..." when echoing bullet points.</li>
-<li>See <em>init/base/hooks/example.sh</em> for a code example.</li>
+<li>See <em>install/base/hooks/example.sh</em> for a code example.</li>
 </ul>
 
 <table>
@@ -185,9 +185,9 @@ loft_deploy_mysql "DROP TABLE cache_admin_menu;"
   <a href="index.html" class="index">Index</a>
   <a href="migrations.html" class="next migrations">Migrations&raquo;</a>
 </div>
-
+  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 05 Oct 2018 16:33:26 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Fri, 05 Oct 2018 17:29:30 -0700</p>
   </div>
 </footer>
 
