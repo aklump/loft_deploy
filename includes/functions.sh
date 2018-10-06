@@ -168,9 +168,9 @@ function init() {
   if [ $# -ne 1 ]; then
     end "Please specific one of: dev, staging or prod.  e.g. loft_deploy init dev"
   elif [ "$1" == 'dev' ] || [ "$1" == 'staging' ] || [ "$1" == 'prod' ]; then
-    mkdir $config_dir && rsync -a "$ROOT/install/base/" "$config_dir/" --exclude=.gitkeep
+    mkdir $config_dir && rsync -a "$ROOT/init/base/" "$config_dir/" --exclude=.gitkeep
     chmod 0644 "$config_dir/.htaccess"
-    cp "$ROOT/install/config/$1.yml" "$config_dir/config.yml"
+    cp "$ROOT/init/config/$1.yml" "$config_dir/config.yml"
     cd "$start_dir"
     complete "Initialization almost done; please configure and save $config_dir/config.yml.  Then run: clearcache"
     end
