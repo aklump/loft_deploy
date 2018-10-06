@@ -4,12 +4,12 @@ local:
   basepath: /path/to/prod/branch
   role: prod
   copy_source:
-  - web/.htaccess
-  - web/sites/default/settings.local.php
-  - web/sites/default/settings.local.php
+    - web/.htaccess
+    - web/sites/default/settings.local.php
+    - web/sites/default/settings.local.php
   files:
-  - web/sites/default/files
-  - private/default/files
+    - web/sites/default/files
+    - private/default/files
   database:
     backups: private/default/db/purgeable
   drupal:
