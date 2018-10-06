@@ -89,7 +89,7 @@ function realpath() {
 function load_config() {
   if [ ! -f core-config.sh ]; then
     echo_yellow "Installing..."
-    cp "$CORE/install/core-config.sh" "$docs_root_dir/"
+    cp "$CORE/init/core-config.sh" "$docs_root_dir/"
     installing=1
   fi
 
@@ -123,7 +123,7 @@ function load_config() {
   fi
 
   # Installation steps
-  test -d "$docs_source_path/" || rsync -a "$CORE/install/source/" "$docs_source_path/"
+  test -d "$docs_source_path/" || rsync -a "$CORE/init/source/" "$docs_source_path/"
 
   #
   #

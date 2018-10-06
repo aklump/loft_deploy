@@ -43,12 +43,12 @@ for dir in "${dirs_to_empty[@]}"; do
 done
 
 # If no dirs, copy the patterns into place from the patterns dir.  This is important after --clean
-test -e "$docs_root_dir/$docs_website_dir" || rsync -a  "$CORE/install/patterns/public_html/" "$docs_root_dir/$docs_website_dir"
-test -e "$docs_root_dir/$docs_html_dir" || rsync -a "$CORE/install/patterns/html/" "$docs_root_dir/$docs_html_dir"
-test -e "$docs_root_dir/$docs_mediawiki_dir" || rsync -a    "$CORE/install/patterns/mediawiki/" "$docs_root_dir/$docs_mediawiki_dir"
-test -e "$docs_root_dir/$docs_text_dir" || rsync -a "$CORE/install/patterns/text/" "$docs_root_dir/$docs_text_dir"
-test -e "$docs_root_dir/$docs_drupal_dir" || rsync -a   "$CORE/install/patterns/advanced_help/"
-test -e "$docs_root_dir/$docs_doxygene_dir" || rsync -a "$CORE/install/patterns/doxygene/" "$docs_root_dir/$docs_doxygene_dir"
+test -e "$docs_root_dir/$docs_website_dir" || rsync -a  "$CORE/init/patterns/public_html/" "$docs_root_dir/$docs_website_dir"
+test -e "$docs_root_dir/$docs_html_dir" || rsync -a "$CORE/init/patterns/html/" "$docs_root_dir/$docs_html_dir"
+test -e "$docs_root_dir/$docs_mediawiki_dir" || rsync -a    "$CORE/init/patterns/mediawiki/" "$docs_root_dir/$docs_mediawiki_dir"
+test -e "$docs_root_dir/$docs_text_dir" || rsync -a "$CORE/init/patterns/text/" "$docs_root_dir/$docs_text_dir"
+test -e "$docs_root_dir/$docs_drupal_dir" || rsync -a   "$CORE/init/patterns/advanced_help/"
+test -e "$docs_root_dir/$docs_doxygene_dir" || rsync -a "$CORE/init/patterns/doxygene/" "$docs_root_dir/$docs_doxygene_dir"
 
 # Assert dir exists if not create it and parents
 for path in "${dirs[@]}"; do
@@ -84,7 +84,7 @@ for file in $docs_source_dir/*; do
 
     if echo "$file" | grep -q '.md$'; then
       basename=$(echo $basename | sed 's/\.md$//g').html
-      
+
       $docs_php "$CORE/markdown.php" "$file" "$docs_tmp_dir/$basename"
 
     # Css files pass through to the website and html dir
