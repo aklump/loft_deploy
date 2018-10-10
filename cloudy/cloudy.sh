@@ -1094,6 +1094,18 @@ function path_relative_to_root() {
     echo $path
 }
 
+# Echo the last modified time of a file.
+#
+# $1 - The path to the the file.
+#
+# Returns 1 if the time cannot be determined.
+function path_mtime() {
+    local path=$1
+    [ -f "$path" ] || return 1
+
+     date -r "$path" +%s
+}
+
 ##
  # Return the basename less the extension.
  #

@@ -178,7 +178,7 @@ function _cloudy_get_config() {
         else
             local eval_code="local $cached_var_name="$default_value""
         fi
-        eval $eval_code
+        eval $eval_code 2>/dev/null
     fi
 
     # Determine what type of array.

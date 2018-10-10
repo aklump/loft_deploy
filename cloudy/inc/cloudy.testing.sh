@@ -109,11 +109,41 @@ function assert_empty() {
 # Returns 0 if assertion is true; 1 otherwise.
 function assert_not_empty() {
     local actual_value="$1"
-    local custom_message="${3:-Value should not be empty}"
+    local custom_message="${2:-Value should not be empty}"
 
     let CLOUDY_ASSERTION_COUNT=(CLOUDY_ASSERTION_COUNT + 1)
     [ ${#actual_value} -gt 0 ] && return 0
     _cloudy_assert_failed "$actual_value" "$custom_message"
+}
+
+# Asset one number is greater than another.
+#
+# $1 - The target value.
+# $2 - The number than should be greater than the target.
+#
+# Returns 0 if  $2 is > $1
+function assert_greater_than() {
+    local target="$1"
+    local subject="$2"
+
+    let CLOUDY_ASSERTION_COUNT=(CLOUDY_ASSERTION_COUNT + 1)
+    [[ $subject -gt $target ]] && return 0
+    _cloudy_assert_failed "$subject" "is not less than $target"
+}
+
+# Asset one number is less than another.
+#
+# $1 - The target value.
+# $2 - The number than should be less than the target.
+#
+# Returns 0 if  $2 is < $1
+function assert_less_than() {
+    local target="$1"
+    local subject="$2"
+
+    let CLOUDY_ASSERTION_COUNT=(CLOUDY_ASSERTION_COUNT + 1)
+    [[ $subject -lt $target ]] && return 0
+    _cloudy_assert_failed "$subject" "is not less than $target"
 }
 
 # Assert that two values are not the same.
