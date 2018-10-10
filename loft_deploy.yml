@@ -64,10 +64,10 @@ commands:
     options:
       d:
         type: boolean
-        help: Fetch only database, ignoring files.
+        help: Reset only database, ignoring files.
       f:
         type: boolean
-        help: Fetch only files, skip the database.
+        help: Reset only files, skip the database.
       yes:
         type: boolean
         aliases: [y]
