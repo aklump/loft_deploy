@@ -489,7 +489,10 @@ function _do_migrate_push() {
 }
 
 function _do_migrate_pull() {
-    local db_command="scp"
+
+    # -p will preserve the times so we can detect how old this database is.
+    local db_command="scp -p"
+
     local files_command="$ld_remote_rsync_cmd --delete"
     ! has_option 'v' && db_command="$db_command -q"
     ! has_option 'v' && files_command="$files_command -q"
@@ -520,6 +523,32 @@ function _do_migrate_pull() {
         fi
 
         $db_command $from $to || fail_because "Could not migrate database $(basename $migration_database_path)"
+
+        # Do a test to make sure the db source is not too old.
+        local now=$(timestamp)
+        local mtime=$(path_mtime $to)
+        local age_in_minutes
+        local age_in_hours
+        local age_in_days
+        let "age_in_minutes=($now - $mtime) / 60"
+        let "age_in_hours=($now - $mtime) / 3600"
+        let "age_in_days=($now - $mtime) / 86400"
+        local threshold
+        local severity="danger"
+        eval $(get_config_as max_db_seconds "migration.max_db_age" 1800)
+        let "max_db_minutes=$max_db_seconds / 60"
+        if [ $age_in_days -gt 1 ]; then
+            threshold="$age_in_days days"
+        elif [ $age_in_hours -gt 1 ]; then
+            threshold="$age_in_hours hours"
+        elif [ $age_in_minutes -gt $max_db_minutes ]; then
+            threshold="$age_in_minutes minutes"
+            severity="caution"
+        fi
+        if [[ "$threshold" ]] && ! confirm --$severity "Your migration database source is older than $threshold; do you wish to continue?"; then
+             fail_because "Database snapshot was too old; create a newer export of the migration database and try again."
+             return 1
+        fi
 
         reset_db --source=migrate -y  || fail_because "Could not import the database."
 

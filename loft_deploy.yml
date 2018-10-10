@@ -1,5 +1,8 @@
 title: "Loft Deploy"
 default_command: "help"
+migration:
+  # The maximum age in seconds of a database backup before a user is warned during migration.
+  max_db_age: 1800
 commands:
   config:
     help: Open $EDITOR with the configuration file to make changes.
@@ -146,3 +149,4 @@ commands:
       nobu:
         type: boolean
         help: Do not perform a backup of the local database.
+
