@@ -1890,6 +1890,8 @@ function show_info() {
         table_add_row "DB Name" "$staging_db_name"
         table_add_row "DB Dumps" "$staging_db_dir"
         table_add_row "Files" "$staging_files"
+        [[ "$staging_files2" != null ]] && table_add_row "Files2" "$staging_files2"
+        [[ "$staging_files3" != null ]] && table_add_row "Files3" "$staging_files3"
         echo_slim_table
     fi
   fi
