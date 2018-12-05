@@ -2134,7 +2134,18 @@ function hooks_empty_array_key () {
     local file=$1
     test -f $file || return 1
     local key=$2
-    sed -i '' "s/^.*$key.*$/'$key' => NULL,/g" $file || return 2
-    echo_green "├── $key removed."
-    return 0
+    local success=false
+    local extension=$(path_extension $file)
+
+    case $extension in
+    php)
+        sed -i '' "s/^.*$key.*$/'$key' => NULL,/g" $file && success=true
+        ;;
+    yml)
+        sed -i '' "s/^.*$key.*$/$key: NULL,/g" $file && success=true
+        ;;
+    esac
+
+    [[ $success == true ]] &&  echo_green "├── $key removed." && return 0
+    return 2
 }
