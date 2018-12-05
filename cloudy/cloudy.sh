@@ -17,18 +17,33 @@ function confirm() {
     while true; do
         read -r -n 1 -p "$message " REPLY
         case $REPLY in
-            [yY]) echo; echo; return 0 ;;
-            [nN]) echo; echo; return 1 ;;
+            [yY]) echo; return 0 ;;
+            [nN]) echo; return 1 ;;
             *) printf " \033[31m %s \n\033[0m" "invalid input"
         esac
     done
 }
 
-# Determine if a given directory has any files in it.
+# Prompt the user to read a message and press any key to continue.
+#
+# $1 - The message to show the user.
+#
+# Returns nothing
+function wait_for_any_key() {
+    local message="$1"
+
+    parse_args "$@"
+    local message="${parse_args__args}; press any key to continue..."
+    [[ "$parse_args__options__caution" ]] && message=$(echo_warning "$message")
+    [[ "$parse_args__options__danger" ]] && message=$(echo_error "$message")
+    read -r -n 1 -p "$message "
+}
+
+# Determine if a given directory has any non-hidden files or directories.
 #
 # $1 - The path to a directory to check
 #
-# Returns 0 if the path contains non-hidden files or 1 if not.
+# Returns 0 if the path contains non-hidden files directories; 1 if not.
 function dir_has_files() {
     local path_to_dir="$1"
 
@@ -61,7 +76,22 @@ function get_version() {
 #
 # Returns nothing.
 function timestamp() {
-    echo $(date +%s)
+    date +%s
+}
+
+# Echo the current local time as hours/minutes with optional seconds.
+#
+# options -
+#   -s - Include the seconds
+#
+# Returns nothing.
+function time_local() {
+    parse_args "$@"
+    if [[ "$parse_args__options__s" ]]; then
+        date +%H:%M:%S
+    else
+        date +%H:%M
+    fi
 }
 
 # Return the current datatime in ISO8601 in UTC.
@@ -69,13 +99,13 @@ function timestamp() {
 # options -
 #   -c - Remove hyphens and colons for use in a filename
 #
-# Returns 0 if .
+# Returns nothing.
 function date8601() {
     parse_args "$@"
     if [[ "$parse_args__options__c" ]]; then
-        echo $(date -u +%Y%m%dT%H%M%S)
+        date -u +%Y%m%dT%H%M%S
     else
-        echo $(date -u +%Y-%m-%dT%H:%M:%S)
+        date -u +%Y-%m-%dT%H:%M:%S
     fi
     return 0
 }
@@ -99,7 +129,7 @@ function validate_input() {
     for name in "${CLOUDY_OPTIONS[@]}"; do
        array_has_value__array=(${_cloudy_get_valid_operations_by_command__array[@]})
        array_has_value $name || fail_because "Invalid option: $name"
-       eval "value=\"\$CLOUDY_OPTION__$(string_upper $name)\""
+       eval "value=\"\$CLOUDY_OPTION__$(string_upper ${name//-/_})\""
 
        # Assert the provided value matches schema.
        eval $(_cloudy_validate_input_against_schema "commands.$command.options.$name" "$name" "$value")
@@ -136,7 +166,7 @@ function parse_args() {
 
     # Purge any previous values.
     for name in "${parse_args__options[@]}"; do
-        eval "unset parse_args__options__${name}"
+        eval "unset parse_args__options__${name//-/_}"
     done
     parse_args__options=()
     parse_args__args=()
@@ -168,7 +198,7 @@ function parse_args() {
             fi
             for name in "${options[@]}"; do
                 parse_args__options=("${parse_args__options[@]}" "$name")
-                eval "parse_args__options__${name}=true"
+                eval "parse_args__options__${name//-/_}=true"
                 parse_args__options_passthru="$parse_args__options_passthru -${name}"
             done
         fi
@@ -243,7 +273,7 @@ function get_option() {
     local param=$1
     local default=$2
 
-    local var_name="\$CLOUDY_OPTION__$(string_upper $1)"
+    local var_name="\$CLOUDY_OPTION__$(string_upper ${1//-/_})"
     local value=$(eval "echo $var_name")
     [[ "$value" ]] && echo "$value" && return 0
     echo "$default" && return 2
@@ -271,6 +301,52 @@ function array_has_value() {
        [[ "$value" == "$needle" ]] && array_has_value__index=$index && return 0
        let index++
     done
+    return 1
+}
+
+# Apply a callback to every item in an array and echo new array eval statement.
+#
+# array_map__callback
+#
+# The array_map__callback has to be re-defined for each call of array_map and receives the value of an array item as
+# it's argument.  The example here expects that user_patterns is an array, already defined.  The array user_patterns is
+# mutated by the eval statement at the end.
+#
+# @code
+#   function array_map__callback {
+#       echo "<h1>$1</h1>"
+#   }
+#   declare -a titles=("The Hobbit" "Charlottes Web");
+#   eval $(array_map titles)
+# @endcode
+#
+# $1 - string The name of the defined array.
+#
+# Returns nothing.
+function array_map() {
+    local array_name=$1
+
+    local -a stash=()
+    local subject
+    function_exists array_map__callback || return 1
+    eval subject=(\"\${$array_name[@]}\")
+    [[ ${#subject[@]} -eq 0 ]] && return 1
+    for item in "${subject[@]}" ; do
+        stash=("${stash[@]}" "\"$(array_map__callback "$item")\"")
+    done
+    echo "$array_name=(${stash[@]})"
+}
+
+# Determine if a function has been defined.
+#
+# $1 - string The name of the function to check.
+#
+# Returns 0 if defined; 1 otherwise.
+function function_exists() {
+    local function_name=$1
+
+    local type=$(eval type $function_name 2>/dev/null)
+    [[ "$type" =~ "function" ]] && return 0
     return 1
 }
 
@@ -352,19 +428,27 @@ function has_command_args() {
 }
 
 ##
- # Return a operation argument by zero-based index key.
+
  #
- # As an example see the following code:
- # @code
- #   ./script.sh action blue apple
- #   get_command --> "action"
- #   get_command_arg 0 --> "blue"
- #   get_command_arg 1 --> "apple"
- # @endcode
- #
+
+
+# Return a operation argument by zero-based index key.
+#
+# $1 - int The index of the argument
+# $2 - mixed Optional, default value.
+#
+# As an example see the following code:
+# @code
+#   ./script.sh action blue apple
+#   get_command --> "action"
+#   get_command_arg 0 --> "blue"
+#   get_command_arg 1 --> "apple"
+# @endcode
+# Returns 0 if found, 2 if using the default.
 function get_command_arg() {
     local index=$1
-    local default="$2"
+    local default="${2}"
+
     let index=(index + 1)
     [ ${#CLOUDY_ARGS[@]} -gt $index ] && echo  ${CLOUDY_ARGS[$index]} && return 0
     echo $default && return 2
@@ -714,7 +798,15 @@ function implement_cloudy_basic() {
 #
 # You must set up an init command in your core config file.
 # Then call this function from inside `on_pre_config`, e.g.
-# [[ "$(get_command)" == "init" ]] && exit_with_init
+# [[ "$(get_command)" == "init" ]] && handle_init
+# ...do your extra work here...
+# exit_with...
+#
+#
+# You should only call this function if you need to do something additional in
+# your init step, where you don't want to exit.  If not, you should use
+# exit_with_init, instead.
+#
 # The translation service is not yet bootstrapped in on_pre_config, so if you
 # want to alter the strings printed you can do something like this:
 # if [[ "$(get_command)" == "init" ]]; then
@@ -723,8 +815,8 @@ function implement_cloudy_basic() {
 #     exit_with_init
 # fi
 #
-# Returns nothing.
-function exit_with_init() {
+# Returns 1 if the init fails, 0 otherwise.
+function handle_init() {
     local path_to_files_map="$ROOT/init/cloudypm.files_map.txt"
     [ -f "$path_to_files_map" ] || fail_because "Missing required initialization file: $path_to_files_map."
 
@@ -770,7 +862,26 @@ function exit_with_init() {
             fi
         done
     fi
-    has_failed && exit_with_failure "${CLOUDY_FAILED:-Initialization failed.}"
+    has_failed && return 1
+    return 0
+}
+
+# Performs an initialization (setup default config, etc.) and exits.
+#
+# You must set up an init command in your core config file.
+# Then call this function from inside `on_pre_config`, e.g.
+# [[ "$(get_command)" == "init" ]] && exit_with_init
+# The translation service is not yet bootstrapped in on_pre_config, so if you
+# want to alter the strings printed you can do something like this:
+# if [[ "$(get_command)" == "init" ]]; then
+#     CLOUDY_FAILED="Initialization failed."
+#     CLOUDY_SUCCESS="Initialization complete."
+#     exit_with_init
+# fi
+#
+# Returns nothing.
+function exit_with_init() {
+    handle_init || exit_with_failure "${CLOUDY_FAILED:-Initialization failed.}"
     exit_with_success "${CLOUDY_SUCCESS:-Initialization complete.}"
 }
 
@@ -781,10 +892,23 @@ function exit_with_init() {
  #
 function exit_with_cache_clear() {
     local cloudy_dir="${1:-$CLOUDY_ROOT}"
+    [[ ! "${cloudy_dir}" ]] && exit_with_failure "Invalid cache directory ${cloudy_dir}"
     event_dispatch "clear_cache" "$cloudy_dir" || exit_with_failure "Clearing caches failed"
     if dir_has_files "$cloudy_dir/cache"; then
+
+        # We should not delete cpm on general cache clear.
+        if [ -d "$cloudy_dir/cache/cpm" ]; then
+            stash=$(tempdir)
+            mv "$cloudy_dir/cache/cpm" "$stash/cpm"
+        fi
+
         clear=$(rm -rv "$cloudy_dir/cache/"*)
         status=$?
+
+        if [[ "$stash" ]]; then
+            mv "$stash/cpm" "$cloudy_dir/cache/cpm"
+        fi
+
         [ $status -eq 0 ] || exit_with_failure "Could not remove all cached files in $cloudy_dir"
         file_list=($clear)
         for i in "${file_list[@]}"; do
@@ -823,33 +947,71 @@ function exit_with_success() {
     _cloudy_exit_with_success "$(_cloudy_message "$message" "$CLOUDY_SUCCESS")"
 }
 
-function exit_with_success_elapsed() {
-    local message=$1
-    _cloudy_exit_with_success "$(_cloudy_message "$message" "$CLOUDY_SUCCESS" " in $SECONDS seconds.")"
+# Exit without echoing anything with a 0 status code.
+#
+# Returns nothing.
+function exit_with_success_code_only() {
+    CLOUDY_EXIT_STATUS=0 && _cloudy_exit
 }
 
-##
- # Add a warning message to be shown on exit.
- #
-function warn_because() {
+# Echo a success message (with elapsed time) plus success reasons and exit
+#
+# $1 - The success message to use.
+#
+# Returns 0.
+function exit_with_success_elapsed() {
     local message=$1
-    [[ "$message" ]] || return 1
-    message=$(echo_yellow "$(_cloudy_message "$message")")
-    [[ "$message" ]] && CLOUDY_SUCCESSES=("${CLOUDY_SUCCESSES[@]}" "$message")
+    local duration=$SECONDS
+    local elapsed="$duration seconds"
+
+    if [ $duration -gt 600 ]; then
+        let duration=(duration / 60)
+        elapsed="$duration minutes"
+    fi
+    _cloudy_exit_with_success "$(_cloudy_message "$message" "$CLOUDY_SUCCESS" " in $elapsed.")"
+}
+
+# Add a warning message to be shown on success exit; not shown on failure exits.
+#
+# $1 - string The warning message.
+# $2 - string A default value if $1 is empty.
+#
+# @code
+#   warn_because "$reason" "Some default if $reason is empty"
+# @endcode
+#
+# @todo Should this show if a failure exit?
+#
+# Returns 1 if both $message and $default are empty; 0 if successful.
+function warn_because() {
+    local message="$1"
+    local default="$2"
+
+    [[ "$message" ]] || [[ "$default" ]] || return 1
+    [[ "$message" ]] && CLOUDY_SUCCESSES=("${CLOUDY_SUCCESSES[@]}" "$(echo_yellow "$message")")
+    [[ "$default" ]] && CLOUDY_SUCCESSES=("${CLOUDY_SUCCESSES[@]}" "$(echo_yellow "$default")")
+    return 0
 }
 
 # Add a success reason to be shown on exit.
 #
-# $1 - The success reason.
+# $1 - string The reason for the success.
+# $2 - string A default value if $1 is empty.
 #
-# Returns 1 if the message is empty; 0 otherwise.
+# @code
+#   succeed_because "$reason" "Some default if $reason is empty"
+# @endcode
+#
+# Returns 1 if both $message and $default are empty; 0 if successful.
 function succeed_because() {
-    local message=$1
+    local message="$1"
+    local default="$2"
 
-    [[ "$message" ]] || return 1
-    message=$(_cloudy_message "$message")
     CLOUDY_EXIT_STATUS=0
+    [[ "$message" ]] || [[ "$default" ]] || return 1
     [[ "$message" ]] && CLOUDY_SUCCESSES=("${CLOUDY_SUCCESSES[@]}" "$message")
+    [[ "$default" ]] && CLOUDY_SUCCESSES=("${CLOUDY_SUCCESSES[@]}" "$default")
+    return 0
 }
 
 # Test a global config variable to see if it points to an existing path.
@@ -933,6 +1095,27 @@ function exit_with_failure() {
     _cloudy_exit
 }
 
+# Exit without echoing anything with a non-success code.
+#
+# @option --status=N Optional, set the exit status, a number > 0
+#
+# Returns nothing.
+function exit_with_failure_code_only() {
+    parse_args "$@"
+
+    [[ $CLOUDY_EXIT_STATUS -lt 2 ]] && CLOUDY_EXIT_STATUS=1
+    CLOUDY_EXIT_STATUS=${parse_args__options__status:-$CLOUDY_EXIT_STATUS}
+
+    ## Write out the failure messages if any.
+    if [ ${#CLOUDY_FAILURES[@]} -gt 0 ]; then
+        for i in "${CLOUDY_FAILURES[@]}"; do
+           write_log_error "Failed because: $i"
+        done
+    fi
+
+    _cloudy_exit
+}
+
 # Test if a program is installed on the system.
 #
 # $1 - The name of the program to check for.
@@ -973,15 +1156,25 @@ function fail() {
     CLOUDY_EXIT_STATUS=1 && return 0
 }
 
-##
- # Add a failure message to be shown on exit.
- #
+# Add a failure message to be shown on exit.
+#
+# $1 - string The reason for the failure.
+# $2 - string A default value if $1 is empty.
+#
+# @code
+#   fail_because "$reason" "Some default if $reason is empty"
+# @endcode
+#
+# Returns 1 if both $message and $default are empty. 0 otherwise.
 function fail_because() {
-    local message=$1
+    local message="$1"
+    local default="$2"
+
     fail $@
-    if [[ "$message" ]]; then
-        CLOUDY_FAILURES=("${CLOUDY_FAILURES[@]}" "$message")
-    fi
+    [[ "$message" ]] || [[ "$default" ]] || return 1
+    [[ "$message" ]] && CLOUDY_FAILURES=("${CLOUDY_FAILURES[@]}" "$message")
+    [[ "$default" ]] && CLOUDY_FAILURES=("${CLOUDY_FAILURES[@]}" "$default")
+    return 0
 }
 
 # Determine if any failure reasons have been defined yet.
@@ -1028,6 +1221,7 @@ function event_dispatch() {
         return
     fi
     event_dispatch__event=$event_id
+    write_log_info "Dispatching event: $event_id"
 
     shift
     local args
@@ -1074,13 +1268,12 @@ function event_listen() {
  # If the path begins with / it is unchanged.
  #
 function path_relative_to_config_base() {
-    local path=$1
+    local path="$1"
 
     local config_path_base=${cloudy_config___config_path_base}
     [[ "${config_path_base:0:1}" != '/' ]] && config_path_base="${ROOT}/$config_path_base"
     config_path_base=${config_path_base%/}
-    [[ "${path:0:1}" != '/' ]] && path="$config_path_base/$path"
-    echo $path
+    path_resolve "$config_path_base" "$path"
 }
 
 ##
@@ -1089,10 +1282,39 @@ function path_relative_to_config_base() {
  # If the path begins with / it is unchanged.
  #
 function path_relative_to_root() {
-    local path=$1
-    [[ "${path:0:1}" != '/' ]] && path="$ROOT/$path"
-    echo $path
+    local path="$1"
+
+    path_resolve "$ROOT" "$path"
 }
+
+# Resolve a path to an absolute link; if already absolute, do nothing.
+#
+# $1 - The direname to use if $2 is not absolute
+# $2 - The path to make absolute if not starting with /
+#
+# Returns nothing
+function path_resolve() {
+    local dirname="${1%/}"
+    local path="$2"
+
+    [[ "${path:0:1}" != '/' ]] && path="$dirname/$path"
+    [ ! -e $path ] && echo $path && return
+
+    # If it exists, we will echo the real path.
+    echo "$(cd $(dirname $path) && pwd)/$(basename $path)"
+}
+
+# Determine if a path is absolute (begins with /) or not.
+#
+# $1 - The filepath to check
+#
+# Returns 0 if absolute; 1 otherwise.
+function path_is_absolute() {
+    local path="$1"
+
+    [[ "${path:0:1}" == '/' ]]
+}
+
 
 # Echo the last modified time of a file.
 #
@@ -1135,11 +1357,26 @@ if [ $? -gt 0 ]; then
     }
 fi
 
-##
- # Create and echo a new temp directory.
- #
+# Echo a temporary directory filepath.
+#
+# If you do not provide $1 then a new temporary directory is created each time
+# you call tempdir.  If you do provide $1 and call tempdir more than once with
+# the same value for $1, the same directory will be returned each time--a
+# shared directory within the system's temporary filesystem with the name
+# passed as $1.
+#
+# $1 - string An optional directory name to use.
+#
+# Returns 0 if successful
 function tempdir() {
-    mktemp -d 2>/dev/null || mktemp -d -t 'temp'
+    local basename=${1}
+
+    local path=$(mktemp -d 2>/dev/null || mktemp -d -t 'temp')
+    [[ ! "$basename" ]] && echo $path && return 1
+    local final="$(dirname $path)/$basename"
+    [[ -d $final ]] && ! rmdir $path && return 1
+    [[ ! -d $final ]] && ! mv $path $final && return 1
+    echo $final && return 0
 }
 
 # Echo the uppercase version of a string.
@@ -1188,7 +1425,7 @@ function debug() {
 function echo_key_value() {
     local key=$1
     local value=$2
-    echo "$(tput setaf 0)$(tput setab 7) $key $(tput smso) "$value" $(tput sgr0)"
+    echo "$(tty -s && tput setaf 0)$(tty -s && tput setab 7) $key $(tty -s && tput smso) "$value" $(tty -s && tput sgr0)"
 }
 
 # Echo an exception message and exit.

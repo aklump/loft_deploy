@@ -109,6 +109,10 @@ class Configuration {
     elseif (!$force && in_array($value, ['true', 'false', 'null'])) {
       $value = $value;
     }
+    elseif (is_array($value)) {
+      // TODO https://trello.com/c/RK8pPYjl/44-c-b-732-certain-types-of-arrays-are-not-supported-in-yml-config-yet
+      $value = '';
+    }
     else {
       $value = '"' . $value . '"';
     }

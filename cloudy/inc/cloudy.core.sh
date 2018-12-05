@@ -54,7 +54,7 @@ function _cloudy_bootstrap() {
             if has_option $alias && ! has_option $master_option; then
                 value=$(get_option "$alias")
                 CLOUDY_OPTIONS=("${CLOUDY_OPTIONS[@]}" "$master_option")
-                eval "CLOUDY_OPTION__$(string_upper $master_option)=\"$value\""
+                eval "CLOUDY_OPTION__$(string_upper ${master_option//-/_})=\"$value\""
             fi
         done
     done
@@ -99,7 +99,7 @@ function _cloudy_has_config_changed() {
 
 function _cloudy_get_file_mtime() {
     local filepath=$1
-    echo $(php -r "echo filemtime('$filepath');")
+    [[ -e $filepath ]] && echo $(php -r "echo filemtime('$filepath');")
 }
 
 ##
@@ -141,7 +141,7 @@ function _cloudy_get_config() {
     config_path_base=${config_path_base%/}
 
     parse_args "$@"
-    config_path=${parse_args__args[0]/-/_}
+    config_path=${parse_args__args[0]//-/_}
     cached_var_name="cloudy_config___${config_path//./___}"
 
     # This is the name of the variable containing the keys for $cached_var_name
@@ -184,7 +184,7 @@ function _cloudy_get_config() {
     # Determine what type of array.
     if [[ "$var_type" == "array" ]]; then
         eval "local var_keys=("\${$cached_var_name_keys[@]}")"
-        if [[ "${var_keys[0]}" == 0 ]] || [[ "${var_keys[0]}" == "" ]]; then
+        if [[ "${var_keys[0]}" == 0 ]] || [[ -z "${var_keys[0]}" ]]; then
             var_type="indexed_array"
         else
             var_type="associative_array"
@@ -279,9 +279,10 @@ function _cloudy_get_config() {
     echo ${code%;} && return 0
 }
 
-
-
 function _cloudy_exit() {
+    event_dispatch "exit" $CLOUDY_EXIT_STATUS
+    [[ "$CLOUDY_EXIT_STATUS" -eq 0 ]] && write_log_info "Exit status is: $CLOUDY_EXIT_STATUS"
+    [[ "$CLOUDY_EXIT_STATUS" -ne 0 ]] && write_log_notice "Exit status is: $CLOUDY_EXIT_STATUS"
     exit $CLOUDY_EXIT_STATUS
 }
 
@@ -321,14 +322,14 @@ function _cloudy_echo_color() {
     # tput is more portable so we use that and convert to it's colors.
     # https://linux.101hacks.com/ps1-examples/prompt-color-using-tput/
     let color-=30
-    [ $intensity -eq 1 ] && echo -n $(tput bold)
+    [[ $intensity -eq 1 ]] && echo -n $(tty -s && tput bold)
     if [[ "$bg" ]]; then
         let bg-=40
-        echo -n $(tput setab $bg)
+        echo -n $(tty -s && tput setab $bg)
     fi
-    echo -n $(tput setaf $color)
+    echo -n $(tty -s && tput setaf $color)
     echo -n "${message}"
-    echo -n $(tput sgr0)
+    echo -n $(tty -s && tput sgr0)
     echo
 }
 
@@ -340,7 +341,7 @@ function _cloudy_echo_ansi_rainbow() {
 }
 
 function _cloudy_echo_tput_rainbow() {
-    for c in {0..255}; do tput setaf $c; tput setaf $c | cat -v; echo =$c; done
+    for c in {0..255}; do tty -s && tput setaf $c; tty -s && tput setaf $c | cat -v; echo =$c; done
 }
 
 function _cloudy_echo_credits() {
@@ -558,25 +559,7 @@ function _cloudy_debug_helper() {
     [[ "$funcname" ]] && sidebar="$funcname in $sidebar"
     [[ "$lineno" ]] && sidebar="$sidebar on line $lineno"
     [[ "$sidebar" ]] || sidebar="$default"
-    echo && echo "$(tput setaf $fg)$(tput setab $bg) $sidebar $(tput smso) "$message" $(tput sgr0)" && echo
-}
-
-function _cloudy_assert_failed() {
-    local actual=$1
-    local reason="$(echo "$2")"
-
-    [ ${#actual} -eq 0 ] && actual='""'
-    actual="$(echo_yellow "$actual")"
-    [[ $# -gt 2 ]] && expected="$(echo_green "$3")"
-
-    let CLOUDY_FAILED_ASSERTION_COUNT=(CLOUDY_FAILED_ASSERTION_COUNT + 1)
-    [[ "$CLOUDY_ACTIVE_TEST" ]] && fail_because "Failed test: $CLOUDY_ACTIVE_TEST in $(basename $CLOUDY_ACTIVE_TESTFILE)" && CLOUDY_ACTIVE_TEST=''
-
-    local because="$actual $reason"
-    [[ $# -gt 2 ]] && because="$because expected $expected"
-    fail_because "$because"
-
-    return 1
+    echo && echo "$(tty -s && tput setaf $fg)$(tty -s && tput setab $bg) $sidebar $(tty -s && tput smso) "$message" $(tty -s && tput sgr0)" && echo
 }
 
 function _cloudy_write_log() {
@@ -720,6 +703,7 @@ function _cloudy_validate_command_arguments() {
         eval $(get_config_as "required" "commands.$command.arguments.$key.required")
         entered_value=$(eval "echo \${CLOUDY_ARGS[$index]}")
         [[ "$required" == true ]] && [[ ! "$entered_value" ]] && fail_because "Please provide <$key>." && status=1
+        let index++
     done
 
     return $status
@@ -758,7 +742,7 @@ parse_args "$@"
 declare -a CLOUDY_ARGS=("${parse_args__args[@]}")
 declare -a CLOUDY_OPTIONS=("${parse_args__options[@]}")
 for option in "${CLOUDY_OPTIONS[@]}"; do
-    eval "CLOUDY_OPTION__$(string_upper $option)=\"\$parse_args__options__${option}\""
+    eval "CLOUDY_OPTION__$(string_upper ${option//-/_})=\"\$parse_args__options__${option//-/_}\""
 done
 
 # Define shared variables

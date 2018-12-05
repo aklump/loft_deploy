@@ -13,7 +13,6 @@
 
 use JsonSchema\Constraints\Constraint;
 use JsonSchema\Validator;
-use Symfony\Component\Yaml\Yaml;
 
 require_once __DIR__ . '/bootstrap.php';
 $filepath_to_schema_file = $argv[2];
@@ -21,9 +20,17 @@ $filepath_to_config_file = $argv[3];
 $skip_config_validation = $g->get($argv, 4, FALSE) === 'true';
 $runtime = array_filter(explode("\n", trim($g->get($argv, 5, ''))));
 try {
-  $data = load_configuration_data($filepath_to_config_file);
-  $additional_config = $g->get($data, 'additional_config', []);
-  $merge_config = array_merge($additional_config, $runtime);
+  $data = [
+    '__cloudy' => [
+      'ROOT' => ROOT,
+      'CLOUDY_ROOT' => CLOUDY_ROOT,
+    ],
+  ];
+  $data += load_configuration_data($filepath_to_config_file);
+  $merge_config = $runtime;
+  if ($additional_config = $g->get($data, 'additional_config', [])) {
+    $merge_config = array_merge($additional_config, $runtime);
+  }
   foreach ($merge_config as $basename) {
     $path = strpos($basename, '/') !== 0 ? ROOT . "/$basename" : $basename;
     $additional_data = load_configuration_data($path);
