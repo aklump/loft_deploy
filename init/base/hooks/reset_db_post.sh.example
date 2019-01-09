@@ -3,7 +3,13 @@
 cd "$4/web" || return 1
 
 # Santize the database.
-loft_deploy_mysql "UPDATE users SET name = 'admin' WHERE uid = 1;" || return 1
+
+# Drupal 7
+#loft_deploy_mysql "UPDATE users SET name = 'admin' WHERE uid = 1;" || return 1
+
+# Drupal 8
+#loft_deploy_mysql "UPDATE users_field_data SET name = 'admin' WHERE uid = 1;" || return 1
+
 drush sql-sanitize --sanitize-password=pass -y || return 1
 echo_green "├── Database sanitized."
 
