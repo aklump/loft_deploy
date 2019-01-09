@@ -2088,12 +2088,16 @@ function generate_db_cnf() {
 }
 
 ##
- # Remove the value of a $conf variable as found in a Drupal settings file.
+ # Remove the value of a $conf or $settings variable as found in a Drupal settings file.
  #
  # @param string $1
  #   The filepath to the PHP settings file.
  # @param string $2
  #   The key of the $conf variable to empty.
+ #
+ # @code
+ #   $settings['hash_salt'] = NULL;
+ # @endcode
  #
  # @return int
  #   - 0 success
@@ -2131,8 +2135,11 @@ function hooks_empty_drupal_conf () {
  #   hooks_empty_drupal_conf $file "reroute_email.settings'\]\['address" || return 1
  #
 function hooks_empty_array_key () {
-    local file=$1
-    test -f $file || return 1
+    local file="$1"
+    if [[ ! -f "$file" ]]; then
+      echo_red "file \"$file\" does not exist."
+      return 1
+    fi
     local key=$2
     local success=false
     local extension=$(path_extension $file)
