@@ -1170,6 +1170,9 @@ function fail_because() {
     local message="$1"
     local default="$2"
 
+    parse_args "$@"
+    message="${parse_args__args[0]}"
+    default="${parse_args__args[1]}"
     fail $@
     [[ "$message" ]] || [[ "$default" ]] || return 1
     [[ "$message" ]] && CLOUDY_FAILURES=("${CLOUDY_FAILURES[@]}" "$message")

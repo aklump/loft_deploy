@@ -64,13 +64,26 @@ function _cloudy_bootstrap() {
  # Delete $CACHED_CONFIG_FILEPATH as necessary.
  #
 function _cloudy_auto_purge_config() {
-    local cache_mtime_filepath="${CACHED_CONFIG_FILEPATH/.sh/.modified.txt}"
-    if [[ "$cloudy_development_do_not_cache_config" == true ]] || _cloudy_has_config_changed; then
-        if [[ "$cloudy_development_do_not_cache_config" == true ]]; then
-            write_log_dev_warning "Configuration purge detected due to \$cloudy_development_do_not_cache_config = true."
-        else
-            write_log_notice "Config changes detected in \"$(basename $_cloudy_has_config_changed__file)\"."
-        fi
+    local purge=false
+
+    # Log the reason for the purge.
+    if [[ "$cloudy_development_do_not_cache_config" == true ]]; then
+      purge=true
+      write_log_dev_warning "Configuration purge detected due to \$cloudy_development_do_not_cache_config = true."
+    elif _cloudy_has_config_changed; then
+      write_log_notice "Config changes detected in \"$(basename $_cloudy_has_config_changed__file)\"."
+    else
+      local cache_id
+      if [[ -f "$CACHED_CONFIG_HASH_FILEPATH" ]]; then
+        cache_id=$(cat "$CACHED_CONFIG_HASH_FILEPATH");
+      fi
+      if [[ "$cache_id" != "$config_cache_id" ]]; then
+        purge=true
+        write_log_notice "Config hash change detected in \"$(basename $CACHED_CONFIG_HASH_FILEPATH)\"."
+      fi
+    fi
+
+    if [[ "$purge" == true ]]; then
         if ! rm -f "$CACHED_CONFIG_FILEPATH"; then
             fail_because "Could not rm $CACHED_CONFIG_FILEPATH during purge."
             write_log_critical "Cannot delete $CACHED_CONFIG_FILEPATH.  Cached configuration may be stale."
@@ -759,6 +772,7 @@ CACHE_DIR="$CLOUDY_ROOT/cache"
 CACHED_CONFIG_FILEPATH="$CACHE_DIR/_cached.$(path_filename $SCRIPT).config.sh"
 CACHED_CONFIG_JSON_FILEPATH="$CACHE_DIR/_cached.$(path_filename $SCRIPT).config.json"
 CACHED_CONFIG_MTIME_FILEPATH="${CACHED_CONFIG_FILEPATH/.sh/.modified.txt}"
+CACHED_CONFIG_HASH_FILEPATH="${CACHED_CONFIG_FILEPATH/.sh/.hash.txt}"
 
 # Ensure the configuration cache environment is present and writeable.
 if [ ! -d "$CACHE_DIR" ]; then
@@ -767,6 +781,7 @@ fi
 
 event_dispatch "pre_config" || exit_with_failure "Non-zero returned by on_pre_config()."
 compile_config__runtime_files=$(event_dispatch "compile_config")
+config_cache_id=$(php $CLOUDY_ROOT/php/helpers.php get_config_cache_id "$ROOT\n$compile_config__runtime_files")
 
 # Detect changes in YAML and purge config cache if necessary.
 _cloudy_auto_purge_config
@@ -807,6 +822,7 @@ if [ ! -f "$CACHED_CONFIG_FILEPATH" ]; then
         for file in "${config_files[@]}"; do
             [[ "$file" ]] && [ -f "$file" ] && echo "$(realpath "$file") $(_cloudy_get_file_mtime $file)" >> "$CACHED_CONFIG_MTIME_FILEPATH"
         done
+        echo $config_cache_id > $CACHED_CONFIG_HASH_FILEPATH
 
         write_log_notice "$(basename $CONFIG) configuration compiled to $CACHED_CONFIG_FILEPATH."
     fi

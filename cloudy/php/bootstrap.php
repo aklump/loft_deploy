@@ -57,7 +57,7 @@ function load_configuration_data($filepath) {
   }
   if (!($contents = file_get_contents($filepath))) {
     // TODO Need a php method to write a log file, and then log this.
-//    throw new \RuntimeException("Empty configuration file: " . realpath($filepath));
+    //    throw new \RuntimeException("Empty configuration file: " . realpath($filepath));
   }
   if ($contents) {
     switch (($extension = pathinfo($filepath, PATHINFO_EXTENSION))) {
@@ -119,4 +119,16 @@ function merge_config($arrays) {
   }
 
   return $master;
+}
+
+/**
+ * Create a hash of a string of filenames separated by \n.
+ *
+ * @return string
+ *   The has of filenames.
+ */
+function get_config_cache_id() {
+  $paths = func_get_arg(0);
+
+  return md5(str_replace("\n", ':', $paths));
 }
