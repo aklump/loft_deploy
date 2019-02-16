@@ -1,27 +1,28 @@
 #!/bin/bash
 
+#
+# Sanitize the database and set UID to "admin:pass", handle modules as fit for
+# development and clear caches
+#
+
 cd "$4/web" || return 1
 
-# Santize the database.
-
-# Drupal 7
-#loft_deploy_mysql "UPDATE users SET name = 'admin' WHERE uid = 1;" || return 1
-
-# Drupal 8
-#loft_deploy_mysql "UPDATE users_field_data SET name = 'admin' WHERE uid = 1;" || return 1
-
+# Sanitize the database.
+#D7 loft_deploy_mysql "UPDATE users SET name = 'admin' WHERE uid = 1;" || return 1
+#D8 loft_deploy_mysql "UPDATE users_field_data SET name = 'admin' WHERE uid = 1;" || return 1
 drush sql-sanitize --sanitize-password=pass -y || return 1
 echo_green "├── Database sanitized."
 
 # Disable production modules.
-drush pm-disable memcache, memcache_admin, features, honeypot, mollom -y || return 1
-echo_green "├── Production modules disabled."
+#drush pm-disable memcache, memcache_admin, features, honeypot, mollom -y || return 1
+#echo_green "├── Production modules disabled."
 
 # Enable development modules.
-drush en gop3_dev bulk_export update alter_partials_dev -y || return 1
-echo_green "├── Development modules enabled."
+#drush en gop3_dev bulk_export update alter_partials_dev -y || return 1
+#echo_green "├── Development modules enabled."
 
-drush cc all -y > /dev/null || return 1
+#D8 drush cr -y > /dev/null || return 1
+#D7 drush cc all -y > /dev/null || return 1
 echo_green "└── Drupal cache cleared."
 
 return 0
