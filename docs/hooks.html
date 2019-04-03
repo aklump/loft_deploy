@@ -91,7 +91,18 @@ echo $1
 loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 </code></pre>
 
-<h2>Hook vars</h2>
+<h2>Hook Functions</h2>
+
+<p>The following functions might be useful in your hooks.  For a list of all functions see <em>includes/function.sh</em>.</p>
+
+<ul>
+<li><code>hooks_empty_array_key</code></li>
+<li><code>hooks_empty_drupal_conf</code></li>
+</ul>
+
+<p>See example usage in <em>init/base/hooks/reset_files_post.sh.example</em>.</p>
+
+<h2>Hook Vars</h2>
 
 <ul>
 <li>Be sure to use <code>echo_green</code>, <code>echo_yello</code>, and <code>echo_red</code>.</li>
@@ -180,7 +191,7 @@ loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 <footer>
   <div class="pager"><a href="configuration.html" class="prev configuration">&laquo;Configuration Examples</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="README.html" class="next readme">Installation&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.15.27 &bull; Last Updated: Tue, 02 Apr 2019 17:24:41 -0700</p>
+    <p class="legaleeze center">Version: 0.15.28 &bull; Last Updated: Tue, 02 Apr 2019 17:50:21 -0700</p>
   </div>
 </footer>
 
