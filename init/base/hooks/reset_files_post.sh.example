@@ -6,7 +6,7 @@
 
 file="$4/install/default/settings.local.dev.php"
 hooks_empty_array_key $file 'password' || return 1
-hooks_empty_drupal_conf $file "reroute_email.settings'\]\['address" || return 1
+hooks_empty_drupal_conf $file "reroute_email.settings']['address" || return 1
 echo_green "└── Sensitive data removed from: ${file##*/}"
 return 0
 

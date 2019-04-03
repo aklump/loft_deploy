@@ -2106,10 +2106,12 @@ function generate_db_cnf() {
  #
 function hooks_empty_drupal_conf () {
     local file=$1
-    test -f $file || return 1
     local key=$2
-    sed -i '' "s/[\"']$key[\"'].*$/'$key'] = NULL;/g" $file || return 2
-    echo_green "├── $key removed."
+
+    test -f $file || return 1
+    local key_escaped="${key//\]\[/\\]\\[}"
+    sed -i '' "s/[\"']$key_escaped[\"'].*$/'$key_escaped'] = NULL;/g" $file || return 2
+    echo_green "├── \"$key\" removed."
     return 0
 }
 

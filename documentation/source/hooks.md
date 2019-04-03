@@ -61,7 +61,16 @@ You can add mysql commands against the local environment in a hook using `loft_d
     echo $1
     loft_deploy_mysql "DROP TABLE cache_admin_menu;"
 
-## Hook vars
+## Hook Functions
+
+The following functions might be useful in your hooks.  For a list of all functions see _includes/function.sh_.
+
+* `hooks_empty_array_key`
+* `hooks_empty_drupal_conf`
+
+See example usage in _init/base/hooks/reset_files_post.sh.example_.
+ 
+## Hook Vars
 
 * Be sure to use `echo_green`, `echo_yello`, and `echo_red`.
 * Always `return` 0, or a non-zero if the hook fails.
