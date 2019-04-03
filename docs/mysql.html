@@ -9,21 +9,19 @@
 
 <body class="page--mysql">
 <header>
-  <div class="pager">
-  <a href="motd.html" class="prev motd">&laquo;Motd</a>
-  <a href="index.html" class="index">Index</a>
-  <a href="overview.html" class="next overview">Overview&raquo;</a>
-</div>
-</header>
-
-  <div class="search__wrapper">
+  <div class="pager"><a href="motd.html" class="prev motd">&laquo;Motd</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="overview.html" class="next overview">Overview&raquo;</a></div></header>
+<section class="sub-header">
+  <div class="breadcrumbs"><a href="index.html">Index</a>
+         &raquo
+      </div>      <div class="search__wrapper">
   <form action="search--results.html">
     <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
   </form>
 </div>
+  </section>
 
-  <h1>MYSQL</h1>
-  <div class="breadcrumb"><a href="index.html">Index</a></div>
+
+<h1>MYSQL</h1>
 
 <section>
 
@@ -51,14 +49,9 @@
 </div>
 
 <footer>
-  <div class="pager">
-  <a href="motd.html" class="prev motd">&laquo;Motd</a>
-  <a href="index.html" class="index">Index</a>
-  <a href="overview.html" class="next overview">Overview&raquo;</a>
-</div>
-  
+  <div class="pager"><a href="motd.html" class="prev motd">&laquo;Motd</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="overview.html" class="next overview">Overview&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Sat, 16 Feb 2019 08:40:40 -0800</p>
+    <p class="legaleeze center">Version: 0.15.27 &bull; Last Updated: Tue, 02 Apr 2019 17:24:42 -0700</p>
   </div>
 </footer>
 
@@ -67,9 +60,9 @@
   <script src="search/tipuesearch_set.js"></script>
   <script src="search/tipuesearch.min.js"></script>
   <script>
-    $(document).ready(function () {
-      $('#tipue_search_input').tipuesearch();
-    });
+    $(document).ready(function() {
+      $('#tipue_search_input').tipuesearch()
+    })
   </script>
 <script src="js/core.js"></script>
 </body>
