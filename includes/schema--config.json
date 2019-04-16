@@ -95,39 +95,6 @@
         "remote": {
             "oneOf": [
                 {
-                    "$id": "To support SSH connections.",
-                    "type": "object",
-                    "properties": {
-                        "config": {
-                            "type": "string",
-                            "pattern": "\\/\\.loft_deploy$"
-                        },
-                        "script": {
-                            "type": "string",
-                            "pattern": "\\/loft_deploy$"
-                        },
-                        "user": {
-                            "$ref": "#/definitions/user"
-                        },
-                        "host": {
-                            "$ref": "#/definitions/host"
-                        },
-                        "port": {
-                            "type": "integer"
-                        },
-                        "password": {
-                            "type": "string"
-                        }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                        "config",
-                        "script",
-                        "user",
-                        "host"
-                    ]
-                },
-                {
                     "$id": "To support Pantheon servers.",
                     "type": "object",
                     "properties": {
@@ -158,6 +125,39 @@
                     "required": [
                         "files",
                         "pantheon"
+                    ]
+                },
+                {
+                    "$id": "To support SSH connections.",
+                    "type": "object",
+                    "properties": {
+                        "config": {
+                            "type": "string",
+                            "pattern": "\\/\\.loft_deploy$"
+                        },
+                        "script": {
+                            "type": "string",
+                            "pattern": "\\/loft_deploy(\\.sh)?$"
+                        },
+                        "user": {
+                            "$ref": "#/definitions/user"
+                        },
+                        "host": {
+                            "$ref": "#/definitions/host"
+                        },
+                        "port": {
+                            "type": "integer"
+                        },
+                        "password": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                        "config",
+                        "script",
+                        "user",
+                        "host"
                     ]
                 }
             ]
