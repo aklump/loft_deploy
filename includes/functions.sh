@@ -368,6 +368,7 @@ function load_config() {
  # Logs in to production server for dynamic variables
  #
 function load_production_config() {
+  echo_heading "Checking production config..."
   if [ "$production_server" ] && [ "$production_script" ]; then
     production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_files2; $production_script get local_files3; $production_script get local_db_port; $production_script get local_copy_source;"))
     production_db_host="${production[0]}";
@@ -393,6 +394,7 @@ function load_production_config() {
  # Logs in to staging for dynamic variables
  #
 function load_staging_config() {
+  echo_heading "Checking staging config..."
   if [ "$staging_server" ] && [ "$staging_script" ]; then
     staging=($(ssh $staging_server$staging_ssh_port "cd $staging_root && $staging_script get local_db_host; $staging_script get local_db_name; $staging_script get local_db_user; $staging_script get local_db_pass; $staging_script get local_db_dir; $staging_script get local_files; $staging_script get local_files2; $staging_script get local_files3; $staging_script get local_db_port; $staging_script get local_copy_source;"))
     staging_db_host="${staging[0]}";
@@ -629,10 +631,20 @@ function _get_path_with_user_and_host() {
  #
 function do_pull() {
     local status=true
-    load_production_config
+    case "$source_server" in
+    'prod')
+      load_production_config
+       ;;
+    'staging')
+      load_staging_config
+       ;;
+    esac
 
-    if [[ ! "$production_server" ]] && [[ ! "$terminus_site" ]]; then
-        fail_because "You cannot pull unless you define a production environment." && return 1
+    if [[ "$source_server" == "staging" ]]  && [[ ! "$staging_server" ]]; then
+      fail_because "You must define a Staging environment before pulling from it." && return 1
+    fi
+    if [[ "$source_server" == "prod"  ]] && [[ ! "$production_server$terminus_site" ]]; then
+      fail_because "You must define a Production environment before pulling from it." && return 1
     fi
 
     if [[ "$status" == true ]]; then handle_pre_hook fetch || status=false; fi
@@ -798,14 +810,18 @@ function fetch_files() {
                 fi
             fi
         ;;
-#        'staging' )
-#            result=true
-#            load_staging_config
-#            [ "$local_copy_staging_to" ] && _fetch_copy "Staging" "$staging_server" "$staging_copy_source" "$local_copy_staging_to" || echo_red "└── failed.")
-#            [ "$local_files" ] && _fetch_dir 'Staging:files' "$staging_server" "$staging_port" "$staging_files" "$local_files" "$config_dir/staging/files" "$ld_rsync_exclude_file" "$ld_rsync_ex" && echo_green "└── done." || echo_red "└── failed." && result=false ))
-#            [ "$local_files2" ] && _fetch_dir 'Staging:files2' "$staging_server" "$staging_port" "$staging_files2" "$local_files2" "$config_dir/staging/files2" "$ld_rsync_exclude_file2" "$ld_rsync_ex2" && echo_green "└── done." || echo_red "└── failed." && result=false ))
-#            [ "$local_files3" ] && _fetch_dir 'Staging:files3' "$staging_server" "$staging_port" "$staging_files3" "$local_files3" "$config_dir/staging/files3" "$ld_rsync_exclude_file3" "$ld_rsync_ex3" && echo_green "└── done." || echo_red "└── failed." && result=false ))
-#        ;;
+
+        'staging' )
+            status=true
+            load_staging_config
+            if [ "$local_copy_staging_to" ]; then
+                _fetch_copy "Staging" "$staging_server" "$staging_copy_source" "$local_copy_staging_to" || status=false
+            fi
+            if ! has_option ind; then
+                echo_warning "(When fetching files from staging, the --ind flag is assumed.)"
+                echo
+            fi
+        ;;
     esac
 
     [[ "$status" == true ]] && echo "$(date8601)" > "$config_dir/$source_server/cached_files.txt" && return 0
@@ -813,7 +829,7 @@ function fetch_files() {
 }
 
 ##
- # Handle the copy of a colon separted list of files from remote server to the config stage.
+ # Handle the copy of a colon separated list of files from remote server to the config stage.
  #
  # @param string $1
  #   The production file list separated by colons.
@@ -939,7 +955,7 @@ function reset_files() {
             _reset_copy "$local_copy_staging_to" || status=false
         fi
 
-        if ! has_option "ind"; then
+        if ! has_option "ind" && [[ "$source_server" == 'prod' ]]; then
             if [ "$status" == true ] && [ "$local_files" ]; then
                 _reset_dir "Files" "$config_dir/$source_server/files" "$local_files" "$ld_rsync_exclude_file" "$ld_rsync_ex" || status=false
                 if [[ "$status" == true ]]; then
@@ -974,7 +990,7 @@ function reset_files() {
 }
 
 ##
- # Copy files from the stage to the correct local location.
+ # Copy files from the staging to the correct local location.
  #
  # @param string $1
  #   The destination file list separated by colons.

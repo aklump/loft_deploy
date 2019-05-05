@@ -16,9 +16,9 @@ local:
     - install/default/settings.local.prod.php
     - private/default/secrets.prod.php
   copy_staging_to:
-    - install/default/.htaccess.stage
-    - install/default/settings.local.stage.php
-    - private/default/secrets.stage.php
+    - install/default/.htaccess.staging
+    - install/default/settings.local.staging.php
+    - private/default/secrets.staging.php
   files:
     - web/sites/default/files
     - private/default/files

@@ -17,6 +17,23 @@ commands:
         help: Configure the current directory as a development source.
   get:
     help: Print out an individual configuration value.
+  push:
+    help: Push assets to staging. Does not push individual files.
+    options:
+      f:
+        type: boolean
+        help: Push only files, skip the database.
+      d:
+        type: boolean
+        help: Push only database, ignoring files.
+      verbose:
+        type: boolean
+        aliases: [v]
+        help: Display verbose output.
+      yes:
+        type: boolean
+        aliases: [y]
+        help: Answer yes to all confirmations, bypassing user input.
   pull:
     help: Combine the fetch and reset commands in one step.
     arguments:
