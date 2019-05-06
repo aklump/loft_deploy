@@ -81,7 +81,6 @@ function on_clear_cache() {
     generate_db_cnf && succeed_because "$(echo_green "local.cnf")"
 }
 
-
 # Begin Cloudy Bootstrap
 s="${BASH_SOURCE[0]}";while [ -h "$s" ];do dir="$(cd -P "$(dirname "$s")" && pwd)";s="$(readlink "$s")";[[ $s != /* ]] && s="$dir/$s";done;r="$(cd -P "$(dirname "$s")" && pwd)";
 
@@ -98,10 +97,14 @@ _upsearch $(basename $config_dir)
 source "$r/cloudy/cloudy.sh"
 # End Cloudy Bootstrap
 
+# Do not move this, it must come after Bootstrap.
 function get_version() {
     local version=$(grep "version = " "$ROOT/web_package.info")
     echo ${version/version = / }
 }
+
+# Input validation.
+validate_input || exit_with_failure "Input validation failed."
 
 # Determine the version of php to use based on:
 # 1. The option --php
@@ -147,6 +150,7 @@ done
 ##
  # End Bootstrap
  #
+
 
 # The user's operation
 op=$(get_command)
