@@ -1480,27 +1480,6 @@ function complete() {
     return 0
 }
 
-##
- # Accept a y/n confirmation message or end
- #
- # @param string $1
- #   A question to ask ending with a '?' mark.  Leave blank for default.
- #
- # @return bool
- #   Sets the value of confirm_result
- #
-function confirm() {
-
- while true; do
-    read -r -n 1 -p "${1:-Continue?} [y/n]: " REPLY
-    case $REPLY in
-      [yY]) echo ; return 0 ;;
-      [nN]) echo ; return 1 ;;
-      *) printf " \033[31m %s \n\033[0m" "invalid input"
-    esac
-  done
-}
-
 show_switch_state='remote'
 function show_switch() {
     local title="Connecting to remote..."
