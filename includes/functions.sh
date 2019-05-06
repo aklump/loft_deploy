@@ -2036,6 +2036,9 @@ function _access_check() {
       'export')
         return 0
         ;;
+      'export-purge')
+        return 0
+        ;;
     esac
   elif [ "$local_role" == 'staging' ]; then
     case $1 in
@@ -2043,6 +2046,9 @@ function _access_check() {
         return 0
         ;;
       'export')
+        return 0
+        ;;
+      'export-purge')
         return 0
         ;;
       'import')

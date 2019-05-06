@@ -120,6 +120,20 @@ commands:
         help: Overwrite file, if it exists.
         type: boolean
         aliases: [f]
+  export-purge:
+    help: Purge (delete) database exports in the export directory older than N days.  Only files matching *.sql.gz or *.sql are considered.  This can be called from anywhere as it always acts on the export directory.
+    arguments:
+      days:
+        required: true
+        help: The age in days to keep.  Exports older than this will be deleted.
+    options:
+      yes:
+        type: boolean
+        aliases: [y]
+        help: Answer yes to all confirmations, bypassing user input.
+      dry-run:
+        type: boolean
+        help: List out files without the option of deleting.
   import:
     help: Empty your local database and import a database dump.
     arguments:

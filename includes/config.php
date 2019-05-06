@@ -215,7 +215,7 @@ try {
   exit(0);
 }
 catch (\Exception $exception) {
-  print Color::wrap('red', 'Configuration problem in: ' . $config_file->getBasename()) . PHP_EOL;
+  print Color::wrap('red', 'Configuration problem in: ' . $config_file->getPath()) . PHP_EOL;
   $error_items[] = $exception->getMessage();
   print Output::tree($error_items) . PHP_EOL;
   exit(1);

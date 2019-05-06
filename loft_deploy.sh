@@ -283,6 +283,43 @@ case $op in
     exit_with_failure 'Export failed.'
     ;;
 
+  'export-purge')
+    _current_db_paths
+    days=$(get_command_arg "days")
+    paths=($(find $current_db_dir/*.sql.gz -mtime +$days))
+    paths=("${paths[@]}" $(find $current_db_dir/*.sql -mtime +$days))
+    echo_title "Purge Export Files"
+    table_clear
+    table_add_row "Directory" "$current_db_dir"
+    table_add_row "Age in Days" "$days"
+    table_add_row "Total Found" "${#paths[@]}"
+    echo_table
+
+    list_clear
+    for path in "${paths[@]}"; do
+      if has_option "dry-run"; then
+        list_add_item "$(basename $path)"
+      else
+        if has_option "yes" || confirm "$LI $(basename $path) $(echo_red "Delete?")"; then
+          if rm "$path"; then
+            succeed_because "$(basename $path) deleted."
+          else
+            fail_because "Could not delete $path"
+          fi
+        else
+          echo_yellow_highlight "Skipped."
+        fi
+      fi
+    done
+
+    if has_option "dry-run"; then
+      echo_list
+    fi
+
+    has_failed && exit_with_failure
+    exit_with_success
+    ;;
+
   'fetch')
     suffix=''
     status=true
