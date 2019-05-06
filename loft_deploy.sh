@@ -289,6 +289,11 @@ case $op in
 
   'export-purge')
     _current_db_paths
+
+    if [ ! -d "$current_db_dir" ]; then
+      fail_because "$current_db_dir is not a directory" && exit_with_failure
+    fi
+
     days=$(get_command_arg "days")
     paths=($(find $current_db_dir/*.sql.gz -mtime +$days))
     paths=("${paths[@]}" $(find $current_db_dir/*.sql -mtime +$days))
