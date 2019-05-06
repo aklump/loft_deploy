@@ -1315,20 +1315,14 @@ function export_db() {
   if [ -f "$file" ] && [ "$2" != '-y' ]; then
     if ! has_option y; then
       confirm_result=false
-      if ! confirm "File $file exists, replace"; then
-        echo_red "Cancelled."
-        return 2
-      fi
+      confirm --danger "File $file exists, replace" || return 2
     fi
     rm $file
   fi
   if [ -f "$file_gz" ] && [ "$2" != '-y' ]; then
     if ! has_option y; then
       confirm_result=false
-      if ! confirm "File $file_gz exists, replace"; then
-        echo_red "Cancelled."
-        return 2
-      fi
+      confirm --danger "File $file_gz exists, replace" || return 2
     fi
     rm $file_gz
   fi
@@ -1340,7 +1334,7 @@ function export_db() {
     local_db_host="localhost"
   fi
 
-  ([[ "$3" ]] && echo $3) || echo "Exporting database..."
+  ([[ "$3" ]] && echo_heading $3) || echo_heading "Exporting database..."
 
   # Do we need to process a db_tables_no_data file?
   handle_sql_files
