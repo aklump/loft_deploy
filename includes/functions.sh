@@ -292,12 +292,6 @@ function load_config() {
   local_db_host='localhost'
   production_root=''
 
-  ld_mysql=$(type mysql >/dev/null 2>&1 && which mysql)
-  ld_mysqldump=$(type mysqldump >/dev/null 2>&1 && which mysqldump)
-  ld_gzip=$(type gzip >/dev/null 2>&1 && which gzip)
-  ld_gunzip=$(type gunzip >/dev/null 2>&1 && which gunzip)
-  ld_scp=$(type scp >/dev/null 2>&1 && which scp)
-
   # For Pantheon support we need to find terminus.
   ld_terminus="$config_dir/vendor/bin/terminus"
 

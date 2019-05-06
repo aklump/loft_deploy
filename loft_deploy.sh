@@ -103,15 +103,25 @@ function get_version() {
     echo ${version/version = / }
 }
 
+# Determine the version of php to use based on:
+# 1. The option --php
+# 2. ENV var LOFT_DEPLOY_PHP
+# 3. the system 'php'
+ld_php="/usr/bin/php"
 if [[ "$LOFT_DEPLOY_PHP" ]]; then
-    ld_php=$LOFT_DEPLOY_PHP
-else
-    ld_php=$(type php >/dev/null 2>&1 && which php)
+    ld_php="$LOFT_DEPLOY_PHP"
 fi
+[[ ! -x "$ld_php" ]] && fail_because "$ld_php is not a path to a valid PHP executable" && exit_with_failure
 
 ##
  # Bootstrap
  #
+eval $(get_config_as "ld_mysql" "bin.mysql" "/usr/bin/mysql")
+eval $(get_config_as "ld_mysqldump" "bin.mysqldump" "/usr/bin/mysqldump")
+eval $(get_config_as "ld_gzip" "bin.gzip" "/usr/bin/gzip")
+eval $(get_config_as "ld_gunzip" "bin.gunzip" "/usr/bin/gunzip")
+eval $(get_config_as "ld_scp" "bin.scp" "/usr/bin/scp")
+
 eval $(get_config "migration.title")
 eval $(get_config -a "migration.database")
 eval $(get_config_as -a "migration_files" "migration.files.0")
