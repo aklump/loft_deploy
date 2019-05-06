@@ -121,7 +121,9 @@ commands:
         type: boolean
         aliases: [f]
   export-purge:
-    help: Purge (delete) database exports in the export directory older than N days.  Only files matching *.sql.gz or *.sql are considered.  This can be called from anywhere as it always acts on the export directory.
+    aliases:
+      - purge
+    help: Purge (delete) database exports in the export directory older than N days.  Only files ending in .sql.gz or .sql are considered.  This can be called from anywhere as it always acts on the export directory.
     arguments:
       days:
         required: true
@@ -138,7 +140,7 @@ commands:
     help: Empty your local database and import a database dump.
     arguments:
       suffix:
-        help: If you used export with a suffix, you may provide only the suffix here, e.g. loft_deploy export rollback, then you can use loft_deploy import rollback.  You may also provide a complete path to an exact filename and it will be used.
+        help: If you used export with a suffix, you may provide only the suffix here, e.g. loft_deploy export rollback, then you can use loft_deploy import rollback.  You may also provide a complete path to an exact filename, or a basename in the database directory or the current directory.
     options:
       yes:
         type: boolean

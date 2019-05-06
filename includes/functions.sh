@@ -1314,21 +1314,22 @@ function export_db() {
 
   if [ -f "$file" ] && [ "$2" != '-y' ]; then
     if ! has_option y; then
-      confirm_result=false
       confirm --danger "File $file exists, replace" || return 2
+      echo
     fi
     rm $file
   fi
   if [ -f "$file_gz" ] && [ "$2" != '-y' ]; then
     if ! has_option y; then
-      confirm_result=false
       confirm --danger "File $file_gz exists, replace" || return 2
+      echo
     fi
     rm $file_gz
   fi
 
   if [ ! "$local_db_user" ] || [ ! "$local_db_pass" ] || [ ! "$local_db_name" ]; then
-    end "Bad config"
+    fail_because "Missing one or more of: local.user, local.password, local.name"
+    return 1
   fi
   if [ ! "$local_db_host" ]; then
     local_db_host="localhost"
@@ -1362,7 +1363,7 @@ function export_db() {
   fi
 
   # Keep this as a full path as it's easier to copy and paste for user.
-  [[ $status -eq 0 ]] && echo_green "└── Created file: ${file_gz}"
+  [[ $status -eq 0 ]] && succeed_because "Saved to: ${file_gz}"
 
   return $status
 }

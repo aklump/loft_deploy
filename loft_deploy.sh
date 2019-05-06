@@ -270,14 +270,14 @@ case $op in
   'configtest')
     [[ "$status" == true ]] && configtest || status=false
     handle_post_hook $op $status || status=false
-    [[ "$status" == true ]] && complete_elapsed 'Test complete.' && exit 0
+    [[ "$status" == true ]] && exit_with_success_elapsed 'Test complete.'
     exit_with_failure 'Test complete with failure(s).'
     ;;
 
   'import')
     [[ "$status" == true ]] && import_db ${SCRIPT_ARGS[1]} || status=false
     handle_post_hook $op $status || status=false
-    [[ "$status" == true ]] && complete_elapsed "Import complete." && exit 0
+    [[ "$status" == true ]] && exit_with_success_elapsed "Import complete."
     exit_with_failure "Import failed."
     ;;
 
@@ -286,7 +286,7 @@ case $op in
     has_option "time" && suffix="${suffix}-$(date8601 -c)"
     [[ "$status" == true ]] && export_db ${suffix#-} || status=false
     handle_post_hook $op $status || status=false
-    [[ "$status" == true ]] && complete_elapsed 'Export complete.' && exit 0
+    [[ "$status" == true ]] && exit_with_success_elapsed 'Export complete.'
     exit_with_failure 'Export failed.'
     ;;
 
