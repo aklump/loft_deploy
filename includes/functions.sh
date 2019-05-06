@@ -1384,13 +1384,23 @@ import_db_silent=false
 function import_db() {
   local filename_or_path=$1
 
+  echo_heading "Import New Database"
+
   if [[ ! "$filename_or_path" ]]; then
-    echo_red "Filename of db dump required." || return 1
+    fail_because  "Filename of db dump required." || return 1
   fi
 
   _current_db_paths $filename_or_path
+  # Determine all the possible locations.
 
-  declare -a local check=("$filename_or_path" "${current_db_dir}${current_db_filename}" "${current_db_dir}${current_db_filename}.gz")
+  declare -a local check=("$WDIR/$(basename $filename_or_path)")
+  if [ "$filename_or_path" != "$(basename "$filename_or_path")" ]; then
+    check=("$filename_or_path" "${check[@]}")
+  fi
+  if [ "${WDIR%/}" != "${current_db_dir%/}" ]; then
+    check=("${check[@]}" "${current_db_dir}$(basename $filename_or_path)")
+  fi
+  check=("${check[@]}" "${current_db_dir}${current_db_filename}" "${current_db_dir}${current_db_filename}.gz")
 
   local filepath=''
   for check_filepath in "${check[@]}"; do
@@ -1400,14 +1410,17 @@ function import_db() {
   done
 
   if [[ ! "$filepath" ]]; then
-    echo "File not found as one of:"
-    echo ${check[0]};
-    echo ${check[1]};
-    echo ${check[2]};
-    end
+    fail_because "File not found as one of:"
+    for path in ${check[@]} ; do
+      fail_because "$path"
+    done
+    return 1
   fi
 
-  has_option 'y' || [ $import_db_silent = true ] || confirm "You are about to `tty -s && tput setaf 3`OVERWRITE YOUR LOCAL DATABASE`tty -s && tput op`, are you sure" || return 2
+  echo "Data will be read from: $(dirname $filepath)/$(echo_yellow_highlight $(basename $filepath))"
+  echo
+
+  has_option 'y' || [ $import_db_silent = true ] || confirm --danger "You are about to overwrite your entire database. Are you sure?" || return 2
   echo "Importing data into $local_db_host:$local_db_name..."
   _drop_tables || return 1
 

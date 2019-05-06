@@ -300,7 +300,7 @@ case $op in
     days=$(get_command_arg "days")
     paths=($(find $current_db_dir/*.sql.gz -mtime +$days))
     paths=("${paths[@]}" $(find $current_db_dir/*.sql -mtime +$days))
-    echo_title "Purge Export Files"
+    echo_heading "Purge Export Files"
     table_clear
     table_add_row "Directory" "$current_db_dir"
     table_add_row "Age in Days" "$days"
