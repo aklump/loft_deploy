@@ -34,9 +34,7 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
     public function __construct(array $messages = [])
     {
         foreach ($messages as $key => $value) {
-            $value = $value instanceof Arrayable ? $value->toArray() : (array) $value;
-
-            $this->messages[$key] = array_unique($value);
+            $this->messages[$key] = (array) $value;
         }
     }
 
@@ -51,7 +49,7 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
     }
 
     /**
-     * Add a message to the message bag.
+     * Add a message to the bag.
      *
      * @param  string  $key
      * @param  string  $message
@@ -81,7 +79,7 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
     }
 
     /**
-     * Merge a new array of messages into the message bag.
+     * Merge a new array of messages into the bag.
      *
      * @param  \Illuminate\Contracts\Support\MessageProvider|array  $messages
      * @return $this
@@ -140,7 +138,7 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
     }
 
     /**
-     * Get the first message from the message bag for a given key.
+     * Get the first message from the bag for a given key.
      *
      * @param  string  $key
      * @param  string  $format
@@ -156,7 +154,7 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
     }
 
     /**
-     * Get all of the messages from the message bag for a given key.
+     * Get all of the messages from the bag for a given key.
      *
      * @param  string  $key
      * @param  string  $format
@@ -164,9 +162,9 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
      */
     public function get($key, $format = null)
     {
-        // If the message exists in the message bag, we will transform it and return
-        // the message. Otherwise, we will check if the key is implicit & collect
-        // all the messages that match the given key and output it as an array.
+        // If the message exists in the container, we will transform it and return
+        // the message. Otherwise, we'll check if the key is implicit & collect
+        // all the messages that match a given key and output it as an array.
         if (array_key_exists($key, $this->messages)) {
             return $this->transform(
                 $this->messages[$key], $this->checkFormat($format), $key
@@ -201,7 +199,7 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
     }
 
     /**
-     * Get all of the messages for every key in the message bag.
+     * Get all of the messages for every key in the bag.
      *
      * @param  string  $format
      * @return array
@@ -220,7 +218,7 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
     }
 
     /**
-     * Get all of the unique messages for every key in the message bag.
+     * Get all of the unique messages for every key in the bag.
      *
      * @param  string  $format
      * @return array
@@ -261,7 +259,7 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
     }
 
     /**
-     * Get the raw messages in the message bag.
+     * Get the raw messages in the container.
      *
      * @return array
      */
@@ -271,7 +269,7 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
     }
 
     /**
-     * Get the raw messages in the message bag.
+     * Get the raw messages in the container.
      *
      * @return array
      */
@@ -328,23 +326,13 @@ class MessageBag implements Arrayable, Countable, Jsonable, JsonSerializable, Me
      *
      * @return bool
      */
-    public function isNotEmpty()
-    {
-        return $this->any();
-    }
-
-    /**
-     * Determine if the message bag has any messages.
-     *
-     * @return bool
-     */
     public function any()
     {
         return $this->count() > 0;
     }
 
     /**
-     * Get the number of messages in the message bag.
+     * Get the number of messages in the container.
      *
      * @return int
      */

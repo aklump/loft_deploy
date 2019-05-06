@@ -104,13 +104,26 @@ class Bash {
    * This handles redirecting the error and capturing it as an exception.
    *
    * @param  string|array $command Arrays will be imploded with ' '.
+   * @param array $args
+   *   Only pass this if you have an array of arguments that you want to pass
+   *   to $command.  They will be wrapped with double quotes.  If you don't
+   *   want to wrap in double quotes, then just pass an array as $command.
    *
    * @return string  The output from the $command.
    * @throws AKlump\LoftLib\Component\Bash\FailedExecException if the command
    *   returns a non 0 status.  The exception code holds the return status.
    */
-  public static function exec($command) {
-    $command = is_array($command) ? implode(' ', $command) : $command;
+  public static function exec($command, $args = []) {
+
+    // Wrap all args in "".
+    $args = array_map(function ($item) {
+      return '"' . $item . '"';
+    }, $args);
+    if (is_string($command)) {
+      $command = [$command];
+    }
+    $command = array_merge($command, $args);
+    $command = implode(' ', $command);
     if (!strpos($command, ' 2>&1')) {
       $command .= ' 2>&1';
     }

@@ -115,10 +115,21 @@ function date8601() {
 # Returns 0 if all input is valid; 1 otherwise.
 function validate_input() {
     local command
+    local assume_command
+    local commands
 
     [[ "$CLOUDY_CONFIG_JSON" ]] || fail_because "$FUNCNAME() cannot be called if \$CLOUDY_CONFIG_JSON is empty."
 
     command=$(get_command)
+
+    # Insert an assume_command if that's configured.
+    eval $(get_config "assume_command")
+    if [[ "$assume_command" ]]; then
+      eval $(get_config_keys "commands")
+      array_has_value__array=(${commands[@]})
+      ! array_has_value "$command" && CLOUDY_ARGS=("$assume_command" "${CLOUDY_ARGS[@]}")
+      command=$(get_command)
+    fi
 
     # Assert only defined operations are valid.
     [[ "$command" ]] && _cloudy_validate_command $command && _cloudy_validate_command_arguments $command

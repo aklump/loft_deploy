@@ -101,6 +101,9 @@
         "default_command": {
             "$ref": "#/definitions/commandName"
         },
+        "assume_command": {
+            "$ref": "#/definitions/commandName"
+        },
         "logging": {
             "type": "object",
             "properties": {

@@ -31,8 +31,9 @@ try {
   if ($additional_config = $g->get($data, 'additional_config', [])) {
     $merge_config = array_merge($additional_config, $runtime);
   }
-  foreach ($merge_config as $basename) {
-    $path = strpos($basename, '/') !== 0 ? ROOT . "/$basename" : $basename;
+  foreach ($merge_config as $path) {
+    $path = preg_replace('/^~\//', $_SERVER['HOME'] . '/', $path);
+    $path = strpos($path, '/') !== 0 ? ROOT . "/$path" : $path;
     $additional_data = load_configuration_data($path);
     $data = merge_config($data, $additional_data);
   }

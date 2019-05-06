@@ -22,9 +22,9 @@
     "minimum-stability": "stable",
     "require": {
         "php": ">=5.6",
-        "illuminate\/support": "^5.4",
-        "ralouphie\/mimey": "^2.0",
+        "illuminate\/support": "5.4.36",
+        "ralouphie\/mimey": "~2.0",
         "aklump\/data": "^0.0.28"
     },
-    "version": "1.0.13"
+    "version": "1.0.20"
 }

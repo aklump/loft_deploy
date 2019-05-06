@@ -41,6 +41,15 @@ abstract class Dataset implements DatasetInterface {
    */
   const REGEX_DATEISO8601 = '/^\d{4}\-\d{2}\-\d{2}(?:\T| )\d{2}\:\d{2}.*/';
 
+  /**
+   * Same as REGEX_DATEISO8601 but for use in JSON schema files.
+   *
+   * This removes the forward slash as they are not used in JSON schema regex.
+   *
+   * @var string
+   */
+  const JS_REGEX_DATEISO8601 = '^\d{4}\-\d{2}\-\d{2}(?:\T| )\d{2}\:\d{2}.*';
+
   protected static $json_schemas;
 
   protected static $schemas;
@@ -704,7 +713,7 @@ abstract class Dataset implements DatasetInterface {
 
   protected static function getAllAliases($alias) {
     $schema = static::getSchema();
-    if (!array_key_exists($alias, $schema)) {
+    if (!static::ignoreKey($alias) && !array_key_exists($alias, $schema)) {
       throw new \InvalidArgumentException("\"$alias\" is not a valid schema key.");
     }
 

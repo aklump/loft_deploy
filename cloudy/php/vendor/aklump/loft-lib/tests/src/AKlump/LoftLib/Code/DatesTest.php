@@ -22,79 +22,6 @@ class DatesTest extends PhpUnitTestCase {
     $this->obj = new Dates($timezone, $now, $start, $interval, $defaultTime);
   }
 
-  public function _testZReturnsAnObjectInUtcIgnoringProvidedTimezoneWhenDateIsAnObject() {
-    $date = date_create('2017-10-23T10:40:36', new \DateTimeZone('PDT'));
-    $this->assertSame('Mon, 23 Oct 2017 17:40:36 +0000', Dates::z($date, 'Arctic/Longyearbyen')
-      ->format('r'));
-  }
-
-  public function _testZReturnsAnObjectInUtcNotInherentTimezoneWhenDateIsAnObject() {
-    $date = date_create('2017-10-23T10:40:36', new \DateTimeZone('PDT'));
-    $this->assertSame('Mon, 23 Oct 2017 17:40:36 +0000', Dates::z($date)
-      ->format('r'));
-  }
-
-  /**
-   * @dataProvider DataForTestNormalizeDateOnVariousInputsWorksAsExpectedProvider
-   */
-  public function _testNormalizeDateOnVariousInputsWorksAsExpected($control, $subject
-  ) {
-    $now = new \DateTime('2017-09-20', new \DateTimeZone('America/Los_Angeles'));
-
-    $this->objArgs[0] = 'PDT';
-    $this->objArgs[1] = $now->format(DATE_ISO8601);
-    $this->createObj();
-
-    $result = $this->obj->normalize($subject);
-
-    $this->assertSame($control, $result);
-  }
-
-  public function _testOReturnsAnObjectInProvidedTimezoneBecauseItWasNotInherentWhenDateIsAString() {
-    $this->assertSame('Mon, 23 Oct 2017 10:40:36 -0700', Dates::o('2017-10-23T10:40:36', 'PDT')
-      ->format('r'));
-  }
-
-  public function _testOReturnsAnObjectInInherentTimezoneNotTheDefaultWhenDateIsObject() {
-    $date = date_create('2017-10-23T10:40:36', new \DateTimeZone('PDT'));
-    $this->assertSame('Mon, 23 Oct 2017 10:40:36 -0700', Dates::o($date)
-      ->format('r'));
-  }
-
-  public function _testOReturnsAnObjectInInherentTimezoneNotTheProvidedWhenDateIsAnObject() {
-    $date = date_create('2017-10-23T10:40:36', new \DateTimeZone('PDT'));
-    $this->assertSame('Mon, 23 Oct 2017 10:40:36 -0700', Dates::o($date, 'UTC')
-      ->format('r'));
-  }
-
-  /**
-   * @expectedException InvalidArgumentException
-   */
-  public function testNormalizeDateTimeThrows() {
-    $this->obj->normalize(date_create());
-  }
-
-  /**
-   * @expectedException InvalidArgumentException
-   */
-  public function testNormalizeIntThrows() {
-    $this->obj->normalize(123);
-  }
-
-  /**
-   * @expectedException InvalidArgumentException
-   */
-  public function testNormalizeArrayThrows() {
-    $this->obj->normalize([]);
-  }
-
-  /**
-   * @expectedException InvalidArgumentException
-   */
-  public function testNormalizeABogusStringThrows() {
-    $this->obj->normalize('Some bogus string');
-  }
-
   /**
    * Provides data for testNormalizeDateOnVariousInputsWorksAsExpected.
    *
@@ -107,6 +34,7 @@ class DatesTest extends PhpUnitTestCase {
       ['2017-09-20T19:00:00'],
       'wednesday',
     );
+
 
     $tests[] = array(
       ['2017-09-24T19:00:00'],
@@ -149,12 +77,13 @@ class DatesTest extends PhpUnitTestCase {
     );
     $tests[] = array(
       ['2017-09-21T19:56:00'],
-      'Sep. 21, 2017 at 12:56 PDT',
+      'Sep. 21, 2017 at 12:56 America/Los_Angeles',
     );
     $tests[] = array(
       ['2017-09-02T12:13:00'],
       '9/2/17, 12:13Z',
     );
+
     $tests[] = array(
       ['2017-09-02T12:12:00'],
       '9/2/17, 12:12 UTC',
@@ -162,7 +91,7 @@ class DatesTest extends PhpUnitTestCase {
 
     $tests[] = array(
       ['2017-09-02T19:56:00'],
-      'Sep 02, 2017 at 12:56 PDT',
+      'Sep 02, 2017 at 12:56 America/Los_Angeles',
     );
 
     $tests[] = array(
@@ -175,18 +104,18 @@ class DatesTest extends PhpUnitTestCase {
     );
     $tests[] = array(
       ['2017-09-02T19:56:00'],
-      '9/2/17, 12:56 PDT',
+      '9/2/17, 12:56 America/Los_Angeles',
     );
 
     $tests[] = array(
       ['2017-09-02T19:56:00'],
-      'Sep 02, 2017, 12:56 PDT',
+      'Sep 02, 2017, 12:56 America/Los_Angeles',
     );
 
 
     $tests[] = array(
       ['2017-09-09T19:00:00'],
-      '12pm PDT on Sep 9',
+      '12pm America/Los_Angeles on Sep 9',
     );
 
 
@@ -260,6 +189,78 @@ class DatesTest extends PhpUnitTestCase {
 
 
     return $tests;
+  }
+
+  /**
+   * @dataProvider DataForTestNormalizeDateOnVariousInputsWorksAsExpectedProvider
+   */
+  public function testNormalizeDateOnVariousInputsWorksAsExpected($control, $subject) {
+    $now = new \DateTime('2017-09-20', new \DateTimeZone('America/Los_Angeles'));
+
+    $this->objArgs[0] = 'America/Los_Angeles';
+    $this->objArgs[1] = $now->format(DATE_ISO8601);
+    $this->createObj();
+
+    $result = $this->obj->normalize($subject);
+
+    $this->assertSame($control, $result);
+  }
+
+  public function testZReturnsAnObjectInUtcIgnoringProvidedTimezoneWhenDateIsAnObject() {
+    $date = date_create('2017-10-23T10:40:36', new \DateTimeZone('America/Los_Angeles'));
+    $this->assertSame('Mon, 23 Oct 2017 17:40:36 +0000', Dates::z($date, 'Arctic/Longyearbyen')
+      ->format('r'));
+  }
+
+  public function testZReturnsAnObjectInUtcNotInherentTimezoneWhenDateIsAnObject() {
+    $date = date_create('2017-10-23T10:40:36', new \DateTimeZone('America/Los_Angeles'));
+    $this->assertSame('Mon, 23 Oct 2017 17:40:36 +0000', Dates::z($date)
+      ->format('r'));
+  }
+
+  public function testOReturnsAnObjectInProvidedTimezoneBecauseItWasNotInherentWhenDateIsAString() {
+    $this->assertSame('Mon, 23 Oct 2017 10:40:36 -0700', Dates::o('2017-10-23T10:40:36', 'America/Los_Angeles')
+      ->format('r'));
+  }
+
+  public function testOReturnsAnObjectInInherentTimezoneNotTheDefaultWhenDateIsObject() {
+    $date = date_create('2017-10-23T10:40:36', new \DateTimeZone('America/Los_Angeles'));
+    $this->assertSame('Mon, 23 Oct 2017 10:40:36 -0700', Dates::o($date)
+      ->format('r'));
+  }
+
+  public function testOReturnsAnObjectInInherentTimezoneNotTheProvidedWhenDateIsAnObject() {
+    $date = date_create('2017-10-23T10:40:36', new \DateTimeZone('America/Los_Angeles'));
+    $this->assertSame('Mon, 23 Oct 2017 10:40:36 -0700', Dates::o($date, 'UTC')
+      ->format('r'));
+  }
+
+  /**
+   * @expectedException InvalidArgumentException
+   */
+  public function testNormalizeDateTimeThrows() {
+    $this->obj->normalize(date_create());
+  }
+
+  /**
+   * @expectedException InvalidArgumentException
+   */
+  public function testNormalizeIntThrows() {
+    $this->obj->normalize(123);
+  }
+
+  /**
+   * @expectedException InvalidArgumentException
+   */
+  public function testNormalizeArrayThrows() {
+    $this->obj->normalize([]);
+  }
+
+  /**
+   * @expectedException InvalidArgumentException
+   */
+  public function testNormalizeABogusStringThrows() {
+    $this->obj->normalize('Some bogus string');
   }
 
   public function testGetFullMonths() {

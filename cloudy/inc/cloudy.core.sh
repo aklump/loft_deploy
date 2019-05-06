@@ -217,6 +217,9 @@ function _cloudy_get_config() {
             if [[ "$mutator" == "_cloudy_realpath" ]]; then
                 local path=$(eval "echo \$${cached_var_name}___${key}")
 
+                # Replace ~ with the actual home page
+                path=$(echo ${path/\~/"$HOME"})
+
                 # On first pass we will try to expand globbed filenames, which will
                 # cause file_list to be longer than var_value.
                 file_list=()
@@ -259,6 +262,9 @@ function _cloudy_get_config() {
             # cause file_list to be longer than var_value.
             file_list=()
             for path in "${var_value[@]}"; do
+
+                # Replace ~ with the actual home page
+                path=$(echo ${path/\~/"$HOME"})
 
                 # Make relative to $ROOT.
                 [[ "$var_value" ]] && [[ "$var_value" != null ]] && [[ "${path:0:1}" != "/" ]] && path=${config_path_base}/${path}
@@ -812,11 +818,8 @@ if [ ! -f "$CACHED_CONFIG_FILEPATH" ]; then
         exit_with_failure "Cannot create cached config filepath."
     else
         source "$CACHED_CONFIG_FILEPATH" || exit_with_failure "Cannot load cached configuration."
-        eval $(get_config -a "additional_config")
-        config_files=("$CONFIG")
-        for file in "${additional_config[@]}"; do
-           [[ "$file" ]] && [ -f "$ROOT/$file" ] && config_files=("${config_files[@]}" "$ROOT/$file")
-        done
+        eval $(get_config_path -a "additional_config")
+        config_files=("$CONFIG" "${additional_config[@]}")
         [ ${#compile_config__runtime_files[@]} -gt 0 ] && config_files=("${config_files[@]}" "${compile_config__runtime_files[@]}")
         echo -n >  $CACHED_CONFIG_MTIME_FILEPATH
         for file in "${config_files[@]}"; do

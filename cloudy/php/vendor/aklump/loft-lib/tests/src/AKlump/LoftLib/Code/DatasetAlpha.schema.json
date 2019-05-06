@@ -17,7 +17,7 @@
         "mi:me:moi": {
             "default": "myself",
             "type": "string",
-            "pattern": "/^m.+/"
+            "pattern": "^m.+"
         },
         "pi": {
             "default": 3.14,
@@ -36,7 +36,7 @@
         "date": {
             "type": "string",
             "default": "static::defaultDate()",
-            "pattern": "static::REGEX_DATEISO8601"
+            "pattern": "static::JS_REGEX_DATEISO8601"
         },
         "boolean": {
             "type": "boolean"

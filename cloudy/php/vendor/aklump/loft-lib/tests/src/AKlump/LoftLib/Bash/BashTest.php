@@ -8,6 +8,11 @@ namespace AKlump\LoftLib\Bash;
 
 class BashTest extends \PHPUnit_Framework_TestCase {
 
+  public function testBashWithArgumentsWrapsWithDoubleQuotes() {
+    $result = Bash::exec('test() { echo $#; } && test', ['alpha', 'bravo charlie']);
+    $this->assertEquals(2, $result);
+  }
+
   public function testDefaults() {
     $obj = new Bash(array());
     $this->assertSame('theme', $obj->getParam('to', 'theme'));
