@@ -1,5 +1,8 @@
 title: "Loft Deploy"
 default_command: "help"
+additional_config:
+  # Per-user configuration should be placed in the home directory.
+  - ~/.loft_deploy/config.yml
 migration:
   # The maximum age in seconds of a database backup before a user is warned during migration.
   max_db_age: 1800
