@@ -88,11 +88,14 @@ INCLUDES="$r/includes"
 
 # Import functions
 source "$INCLUDES/functions.sh"
-
 # Holds the directory of the config file and is modified by load_config().
-# This has to happen before cloudy bootstrap.
-config_dir=${PWD}/.loft_deploy
-_upsearch $(basename $config_dir)
+# This has to happen before cloudy bootstrap.  Also _upsearch changes the PWD so
+# we have to capture it first as $WDIR and then cd back to it so that other
+# variables are calculated correctly inside of Cloudy.
+WDIR="$PWD"
+config_dir="$WDIR/.loft_deploy"
+_upsearch $(basename "$config_dir")
+cd "$WDIR"
 
 source "$r/cloudy/cloudy.sh"
 # End Cloudy Bootstrap
