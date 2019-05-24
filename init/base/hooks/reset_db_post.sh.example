@@ -8,9 +8,11 @@
 cd "$4/web" || return 1
 
 # Sanitize the database.
+drush sql-sanitize --sanitize-password=pass -y || return 1
+
+# Keep the UID name rename after sanitize!
 #D7 loft_deploy_mysql "UPDATE users SET name = 'admin' WHERE uid = 1;" || return 1
 #D8 loft_deploy_mysql "UPDATE users_field_data SET name = 'admin' WHERE uid = 1;" || return 1
-drush sql-sanitize --sanitize-password=pass -y || return 1
 echo_green "├── Database sanitized."
 
 # Disable production modules.
