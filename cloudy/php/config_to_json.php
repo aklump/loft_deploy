@@ -34,8 +34,15 @@ try {
   foreach ($merge_config as $path) {
     $path = preg_replace('/^~\//', $_SERVER['HOME'] . '/', $path);
     $path = strpos($path, '/') !== 0 ? ROOT . "/$path" : $path;
-    $additional_data = load_configuration_data($path);
-    $data = merge_config($data, $additional_data);
+    try {
+      $additional_data = load_configuration_data($path);
+      $data = merge_config($data, $additional_data);
+    }
+    catch (\Exception $exception) {
+      // Purposefully left blank because we will allow missing additional
+      // configuration files.  This will happen if the app allows for a home
+      // directory config file, this should be optional and not throw an error.
+    }
   }
 
   // Validate against cloudy_config.schema.json.
