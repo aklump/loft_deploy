@@ -4,24 +4,24 @@ local:
   basepath: /path/to/dev/branch/site
   role: dev
   copy_source:
-    - web/.htaccess
-    - web/sites/default/settings.local.php
-    - web/sites/default/settings.local.php
+    0: web/.htaccess
+    1: web/sites/default/settings.local.php
+    2: web/sites/default/settings.local.php
   copy_local_to:
-    - install/default/.htaccess.dev
-    - install/default/settings.local.dev.php
-    - private/default/secrets.dev.php
+    0: install/default/.htaccess.dev
+    1: install/default/settings.local.dev.php
+    2: private/default/secrets.dev.php
   copy_production_to:
-    - install/default/.htaccess.prod
-    - install/default/settings.local.prod.php
-    - private/default/secrets.prod.php
+    0: install/default/.htaccess.prod
+    1: install/default/settings.local.prod.php
+    2: private/default/secrets.prod.php
   copy_staging_to:
-    - install/default/.htaccess.staging
-    - install/default/settings.local.staging.php
-    - private/default/secrets.staging.php
+    0: install/default/.htaccess.staging
+    1: install/default/settings.local.staging.php
+    2: private/default/secrets.staging.php
   files:
-    - web/sites/default/files
-    - private/default/files
+    0: web/sites/default/files
+    1: private/default/files
   database:
     backups: private/default/db/purgeable
   drupal:
