@@ -446,40 +446,56 @@ function _do_migrate_push() {
     eval $(get_config_as "user" "migration.push_to.user")
 
     local destination=$(url_host $local_url)
+    local migrate_files=false
+    (! has_option "files" && ! has_option "database" || has_option "files") && migrate_files=true
+    local migrate_db=false
+    (! has_option "files" && ! has_option "database" || has_option "database") && migrate_db=true
 
     echo "# Manual Push Migration Instructions"
     echo "## $migration_title ---> $destination"
     echo
-    echo "1. SSH into the source server, _${migration_title}_."
-    echo "1. Push your database dump to destination server:"
-    echo
+    echo "1. SSH into the SOURCE server, _${migration_title}_."
 
-    filepath=$(_get_path_with_user_and_host $user $host ${config_dir}/migrate/db/$(basename $migration_database_path))
-    echo "        scp ${migration_database_path} ${filepath} || echo \"Failed to push database.\""
-    echo
-    echo "1. Push user files to destination server:"
-    echo
+    if [[ "$migrate_db" == true ]]; then
+      echo "1. Push your database dump to destination server:"
+      echo
 
-    if [[ "$local_files" ]]; then
-        filepath=$(_get_path_with_user_and_host $user $host $local_files)
-        echo "        rsync -azP --delete ${migration_files_path%/}/ ${filepath%/}/ || echo \"Failed to push files.\""
+      filepath=$(_get_path_with_user_and_host $user $host ${config_dir}/migrate/db/$(basename $migration_database_path))
+      echo "        scp ${migration_database_path} ${filepath} || echo \"Failed to push database.\""
+      echo
     fi
 
-    if [[ "$local_files2" ]]; then
-        filepath=$(_get_path_with_user_and_host $user $host $local_files2)
-        echo "        rsync -azP --delete ${migration_files2_path%/}/ ${filepath%/}/ || echo \"Failed to push files2.\""
+    if [[ "$migrate_files" == true ]]; then
+      echo "1. Push user files to destination server:"
+      echo
+
+      if [[ "$local_files" ]]; then
+          filepath=$(_get_path_with_user_and_host $user $host $local_files)
+          echo "        rsync -azP --delete ${migration_files_path%/}/ ${filepath%/}/ || echo \"Failed to push files.\""
+      fi
+
+      if [[ "$local_files2" ]]; then
+          filepath=$(_get_path_with_user_and_host $user $host $local_files2)
+          echo "        rsync -azP --delete ${migration_files2_path%/}/ ${filepath%/}/ || echo \"Failed to push files2.\""
+      fi
+
+      if [[ "$local_files3" ]]; then
+          filepath=$(_get_path_with_user_and_host $user $host $local_files3)
+          echo "        rsync -azP --delete ${migration_files3_path%/}/ ${filepath%/}/ || echo \"Failed to push files3.\""
+      fi
+
+      if [[ "$local_files" ]] || [[ "$local_files" ]] || [[ "$local_files" ]]; then
+        echo
+      fi
     fi
 
-    if [[ "$local_files3" ]]; then
-        filepath=$(_get_path_with_user_and_host $user $host $local_files3)
-        echo "        rsync -azP --delete ${migration_files3_path%/}/ ${filepath%/}/ || echo \"Failed to push files3.\""
+    if [[ "$migrate_db" == true ]]; then
+      echo "1. SSH in to DESTINATION server, _${destination}_."
+      echo "1. Import the database dump:"
+      echo
+      echo "        ldp import ${config_dir}/migrate/db/$(basename $migration_database_path)"
+      echo
     fi
-
-    echo
-    echo "1. SSH in to destination server, _${destination}_."
-    echo "1. Import the database dump:"
-    echo
-    echo "        ldp import ${config_dir}/migrate/db/$(basename $migration_database_path)"
 
     CLOUDY_EXIT_STATUS=0 && _cloudy_exit
 }
@@ -488,17 +504,30 @@ function _do_migrate_pull() {
 
     # -p will preserve the times so we can detect how old this database is.
     local db_command="scp -p"
+    local migrate_files=false
+    (! has_option "files" && ! has_option "database" || has_option "files") && migrate_files=true
+    local migrate_db=false
+    (! has_option "files" && ! has_option "database" || has_option "database") && migrate_db=true
 
     local files_command="$ld_remote_rsync_cmd --delete"
-    ! has_option 'v' && db_command="$db_command -q"
-    ! has_option 'v' && files_command="$files_command -q"
+    has_option 'q' && db_command="$db_command -q"
+    has_option 'q' && files_command="$files_command -q"
 
     echo_title "Migration from \"$migration_title\""
 
     local backup_message="Your database will be backed up, but your files will not."
     has_option "nobu" && backup_message=$(echo_red "Nothing will be backed up.")
 
-    if ! confirm "$(echo_yellow "Migration will overwrite your local files and database.")  ${backup_message}  Do you want to continue?"; then
+    confirmation_message="Migration will overwrite your local $(echo_yellow_highlight "files and database")."
+    if [[ "$migrate_files" == true ]] && [[ "$migrate_db" == false ]]; then
+      confirmation_message="Migration will overwrite your local $(echo_yellow_highlight "files only"); your database will not be touched."
+    fi
+    if  [[ "$migrate_files" == false ]] && [[ "$migrate_db" == true ]]; then
+      confirmation_message="Migration will overwrite your local $(echo_yellow_highlight "database only"); files will not be touched."
+    fi
+
+    echo "${confirmation_message}"
+    if ! confirm "${backup_message}  Do you want to continue?"; then
         fail_because "User cancelled."
         return 1
     fi
@@ -506,7 +535,7 @@ function _do_migrate_pull() {
     local base="$config_dir/migrate"
 
     # Database
-    if [[ "$migration_database_path" ]]; then
+    if [[ "$migrate_db" == true ]] && [[ "$migration_database_path" ]]; then
         echo_heading "Copying database from $migration_title..."
         [ -d "$base/db" ] || mkdir -p "$base/db"
         rm "$base/db/fetched.sql"* > /dev/null 2>&1
@@ -555,17 +584,12 @@ function _do_migrate_pull() {
     fi
 
     # Copy files
-    if [[ "$migration_files_path" ]]; then
+    if [[ "$migrate_files" == true ]] && [[ "$migration_files_path" ]]; then
         echo_heading "Copying files..."
         local from=$(_get_path_with_user_and_host $migration_files_user $migration_files_host $migration_files_path)
         local to="$local_files"
         if [[ "$to" ]]; then
-            if confirm "$to will be erased to match $migration_title"; then
-                $files_command $from/ $to/ || fail_because "Could not migrate files $(basename $from)"
-            else
-                fail_because "User cancelled files."
-                echo_red "$LIL Skipping files."
-            fi
+            $files_command $from/ $to/ || fail_because "Could not migrate files $(basename $from)"
         else
             fail_because "There is no local path to \"files\"."
         fi
@@ -573,17 +597,12 @@ function _do_migrate_pull() {
     fi
 
     # Copy files2
-    if [[ "$migration_files2_path" ]]; then
+    if [[ "$migrate_files" == true ]] && [[ "$migration_files2_path" ]]; then
         echo_heading "Copying files2..."
         local from=$(_get_path_with_user_and_host $migration_files2_user $migration_files2_host $migration_files2_path)
         local to="$local_files2"
         if [[ "$to" ]]; then
-            if confirm "$to will be erased to match $migration_title"; then
-                $files_command $from/ $to/ || fail_because "Could not migrate files2 $(basename $from)"
-            else
-                fail_because "User cancelled files2."
-                echo_red "$LIL Skipping files2."
-            fi
+            $files_command $from/ $to/ || fail_because "Could not migrate files2 $(basename $from)"
         else
             fail_because "There is no local path to \"files2\"."
         fi
@@ -591,17 +610,12 @@ function _do_migrate_pull() {
     fi
 
     # Copy files3
-    if [[ "$migration_files3_path" ]]; then
+    if [[ "$migrate_files" == true ]] && [[ "$migration_files3_path" ]]; then
         echo_heading "Copying files3..."
         local from=$(_get_path_with_user_and_host $migration_files3_user $migration_files3_host $migration_files3_path)
         local to="$local_files3"
         if [[ "$to" ]]; then
-            if confirm "$to will be erased to match $migration_title"; then
-                $files_command $from/ $to/ || fail_because "Could not migrate files2 $(basename $from)"
-            else
-                fail_because "User cancelled files3."
-                echo_red "$LIL Skipping files3."
-            fi
+            $files_command $from/ $to/ || fail_because "Could not migrate files2 $(basename $from)"
         else
             fail_because "There is no local path to \"files3\"."
         fi

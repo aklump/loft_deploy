@@ -178,10 +178,18 @@ commands:
   migrate:
     help: Migrate database and/or files from another server that does not have Loft Deploy installed.  See online help for more info.
     options:
-      verbose:
-        help: Display verbose output.
+      files:
         type: boolean
-        aliases: [v]
+        help: Migrate only files, skip the database.
+        aliases: [f]
+      database:
+        type: boolean
+        help: Migreate only database, ignoring files.
+        aliases: [d]
+      quiet:
+        help: Run in quiet mode, i.e., less verbose output.
+        type: boolean
+        aliases: [q]
       nobu:
         type: boolean
         help: Do not perform a backup of the local database.
