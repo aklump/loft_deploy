@@ -81,6 +81,14 @@ try {
             case 'backups':
               $data['local_db_dir'] = $local_path($v);
               break;
+
+            case 'password':
+              $data['local_db_pass'] = $v;
+              break;
+
+            default:
+              $data['local_db_' . $k] = $v;
+              break;
           }
         }
         break;
