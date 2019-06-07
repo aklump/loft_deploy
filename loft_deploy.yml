@@ -157,6 +157,7 @@ commands:
     help: Show configuration information.
   configtest:
     help: Run a suite of tests to reveal possible configuration issues.  This is a good step to take after all configuration changes, as it checks your connections to your remote servers, files, databases, etc.
+    aliases: [ct]
   ls:
     help: List the contents of various directories.  You may pass ls flags, e.g. loft_deploy ls -f -la
     options:
