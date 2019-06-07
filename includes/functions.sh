@@ -1556,6 +1556,28 @@ function configtest() {
   configtest_return=true;
   echo 'Testing...'
 
+  # Test for tools
+  if ! [ -e "$ld_mysql" ]; then
+    warning "\"$ld_mysql\" not found; you must set bin.mysql in your config file"
+    configtest_return=false
+  fi
+  if ! [ -e "$ld_mysqldump" ]; then
+    warning "\"$ld_mysqldump\" not found; you must set bin.mysql in your config file"
+    configtest_return=false
+  fi
+  if ! [ -e "$ld_gunzip" ]; then
+    warning "\"$ld_gunzip\" not found; you must set bin.mysql in your config file"
+    configtest_return=false
+  fi
+  if ! [ -e "$ld_gzip" ]; then
+    warning "\"$ld_gzip\" not found; you must set bin.mysql in your config file"
+    configtest_return=false
+  fi
+  if ! [ -e "$ld_scp" ]; then
+    warning "\"$ld_scp\" not found; you must set bin.mysql in your config file"
+    configtest_return=false
+  fi
+
   # Test for Pantheon support
   if  [ "$terminus_site" ]; then
 
