@@ -1703,7 +1703,7 @@ function configtest() {
   fi
 
   # Test if files directory is inside of the parent of the config dir
-  parent=$(dirname "$config_dir")
+  parent=$(realpath $(dirname "$config_dir"))
   if [[ "$local_files" != "$parent/"* ]]; then
     configtest_return=false
     warning 'Your local files directory is outside of your configuration root.'
