@@ -2153,10 +2153,13 @@ function hooks_empty_drupal_conf () {
     local file=$1
     local key=$2
 
-    test -f $file || return 1
+    if [[ ! -f "$file" ]]; then
+      echo_red "file \"$file\" does not exist."
+      return 1
+    fi
     local key_escaped="${key//\]\[/\\]\\[}"
     sed -i '' "s/[\"']$key_escaped[\"'].*$/'$key_escaped'] = NULL;/g" $file || return 2
-    echo_green "├── \"$key\" removed."
+    echo_green "├── \"$key\" set to NULL."
     return 0
 }
 
@@ -2183,6 +2186,7 @@ function hooks_empty_drupal_conf () {
  #
 function hooks_empty_array_key () {
     local file="$1"
+
     if [[ ! -f "$file" ]]; then
       echo_red "file \"$file\" does not exist."
       return 1
@@ -2200,8 +2204,38 @@ function hooks_empty_array_key () {
         ;;
     esac
 
-    [[ $success == true ]] &&  echo_green "├── $key removed." && return 0
+    [[ $success == true ]] &&  echo_green "├── $key set to NULL." && return 0
     return 2
+}
+
+# Empty the value of a PHP variable assignment
+#
+# $1 - string Path to the file.
+# $2 - string The name of the variable, omit the leading $, e.g, 'wgDBpassword'.
+#  Can also be a CSV list of variable names.
+#
+# You will use this to remove the password from a file containing something like
+# the following:
+# @code
+#   $wgDBpassword       = "some_secret_password";
+# @endcode
+#
+# ... becomes
+#
+# @code
+#   $wgDBpassword       = null;;
+# @endcode
+#
+# Returns 0 if .
+function hooks_set_vars_to_null () {
+  local file="$1"
+  local var_names="$2"
+
+  php "$ROOT/includes/scrubber.php" "$file" "$var_names" setVariableByName
+  local result=$?
+
+  [[ $result -eq 0 ]] &&  echo_green "├── $var_name set to NULL."
+  return $result
 }
 
 # Echo the public IP of the current server

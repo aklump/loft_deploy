@@ -1,3 +1,6 @@
+---
+id: hooks
+---
 # Hooks
 
 ## Quick Start
@@ -63,16 +66,13 @@ You can add mysql commands against the local environment in a hook using `loft_d
 
 ## Hook Functions
 
-The following functions might be useful in your hooks.  For a list of all functions see _includes/function.sh_.
+For a list of all functions available in your hooks see _includes/function.sh_.
 
-* `hooks_empty_array_key`
-* `hooks_empty_drupal_conf`
-
-See example usage in _init/base/hooks/reset_files_post.sh.example_.
+See also [sanitization using hooks](@sanitize).
  
 ## Hook Vars
 
-* Be sure to use `echo_green`, `echo_yello`, and `echo_red`.
+* Be sure to use `echo_green`, `echo_yellow`, and `echo_red`.
 * Always `return` 0, or a non-zero if the hook fails.
 * Never `exit` in a hook file.
 * Give feedback as to what happened, rather that what is about to happen, e.g. Files downloaded. instead of "Downloading files..." when echoing bullet points.
@@ -88,9 +88,9 @@ See example usage in _init/base/hooks/reset_files_post.sh.example_.
 | $1 | operation  | push |
 | $2 | production server | user@192.168.1.100  |
 | $3 | staging server | user@192.168.1.100 |
-| $4 | local basepath as defined in config.yml  |
+| $4 | local basepath as defined in _config.yml_  |
 | $5 | path to the copy stage directory |
-| $6 | source server | prod, staging |
+| $6 | role of the server being handled | prod, staging |
 | $7 | operation status | true or false |
 | ${13} | path to hooks dir | /do/re/hooks  |
 
