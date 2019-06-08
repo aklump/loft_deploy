@@ -2062,6 +2062,9 @@ function _access_check() {
       'export-purge')
         return 0
         ;;
+      'config-export')
+        return 0
+        ;;
     esac
   elif [ "$local_role" == 'staging' ]; then
     case $1 in
@@ -2081,6 +2084,9 @@ function _access_check() {
         return 0
         ;;
       'migrate')
+        return 0
+        ;;
+      'config-export')
         return 0
         ;;
     esac
@@ -2196,4 +2202,15 @@ function hooks_empty_array_key () {
 
     [[ $success == true ]] &&  echo_green "├── $key removed." && return 0
     return 2
+}
+
+# Echo the public IP of the current server
+#
+# Returns 0 if found 1 otherwise.
+function get_public_ip () {
+  local ip
+  ip=$(curl -s http://checkip.dyndns.org/ | sed 's/[a-zA-Z<>/ :]//g')
+  [[ "$ip" ]] && echo "$ip" && exit 0
+
+  exit 1
 }

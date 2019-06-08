@@ -1,5 +1,7 @@
 # Migrations
 
+**Do not use migrations if both servers have Loft Deploy installed.  In such case use a "prod/staging" relationship and move files using the `pull` command.**
+
 You may wish to migrate a database and/or files from another server, which does not have Loft Deploy installed.  As long as you can `scp` and `rsync` from this other server you can use this feature.  If you cannot then see the section _The Push Option_ for a method to push the files to your destination server.
 
 Migrations are unique in that they do implement the file excludes or the database filters.  In other words, all tables, and all files.

@@ -427,6 +427,21 @@ case $op in
     end
     ;;
 
+  'config-export')
+    echo_heading "Copy and paste the following:"
+    echo
+    if [[ "$local_role" == "prod" ]]; then
+      echo "production:"
+    elif [[ "$local_role" == "staging" ]]; then
+      echo "staging:"
+    fi
+    echo "  config: $config_dir"
+    echo "  script: $0"
+    echo "  user: $(whoami)"
+    echo "  host: $(get_public_ip)"
+    exit_with_success
+    ;;
+
 esac
 
-exit_with_failure "\"$op\" is an unknown operation; please try something else."
+exit_with_failure "\"$op\" is an unhandled operation."
