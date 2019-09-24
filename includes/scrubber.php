@@ -7,14 +7,20 @@
  * exit with 0 on success, >0 on failure.
  */
 
-$filepath = $argv[1];
-$var_names = explode(',', $argv[2]);
-$method = $argv[3];
+require_once __DIR__ . '/../vendor/autoload.php';
+
+$callback_args = $argv;
+array_shift($callback_args);
+$filepath = array_shift($callback_args);
+$var_names = explode(',', array_shift($callback_args));
+$method = array_pop($callback_args);
 
 try {
   $obj = new Scrubber($filepath);
   foreach ($var_names as $var_name) {
-    if (!$obj->{$method}($var_name)) {
+    $args = $callback_args;
+    array_unshift($args, $var_name);
+    if (!call_user_func_array([$obj, $method], $args)) {
       exit(1);
     }
   }
@@ -57,9 +63,71 @@ class Scrubber {
   public function setVariableByName($var_name) {
     $var_name = trim($var_name, '$ ');
     $regex = '(\$' . $var_name . ' +=).+$';
+    $before = $this->contents;
     $this->contents = preg_replace('/' . $regex . '/m', '$1 NULL;', $this->contents);
 
-    return !empty($this->contents);
+    return $before !== $this->contents;
+  }
+
+  /**
+   * Set a variable's value in a YAML file.
+   *
+   * @param string $var_name
+   *
+   * @return bool
+   */
+  public function yamlSetVar($var_name, $value = NULL) {
+    $value = empty($value) ? 'NULL' : $value;
+    $regex = '(^\s*' . preg_quote($var_name) . ') *:.+$';
+    $before = $this->contents;
+    $this->contents = preg_replace('/' . $regex . '/m', '$1: ' . $value, $this->contents);
+
+    return $before !== $this->contents;
+  }
+
+  /**
+   * Sets the value of a variable in .env files.
+   *
+   * @param string $var_name
+   * @param null $value
+   *
+   * @return bool
+   */
+  public function envSetVar($var_name, $value = NULL) {
+    $regex = '(' . $var_name . ').*?=.+$';
+    if (!empty($value) && preg_match('/[ =\']/', $value)) {
+      $value = addslashes($value);
+      $value = "'$value'";
+    }
+
+    $before = $this->contents;
+    $this->contents = preg_replace('/' . $regex . '/m', '$1=' . $value, $this->contents);
+
+    return $before !== $this->contents;
+  }
+
+  /**
+   * Removes the password from a standard URL.
+   *
+   * @param string $var_name
+   *   name of the variable.
+   *
+   * @return bool
+   */
+  public function envSanitizeUrl($var_name) {
+    $regex = '/(' . $var_name . ').*?=(["\']?)(.+?)["\']?$/m';
+    $before = $this->contents;
+    $this->contents = preg_replace_callback($regex, function ($value) {
+      $url = parse_url($value[3]);
+      $url['pass'] = 'PASSWORD';
+      $value[3] = http_build_url($url);
+
+      return $value[1] . '=' . $value[2] . $value[3] . $value[2];
+
+    }, $this->contents);
+
+    return $before !== $this->contents;
+
   }
 
   /**

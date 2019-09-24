@@ -77,6 +77,10 @@ commands:
         type: boolean
         aliases: [i]
         help: Only fetch the individual files as defined by copy_production_to, copy_staging_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you may pair it with -f to ignore the database, e.g. loft_deploy fetch -fi
+      yes:
+        type: boolean
+        aliases: [y]
+        help: Answer yes to all confirmations, bypassing user input.
   reset:
     help: Reset local with fetched assets.
     arguments:
@@ -120,6 +124,9 @@ commands:
         help: Overwrite file, if it exists.
         type: boolean
         aliases: [f]
+      dir:
+        help: An alternative directory for the export file to save to.
+        type: string
   export-purge:
     aliases:
       - purge

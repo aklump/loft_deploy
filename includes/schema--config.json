@@ -226,7 +226,7 @@
                                             "type": "string"
                                         },
                                         "port": {
-                                            "type": "string"
+                                            "type": "integer"
                                         },
                                         "user": {
                                             "type": "string"

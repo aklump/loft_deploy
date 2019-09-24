@@ -183,7 +183,7 @@ function handle_sql_files() {
 
   local sql_dir="$config_dir/sql"
 
-  # We have to clean this on out because it determins how the mysql
+  # We have to clean this on out because it determines how the mysql
   # is processed in the export function.
   local file=$(get_filename_db_tables_data)
   test -f "$file" && rm $file
@@ -1323,7 +1323,13 @@ function _current_db_paths() {
 function export_db() {
   _current_db_paths $1
 
-  file="$current_db_dir$current_db_filename"
+  # Allow modification of the output directory via --dir
+  if has_option "dir"; then
+    dir="$(get_option dir)"
+    [ -d $dir ] || exit_with_failure "The --dir option points to a non-existent directory \"$dir\"."
+    current_db_dir="$dir"
+  fi
+  file="${current_db_dir%/}/$current_db_filename"
   file_gz="$file.gz"
 
   if [ -f "$file" ] && [ "$2" != '-y' ]; then
@@ -1359,8 +1365,9 @@ function export_db() {
   data=$(get_sql_ready_db_tables_data)
   if [[ "$data" ]]; then
     echo_yellow "├── Omitting data from some tables..."
-    # @todo Why are there two dumps?
+    # Omit table content.
     $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name --no-data > "$file"
+    # Omit certain create tables.
     $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name $data --no-create-info >> "$file"
   else
     $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name -r "$file"
@@ -2194,6 +2201,7 @@ function hooks_empty_array_key () {
     local key=$2
     local success=false
     local extension=$(path_extension $file)
+    local before=$(cat $file)
 
     case $extension in
     php)
@@ -2204,8 +2212,27 @@ function hooks_empty_array_key () {
         ;;
     esac
 
+    [[ "$before" == "$(cat $file)" ]] && success=false
+
     [[ $success == true ]] &&  echo_green "├── $key set to NULL." && return 0
     return 2
+}
+
+function hooks_yaml_set_var () {
+  local file="$1"
+  local var_names_csv="$2"
+  local value="$3"
+
+  if [[ ! -f "$file" ]]; then
+    echo_red "file \"$file\" does not exist."
+    return 1
+  fi
+
+  php "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" "$value" yamlSetVar
+  local result=$?
+
+  [[ $result -eq 0 ]] &&  echo_green "├── $var_names_csv set to NULL."
+  return $result
 }
 
 # Empty the value of a PHP variable assignment
@@ -2229,12 +2256,50 @@ function hooks_empty_array_key () {
 # Returns 0 if .
 function hooks_set_vars_to_null () {
   local file="$1"
-  local var_names="$2"
+  local var_names_csv="$2"
 
-  php "$ROOT/includes/scrubber.php" "$file" "$var_names" setVariableByName
+  if [[ ! -f "$file" ]]; then
+    echo_red "file \"$file\" does not exist."
+    return 1
+  fi
+
+  php "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" setVariableByName
   local result=$?
 
-  [[ $result -eq 0 ]] &&  echo_green "├── $var_name set to NULL."
+  [[ $result -eq 0 ]] &&  echo_green "├── $var_names_csv set to NULL."
+  return $result
+}
+
+# Replace the password in a standard URL with PASSWORD.
+#
+# Returns 0 if a change was made in the file.
+function hooks_env_sanitize_url () {
+  local file="$1"
+  local var_names_csv="$2"
+  php "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" envSanitizeUrl
+  local result=$?
+
+  [[ $result -eq 0 ]] &&  echo_green "├── Password(s) in $var_names_csv have been masked."
+  return $result
+}
+
+# Set the value of variable in .env file.
+#
+# $1 - string file
+# $2 - string var_names_csv
+# $1 - string value (optional) Omit to set to "".
+#
+# Returns 0 if a change was made in the file.
+function hooks_env_set_var () {
+  local file="$1"
+  local var_names_csv="$2"
+  local value="$3"
+
+  php "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" "$value" envSetVar
+  local result=$?
+  [[ "$value" ]] || value="''"
+
+  [[ $result -eq 0 ]] &&  echo_green "├── $var_names_csv set to: $value."
   return $result
 }
 

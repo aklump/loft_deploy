@@ -4,14 +4,32 @@
 # This file shows how to remove sensitive info from files.
 #
 
-file="$5/1~settings.local.$6.php"
-
-# Remove $database['password'].
-hooks_empty_array_key $file 'password' || return 1
-
-# Empty out some $conf values, which are sensitive.
-hooks_empty_drupal_conf $file 'mailchimp_api_key' || return 1
-
+file="$5/1~.env.$6"
+hooks_env_set_var $file "MAILCHIMP_API_KEY"
+hooks_env_sanitize_url $file "DATABASE_URL"
 echo_green "└── Sensitive data removed from: ${file##*/}"
+
+#
+# Production only.
+#
+if [[ "$6" == "prod" ]]; then
+
+  file="$5/13~website_backup.local.$6.yml"
+  hooks_yaml_set_var $file "aws_access_key_id,aws_secret_access_key,password" || return 1
+  echo_green "└── Sensitive data removed from: ${file##*/}"
+
+fi
+
+#
+# Staging only.
+#
+if [[ "$6" == "staging" ]]; then
+
+  file="$5/5~post_commit.local.$6.yml"
+  hooks_yaml_set_var $file 'url_secret' || return 1
+  echo_green "└── Sensitive data removed from: ${file##*/}"
+
+fi
+
 return 0
 
