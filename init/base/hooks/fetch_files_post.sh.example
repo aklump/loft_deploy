@@ -4,19 +4,25 @@
 # This file shows how to remove sensitive info from files.
 #
 
+list_clear
 file="$5/1~.env.$6"
 hooks_env_set_var $file "MAILCHIMP_API_KEY"
 hooks_env_sanitize_url $file "DATABASE_URL"
-echo_green "└── Sensitive data removed from: ${file##*/}"
+list_add_item "Sensitive data removed from: ${file##*/}"
+echo_green_list
+echo
 
 #
 # Production only.
 #
 if [[ "$6" == "prod" ]]; then
 
+  list_clear
   file="$5/13~website_backup.local.$6.yml"
   hooks_yaml_set_var $file "aws_access_key_id,aws_secret_access_key,password" || return 1
-  echo_green "└── Sensitive data removed from: ${file##*/}"
+  list_add_item "Sensitive data removed from: ${file##*/}"
+  echo_green_list
+  echo
 
 fi
 
@@ -25,9 +31,12 @@ fi
 #
 if [[ "$6" == "staging" ]]; then
 
+  list_clear
   file="$5/5~post_commit.local.$6.yml"
   hooks_yaml_set_var $file 'url_secret' || return 1
-  echo_green "└── Sensitive data removed from: ${file##*/}"
+  list_add_item "Sensitive data removed from: ${file##*/}"
+  echo_green_list
+  echo
 
 fi
 

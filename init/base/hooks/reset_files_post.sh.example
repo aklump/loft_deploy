@@ -4,9 +4,13 @@
 # This file shows how to remove sensitive info from files.
 #
 
+list_clear
 file="$4/install/default/settings.local.dev.php"
 hooks_empty_array_key $file 'password' || return 1
 hooks_empty_drupal_conf $file "reroute_email.settings']['address" || return 1
-echo_green "└── Sensitive data removed from: ${file##*/}"
+list_add_item "Sensitive data removed from: ${file##*/}"
+echo_green_list
+echo
+
 return 0
 
