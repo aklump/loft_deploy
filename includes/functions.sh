@@ -698,7 +698,7 @@ function _fetch_db_production() {
   # Cleanup local
   rm $config_dir/prod/db/fetched.sql* >/dev/null 2>&1
 
-  echo "Exporting production db..."
+  echo_heading "Exporting production db..."
   local _export_suffix='fetch_db'
   local _local_file="$config_dir/prod/db/fetched.sql.gz"
 
@@ -1149,7 +1149,8 @@ function reset_db() {
     echo
     echo "$(tty -s && tput setaf 3)End result: Your local database will match the $source database.$(tty -s && tput op)"
   fi
-  [[ "$parse_args__options__y" ]] || has_option 'y' || confirm "Are you sure you want to $(tty -s && tput setaf 3)OVERWRITE YOUR LOCAL DB$(tty -s && tput op) with the $source db" || return 2
+  [[ "$parse_args__options__y" ]] || has_option 'y' || confirm --danger "Overwrite your local database with $source" || return 2
+  echo
 
   local fetched_db_dump=($(find $config_dir/$source/db -name fetched.sql*))
 
