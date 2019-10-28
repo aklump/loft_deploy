@@ -1063,7 +1063,7 @@ function _reset_local_copy() {
   local to=''
   local output=''
 
-  has_option 'y' || confirm --caution "Reset local individual files, are you sure?" || return 2
+  has_option 'y' || confirm --danger "Overwrite local individual files, are you sure?" || return 2
 
   echo "Copying individual local files..."
   for from in "${source[@]}"; do
@@ -1123,7 +1123,7 @@ function _reset_dir() {
 
   # Have to exclude here because there might be some lingering files in the cache
   # say, if the exclude file was edited after an earlier sync. 2015-10-20T12:41, aklump
-  has_option 'y' || confirm --danger "Reset local \"$title\", are you sure?" || return 2
+  has_option 'y' || confirm --danger "Overwrite local \"$title\" with $source_server, are you sure?" || return 2
 
   has_option v && echo $cmd && echo
   eval $cmd
