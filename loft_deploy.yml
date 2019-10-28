@@ -3,6 +3,11 @@ default_command: "help"
 additional_config:
   # Per-user configuration should be placed in the home directory.
   - ~/.loft_deploy/config.yml
+
+# True if staging can use pull against prod, false to prevent stage from pulling
+# from prod.
+stage_may_pull_prod: true
+
 migration:
   # The maximum age in seconds of a database backup before a user is warned during migration.
   max_db_age: 1800

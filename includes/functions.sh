@@ -2093,6 +2093,11 @@ function _access_check() {
     'config-export')
       return 0
       ;;
+    'pull')
+      eval $(get_config stage_may_pull_prod false)
+      [[ "$stage_may_pull_prod" == true ]] && return 0
+      return 1
+      ;;
     esac
   elif [ "$local_role" == 'dev' ]; then
     return 0
