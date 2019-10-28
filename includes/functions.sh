@@ -289,7 +289,9 @@ function load_config() {
   fi
 
   # these are defaults
+  # https://dev.mysql.com/doc/refman/8.0/en/mysql-options.html
   local_db_host='localhost'
+  local_db_protocol='socket'
   production_root=''
 
   # For Pantheon support we need to find terminus.
@@ -2134,6 +2136,7 @@ function generate_db_cnf() {
   [ "$local_db_port" ] && echo "port=\"$local_db_port\"" >>$local_db_cnf
   echo "user=\"$local_db_user\"" >>$local_db_cnf
   echo "password=\"$local_db_pass\"" >>$local_db_cnf
+  echo "protocol=\"$local_db_protocol\"" >>$local_db_cnf
   chmod 400 $local_db_cnf
 }
 

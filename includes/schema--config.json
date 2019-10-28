@@ -236,6 +236,15 @@
                                         },
                                         "name": {
                                             "type": "string"
+                                        },
+                                        "protocol": {
+                                            "type": "string",
+                                            "enum": [
+                                                "tcp",
+                                                "socket",
+                                                "pipe",
+                                                "memory"
+                                            ]
                                         }
                                     },
                                     "required": [
