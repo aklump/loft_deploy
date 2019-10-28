@@ -2154,7 +2154,7 @@ function hooks_empty_drupal_conf() {
   local key=$2
 
   if [[ ! -f "$file" ]]; then
-    echo_red "file \"$file\" does not exist."
+    echo_red "├── file \"$file\" does not exist."
     return 1
   fi
   local key_escaped="${key//\]\[/\\]\\[}"
@@ -2188,7 +2188,7 @@ function hooks_empty_array_key() {
   local file="$1"
 
   if [[ ! -f "$file" ]]; then
-    echo_red "file \"$file\" does not exist."
+    echo_red "├── file \"$file\" does not exist."
     return 1
   fi
   local key=$2
@@ -2217,14 +2217,18 @@ function hooks_yaml_set_var() {
   local value="$3"
 
   if [[ ! -f "$file" ]]; then
-    echo_red "file \"$file\" does not exist."
+    echo_red "├── file \"$file\" does not exist."
     return 1
   fi
 
   php "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" "$value" yamlSetVar
   local result=$?
 
-  [[ $result -eq 0 ]] &&  echo_green "├── $var_names_csv set to NULL."
+  if [[ $result -ne 0 ]]; then
+    echo_red "├── hooks_yaml_set_var failed setting \"$var_names_csv\" on $(basename $file)"
+    return 1
+  fi
+  echo_green "├── $var_names_csv set to NULL."
   return $result
 }
 
@@ -2252,7 +2256,7 @@ function hooks_set_vars_to_null() {
   local var_names_csv="$2"
 
   if [[ ! -f "$file" ]]; then
-    echo_red "file \"$file\" does not exist."
+    echo_red "├── file \"$file\" does not exist."
     return 1
   fi
 
@@ -2292,7 +2296,11 @@ function hooks_env_set_var() {
   local result=$?
   [[ "$value" ]] || value="''"
 
-  [[ $result -eq 0 ]] &&  echo_green "├── $var_names_csv set to: $value."
+  if [[ $result -ne 0 ]]; then
+    echo_red "├── hooks_env_set_var failed setting \"$var_names_csv\" on $(basename $file)"
+    return 1
+  fi
+  echo_green "├── $var_names_csv set to: $value."
   return $result
 }
 
