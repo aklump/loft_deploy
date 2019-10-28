@@ -20,9 +20,7 @@ try {
   foreach ($var_names as $var_name) {
     $args = $callback_args;
     array_unshift($args, $var_name);
-    if (!call_user_func_array([$obj, $method], $args)) {
-      exit(1);
-    }
+    call_user_func_array([$obj, $method], $args);
   }
   if (!$obj->save()) {
     exit(2);
@@ -63,10 +61,7 @@ class Scrubber {
   public function setVariableByName($var_name) {
     $var_name = trim($var_name, '$ ');
     $regex = '(\$' . $var_name . ' +=).+$';
-    $before = $this->contents;
     $this->contents = preg_replace('/' . $regex . '/m', '$1 NULL;', $this->contents);
-
-    return $before !== $this->contents;
   }
 
   /**
@@ -79,10 +74,7 @@ class Scrubber {
   public function yamlSetVar($var_name, $value = NULL) {
     $value = empty($value) ? 'NULL' : $value;
     $regex = '(^\s*' . preg_quote($var_name) . ') *:.+$';
-    $before = $this->contents;
     $this->contents = preg_replace('/' . $regex . '/m', '$1: ' . $value, $this->contents);
-
-    return $before !== $this->contents;
   }
 
   /**
@@ -100,10 +92,7 @@ class Scrubber {
       $value = "'$value'";
     }
 
-    $before = $this->contents;
     $this->contents = preg_replace('/' . $regex . '/m', '$1=' . $value, $this->contents);
-
-    return $before !== $this->contents;
   }
 
   /**
@@ -125,9 +114,6 @@ class Scrubber {
       return $value[1] . '=' . $value[2] . $value[3] . $value[2];
 
     }, $this->contents);
-
-    return $before !== $this->contents;
-
   }
 
   /**
@@ -137,12 +123,12 @@ class Scrubber {
    *   This will return false if the processed contents are the same as the
    *   unprocessed contents.
    */
-  public function save() {
-    if ($this->unprocessed === $this->contents) {
+  public function save(): bool {
+    if (NULL === $this->contents) {
       return FALSE;
     }
 
-    return file_put_contents($this->filepath, $this->contents);
+    return (bool) file_put_contents($this->filepath, $this->contents);
   }
 
 }
