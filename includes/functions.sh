@@ -317,7 +317,9 @@ function load_config() {
 
   test -f "$config_dir/cache/config.yml.sh" && source "$config_dir/cache/config.yml.sh"
 
-  # Handle reading the drupal settings file if asked
+  #
+  # Database is coming in from Drupal settings file.
+  #
   if [ "$local_drupal_settings" ]; then
     read -r -a settings <<<$(php "$ROOT/includes/drupal_settings.php" "$local_drupal_root" "$local_drupal_settings" "$local_drupal_db")
     local_db_host=${settings[0]}
@@ -325,10 +327,25 @@ function load_config() {
     local_db_user=${settings[2]}
     local_db_pass=${settings[3]}
     local_db_port=${settings[4]}
+
+  #
+  # Database in using a Lando connection.
+  #
+  elif [[ "$local_lando_db_service" ]]; then
+    lando=$(php "$ROOT/includes/lando_settings.php" "$ld_lando" "$local_lando_db_service" "$($ld_lando info --format=json)")
+    [[ $? -ne 0 ]] && exit_with_failure "Failed to deterine the Lando database configuration".
+    read -r -a settings <<<"$lando"
+    local_db_protocol='tcp'
+    local_db_host=${settings[0]}
+    local_db_name=${settings[1]}
+    local_db_user=${settings[2]}
+    local_db_pass=${settings[3]}
+    local_db_port=${settings[4]}
   fi
 
-  # Define and ensure the mysql credentials.
-  test -f $local_db_cnf || generate_db_cnf
+  # Generate the mysql credentials file.
+  # Todo this should not generate every time.
+  generate_db_cnf
 
   if [[ ! $production_scp ]]; then
     production_scp=$production_root
@@ -1846,11 +1863,15 @@ function show_info() {
     table_add_row "DRUPAL_ROOT" "$local_drupal_root"
     table_add_row "Drupal" "$local_drupal_settings"
   fi
+  if [ "$local_lando_db_service" ]; then
+    table_add_row "Lando DB Service" "$local_lando_db_service"
+  fi
 
   table_add_row "DB Host" "$local_db_host"
   table_add_row "DB Name" "$local_db_name"
   table_add_row "DB User" "$local_db_user"
-  [ "$local_db_port" ] && table_add_row "DB Port" "$local_db_port"
+  [[ "$local_db_port" ]] && table_add_row "DB Port" "$local_db_port"
+  table_add_row "DB Protocol" "$local_db_protocol"
   table_add_row "DB Dumps" "$local_db_dir"
 
   table_add_row "Files" "$local_files"

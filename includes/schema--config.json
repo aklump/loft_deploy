@@ -259,6 +259,29 @@
                             "required": [
                                 "database"
                             ]
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "database": {
+                                    "type": "object",
+                                    "properties": {
+                                        "backups": {
+                                            "type": "string"
+                                        },
+                                        "lando": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "backups",
+                                        "lando"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "database"
+                            ]
                         }
                     ]
                 }
@@ -330,6 +353,10 @@
                     "pattern": "^/"
                 },
                 "scp": {
+                    "type": "string",
+                    "pattern": "^/"
+                },
+                "lando": {
                     "type": "string",
                     "pattern": "^/"
                 }

@@ -86,6 +86,10 @@ try {
               $data['local_db_pass'] = $v;
               break;
 
+            case 'lando':
+              $data['local_lando_db_service'] = $v;
+              break;
+
             default:
               $data['local_db_' . $k] = $v;
               break;

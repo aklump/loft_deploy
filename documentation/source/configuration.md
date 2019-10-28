@@ -3,7 +3,7 @@
 * See _includes/schema--config.json_ for more info.
 * NOTE: If you change DB credentials in the settings file, you will need to call `ldp clearcache` manually.
 
-## Example A
+## Example A: Drupal Database
 
 * Local site using Drupal _settings.php_ for database connection.
 * Production and staging connection via SSH
@@ -43,7 +43,7 @@
 | database | See below |
 | drupal | See below |
 
-## Example B
+## Example B: Any MySQL DB
 
 * Local site using explicit mysql credentials.
 * No production nor staging servers.
@@ -63,6 +63,16 @@
             password: "PASSWORD-GOES-HERE"
             name: DB_NAME
 
+## Example C: Lando
+
+When using Lando you need to indicate the name of the Lando database service.
+
+        local:
+          ...
+          database:
+            backups: private/default/db/purgeable
+            lando: database
+            
 ## Indicating Specific Binaries
 
 You can define the binaries (except PHP) to use; more info in _includes/schema--config.json_.

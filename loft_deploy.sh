@@ -127,6 +127,7 @@ eval $(get_config_as "ld_mysqldump" "bin.mysqldump" "/usr/bin/mysqldump")
 eval $(get_config_as "ld_gzip" "bin.gzip" "/usr/bin/gzip")
 eval $(get_config_as "ld_gunzip" "bin.gunzip" "/usr/bin/gunzip")
 eval $(get_config_as "ld_scp" "bin.scp" "/usr/bin/scp")
+eval $(get_config_as "ld_lando" "bin.lando" "/usr/local/bin/lando")
 
 eval $(get_config "migration.title")
 eval $(get_config -a "migration.database")
