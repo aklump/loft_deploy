@@ -25,17 +25,22 @@ switch ($function) {
     break;
 }
 
-$result = call_user_func_array($function, $args);
+try {
+  $result = call_user_func_array($function, $args);
 
-if (is_array($result)) {
-  $var_service = new Configuration('cloudy_config');
-  $eval_code = $var_service->getVarEvalCode($var_name, $result);
-  echo $eval_code;
-  exit(0);
+  if (is_array($result)) {
+    $var_service = new Configuration('cloudy_config');
+    $eval_code = $var_service->getVarEvalCode($var_name, $result);
+    echo $eval_code;
+    exit(0);
+  }
+  else {
+    echo $result;
+    exit(0);
+  }
 }
-else {
-  echo $result;
-  exit(0);
+catch (\Exception $exception) {
+  exit(1);
 }
 
 

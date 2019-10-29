@@ -11,14 +11,7 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * Root directory of the Cloudy instance script.
  */
-define('ROOT', $argv[1]);
-
-/**
- * The root directory of Cloudy core.
- *
- * @var string
- */
-define('CLOUDY_ROOT', realpath(__DIR__ . '/../'));
+define('ROOT', getenv('ROOT'));
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -40,6 +33,26 @@ function array_sort_by_item_length() {
   });
 
   return array_values($stack);
+}
+
+/**
+ * Convert a YAML string to a JSON string.
+ *
+ * @return string
+ *   The valid YAML string.
+ *
+ * @throws \RuntimeException
+ *   If the YAML cannot be parsed.
+ */
+function yaml_to_json($yaml) {
+  if (empty($yaml)) {
+    return '{}';
+  }
+  elseif (!($data = Yaml::parse($yaml))) {
+    throw new \RuntimeException("Unable to parse invalid YAML string.");
+  }
+
+  return json_encode($data);
 }
 
 /**
@@ -131,4 +144,41 @@ function get_config_cache_id() {
   $paths = func_get_arg(0);
 
   return md5(str_replace("\n", ':', $paths));
+}
+
+/**
+ * Expand a path based on $config_path_base.
+ *
+ * This function can handle:
+ * - paths that begin with ~/
+ * - paths that contain the glob character '*'
+ * - absolute paths
+ * - relative paths to `config_path_base`
+ *
+ * @param string $path
+ *   The path to expand.
+ *
+ * @return array
+ *   The expanded paths.  This will have multiple items when using globbing.
+ */
+function _cloudy_realpath($path) {
+  global $_config_path_base;
+
+  if (!empty($_SERVER['HOME'])) {
+    $path = preg_replace('/^~\//', rtrim($_SERVER['HOME'], '/') . '/', $path);
+  }
+  if (!empty($path) && substr($path, 0, 1) !== '/') {
+    $path = ROOT . '/' . "$_config_path_base/$path";
+  }
+  if (strstr($path, '*')) {
+    $paths = glob($path);
+  }
+  else {
+    $paths = [$path];
+  }
+  $paths = array_map(function ($item) {
+    return is_file($item) ? realpath($item) : $item;
+  }, $paths);
+
+  return $paths;
 }

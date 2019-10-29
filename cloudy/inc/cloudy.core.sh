@@ -71,6 +71,7 @@ function _cloudy_auto_purge_config() {
       purge=true
       write_log_dev_warning "Configuration purge detected due to \$cloudy_development_do_not_cache_config = true."
     elif _cloudy_has_config_changed; then
+      purge=true
       write_log_notice "Config changes detected in \"$(basename $_cloudy_has_config_changed__file)\"."
     else
       local cache_id
@@ -103,9 +104,17 @@ function _cloudy_auto_purge_config() {
  #
 function _cloudy_has_config_changed() {
     local cache_mtime_filepath="${CACHED_CONFIG_FILEPATH/.sh/.modified.txt}"
-    [ -f "$CACHED_CONFIG_MTIME_FILEPATH" ] || touch "$CACHED_CONFIG_MTIME_FILEPATH" || fail
+
+    # When configuration gets cached, this file gets created with a line for
+    # every config file that was used to generate the cached config.  Each line
+    # is the absolute filepath and the modified timestamp of that file.  We will
+    # compare the timestamp of the cached version against the actual version
+    # here and thus know if the configuration changed and needs to be recached.
+    [[ -f "$CACHED_CONFIG_MTIME_FILEPATH" ]] || touch "$CACHED_CONFIG_MTIME_FILEPATH" || fail
     while read path cached_mtime; do
-        [[ $(_cloudy_get_file_mtime $path) -gt "$cached_mtime" ]] && _cloudy_has_config_changed__file="$path" && return 0
+
+      # If we discover a newer file in this step, then the config has changed.
+      [[ $(_cloudy_get_file_mtime $path) -gt "$cached_mtime" ]] && _cloudy_has_config_changed__file="$path" && return 0
     done < $cache_mtime_filepath
     return 1
 }
@@ -147,7 +156,7 @@ function _cloudy_get_config() {
     local file_list
     local config_path_base=${cloudy_config___config_path_base}
 
-    # Determine if we have an absolute relative path base or, if not prepent $ROOT.
+    # Determine if we have an absolute relative path base or, if not prepend $ROOT.
     [[ "${config_path_base:0:1}" != '/' ]] && config_path_base="${ROOT}/$config_path_base"
 
     # Remove trailing / for proper path construction.
@@ -746,11 +755,11 @@ function _cloudy_validate_input_against_schema() {
 #
 
 # Expand some vars from our controlling script.
-CONFIG="$(cd $(dirname "$r/$CONFIG") && pwd)/$(basename $CONFIG)"
+export CONFIG="$(cd $(dirname "$r/$CONFIG") && pwd)/$(basename $CONFIG)"
 if [[ "$LOGFILE" ]]; then
     log_dir="$(dirname $r/$LOGFILE)"
     mkdir -p "$log_dir" || exit_with_failure "Please manually create \"$log_dir\" and ensure it is writeable."
-    LOGFILE="$(cd $log_dir && pwd)/$(basename $LOGFILE)"
+    export LOGFILE="$(cd $log_dir && pwd)/$(basename $LOGFILE)"
 fi
 
 _cloudy_define_cloudy_vars
@@ -793,26 +802,26 @@ config_cache_id=$(php $CLOUDY_ROOT/php/helpers.php get_config_cache_id "$ROOT\n$
 _cloudy_auto_purge_config
 
 # Generate the cached configuration file.
-if [ ! -f "$CACHED_CONFIG_JSON_FILEPATH" ]; then
+if [[ ! -f "$CACHED_CONFIG_JSON_FILEPATH" ]]; then
     # Normalize the config file to JSON.
-    CLOUDY_CONFIG_JSON="$(php $CLOUDY_ROOT/php/config_to_json.php "$ROOT" "$CLOUDY_ROOT/cloudy_config.schema.json" "$CONFIG" "$cloudy_development_skip_config_validation" "$compile_config__runtime_files")"
+    CLOUDY_CONFIG_JSON="$(php "$CLOUDY_ROOT/php/config_to_json.php" "$CLOUDY_ROOT/cloudy_config.schema.json" "$CONFIG" "$cloudy_development_skip_config_validation" "$compile_config__runtime_files")"
     json_result=$?
     [[ "$CLOUDY_CONFIG_JSON" ]] || exit_with_failure "\$CLOUDY_CONFIG_JSON cannot be empty in $(basename $BASH_SOURCE) $LINENO"
-    [ $json_result -ne 0 ] && exit_with_failure "$CLOUDY_CONFIG_JSON"
+    [[ $json_result -ne 0 ]] && exit_with_failure "$CLOUDY_CONFIG_JSON"
     echo "$CLOUDY_CONFIG_JSON" > "$CACHED_CONFIG_JSON_FILEPATH"
 else
-    CLOUDY_CONFIG_JSON=$(cat $CACHED_CONFIG_JSON_FILEPATH)
+    CLOUDY_CONFIG_JSON="$(cat "$CACHED_CONFIG_JSON_FILEPATH")"
 fi
 
 # Generate the cached configuration file.
-if [ ! -f "$CACHED_CONFIG_FILEPATH" ]; then
-    touch $CACHED_CONFIG_FILEPATH || exit_with_failure  "Unable to write cache file: $CACHED_CONFIG_FILEPATH"
+if [[ ! -f "$CACHED_CONFIG_FILEPATH" ]]; then
+    touch "$CACHED_CONFIG_FILEPATH" || exit_with_failure  "Unable to write cache file: $CACHED_CONFIG_FILEPATH"
 
     [[ "$cloudy_development_skip_config_validation" == true ]] && write_log_dev_warning "Configuration validation is disabled due to \$cloudy_development_skip_config_validation == true."
 
     # Convert the JSON to bash config.
     php "$CLOUDY_ROOT/php/json_to_bash.php" "$ROOT" "cloudy_config" "$CLOUDY_CONFIG_JSON" > "$CACHED_CONFIG_FILEPATH"
-    if [ $? -ne 0 ]; then
+    if [[ $? -ne 0 ]]; then
         compiled=$(cat  "$CACHED_CONFIG_FILEPATH")
         fail_because "$(IFS="|"; read file reason <<< "$compiled"; echo "$reason")"
         exit_with_failure "Cannot create cached config filepath."
@@ -820,12 +829,18 @@ if [ ! -f "$CACHED_CONFIG_FILEPATH" ]; then
         source "$CACHED_CONFIG_FILEPATH" || exit_with_failure "Cannot load cached configuration."
         eval $(get_config_path -a "additional_config")
         config_files=("$CONFIG" "${additional_config[@]}")
-        [ ${#compile_config__runtime_files[@]} -gt 0 ] && config_files=("${config_files[@]}" "${compile_config__runtime_files[@]}")
-        echo -n >  $CACHED_CONFIG_MTIME_FILEPATH
+        [[ ${#compile_config__runtime_files[@]} -gt 0 ]] && config_files=("${config_files[@]}" "${compile_config__runtime_files[@]}")
+        echo -n >  "$CACHED_CONFIG_MTIME_FILEPATH"
         for file in "${config_files[@]}"; do
-            [[ "$file" ]] && [ -f "$file" ] && echo "$(realpath "$file") $(_cloudy_get_file_mtime $file)" >> "$CACHED_CONFIG_MTIME_FILEPATH"
+          if [[ "$file" ]]; then
+            if [[ ! -f "$file" ]]; then
+              write_log_error "Missing configuration file path: \"$file\"."
+            else
+              echo "$(realpath "$file") $(_cloudy_get_file_mtime "$file")" >> "$CACHED_CONFIG_MTIME_FILEPATH"
+            fi
+          fi
         done
-        echo $config_cache_id > $CACHED_CONFIG_HASH_FILEPATH
+        echo $config_cache_id > "$CACHED_CONFIG_HASH_FILEPATH"
 
         write_log_notice "$(basename $CONFIG) configuration compiled to $CACHED_CONFIG_FILEPATH."
     fi
@@ -837,6 +852,10 @@ source "$CACHED_CONFIG_FILEPATH" || exit_with_failure "Cannot load cached config
 #
 # End caching setup
 #
+
+eval $(get_config config_path_base)
+APP_ROOT="$(realpath $ROOT/$config_path_base)"
+
 eval $(get_config -a additional_bootstrap)
 if [[ "$additional_bootstrap" != null ]]; then
     for include in "${additional_bootstrap[@]}"; do

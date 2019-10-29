@@ -438,11 +438,6 @@ function has_command_args() {
     return 1
 }
 
-##
-
- #
-
-
 # Return a operation argument by zero-based index key.
 #
 # $1 - int The index of the argument
@@ -538,6 +533,8 @@ function get_config_keys_as() {
 
 # Echo eval code for paths of a configuration item.
 #
+# Relative paths are made absolute using $APP_ROOT.
+#
 # $1 - The path to the config item, e.g. "files.private"
 # -a - If you are expecting an array
 #
@@ -554,7 +551,10 @@ function get_config_path() {
 
 # Echo eval code for paths of a configuration item using custom var.
 #
-# $1 - The path to the config item, e.g. "files.private"
+# Relative paths are made absolute using $APP_ROOT.
+#
+# $1 - The variable name to assign the value to.
+# $2 - The path to the config item, e.g. "files.private"
 # -a - If you are expecting an array
 #
 # Returns 0 on success.
@@ -645,6 +645,15 @@ function echo_warning() {
 # Returns nothing.
 function echo_green() {
     _cloudy_echo_color 32 "$1" 0
+}
+
+# Echo a string with a green background.
+#
+# $1 - The string to echo.
+#
+# Returns nothing.
+function echo_green_highlight() {
+  _cloudy_echo_color 37 "$1" 1 42
 }
 
 # Echo a string with yellow text.
@@ -936,6 +945,11 @@ function exit_with_cache_clear() {
 function exit_with_help() {
     local help_command=$(_cloudy_get_master_command "$1")
 
+    ## Print out the version string only.
+    if has_option "version"; then
+      echo $(get_version) && exit_with_success_code_only
+    fi
+
     # Focused help_command, show info about single command.
     if [[ "$help_command" ]]; then
         _cloudy_validate_command $help_command || exit_with_failure "No help for that!"
@@ -1042,7 +1056,6 @@ function exit_with_failure_if_config_is_not_path() {
         variable="$parse_args__options__as"
     fi
 
-    local code=$(echo_blue "eval \$(get_config_path \"$variable\")")
     local config_name=$(echo_blue "$config_path")
     local config_value="$(eval "echo \$$variable")"
 
@@ -1055,7 +1068,7 @@ function exit_with_failure_if_config_is_not_path() {
 }
 
 ##
- # Checks for a non-empty variable in memory or exist with failure.
+ # Checks for a non-empty variable in memory or exit with failure.
  #
  # Asks the user to add to their configuration filepath.
  #
@@ -1065,19 +1078,32 @@ function exit_with_failure_if_config_is_not_path() {
  #   If the configuration has been renamed, send the memory var name --as=varname.
  #
 function exit_with_failure_if_empty_config() {
+    local variable=$1
+
     parse_args "$@"
     if [[ "$parse_args__options__status" ]]; then
       CLOUDY_EXIT_STATUS=$parse_args__options__status
     fi
-    local variable=${1//./_}
+
+    local code
+    local value
+    local error
+
     if [[ "$parse_args__options__as" ]]; then
-        variable="$parse_args__options__as"
+      code="eval \$(get_config_as \"$parse_args__options__as\" \"$variable\")"
+      error="\"$variable\" as \"$parse_args__options__as\""
+      value="$(eval "echo \$$parse_args__options__as")"
+    else
+      code="eval \$(get_config \"$variable\")"
+      error="\"$variable\""
+      value="$(eval "echo \$${variable//./_}")"
     fi
 
-    local code=$(echo_blue "eval \$(get_config_path \"$variable\")")
-    local config_name=$(echo_blue "$variable")
+    if [[ ! "$value" ]]; then
+      write_log_error "Missing configuration value.  Trying to use $error. Has it been set in config? Is it being read into memory? e.g. $code"
+      exit_with_failure "Failed due to missing configuration; please add \"$variable\"."
+    fi
 
-    [[ ! "$(eval "echo \$$variable")" ]] && exit_with_failure "Failed due to missing configuration; please add $config_name $(echo_red "to your configuration in $CONFIG.  Also, make sure it is being read into memory with") $code"
     return 0
 }
 
@@ -1303,7 +1329,7 @@ function path_relative_to_root() {
 
 # Resolve a path to an absolute link; if already absolute, do nothing.
 #
-# $1 - The direname to use if $2 is not absolute
+# $1 - The dirname to use if $2 is not absolute
 # $2 - The path to make absolute if not starting with /
 #
 # Returns nothing
@@ -1318,6 +1344,19 @@ function path_resolve() {
     echo "$(cd $(dirname $path) && pwd)/$(basename $path)"
 }
 
+
+# Echo a relative path by removing a leading directory(ies).
+#
+# $1 - The dirname to remove from the left of $2
+# $2 - The path to make relative by removing $1, if possible.
+#
+function path_unresolve() {
+  local dirname="${1%/}"
+  local path="$2"
+
+  echo ${path#$dirname/}
+}
+
 # Determine if a path is absolute (begins with /) or not.
 #
 # $1 - The filepath to check
@@ -1329,6 +1368,14 @@ function path_is_absolute() {
     [[ "${path:0:1}" == '/' ]]
 }
 
+# Echo the size of a file.
+#
+# $1 - The path to the file.
+function path_filesize() {
+  local path="$1"
+
+  echo $(du -hs "$path" | cut -f1)
+}
 
 # Echo the last modified time of a file.
 #
@@ -1358,7 +1405,11 @@ function path_filename() {
 function path_extension() {
     local path=$1
 
-    echo "${path##*.}"
+    local extension="${path##*.}"
+    if [[ "$extension" == "$path" ]]; then
+      extension=""
+    fi
+    echo "$extension"
 }
 
 ##
@@ -1375,9 +1426,10 @@ fi
 #
 # If you do not provide $1 then a new temporary directory is created each time
 # you call tempdir.  If you do provide $1 and call tempdir more than once with
-# the same value for $1, the same directory will be returned each time--a
-# shared directory within the system's temporary filesystem with the name
-# passed as $1.
+# the same value for $1, the same directory will be returned each time--a shared
+# directory within the system's temporary filesystem with the name passed as $1.
+# It is a common pattern to pass $CLOUDY_NAME as the argument as this will
+# create a folder based on the name of your script.
 #
 # $1 - string An optional directory name to use.
 #
@@ -1625,9 +1677,67 @@ function echo_table() {
     _cloudy_echo_aligned_columns --lpad=1 --top="-" --lborder="|" --mborder="|" --rborder="|"
 }
 
+# Empties the YAML string from earlier builds, making ready anew.
+#
+# Returns 0.
+function yaml_clear() {
+  yaml_content=''
+  return 0
+}
+
+# Add a line to our YAML data.
+#
+# $1 - string
+#   A complete line with proper indents.
+#
+# Returns 0.
+function yaml_add_line() {
+  local line="$1"
+
+  if [[ ! "$yaml_content" ]]; then
+    yaml_content=$(printf '%s\n' "$line")
+  else
+    yaml_content=$(printf '%s\n' "$yaml_content" "$line")
+  fi
+
+  return 0
+}
+
+yaml_content=''
+# Sets the value of the YAML string.
+#
+# You can use this to convert YAML to JSON:
+#   yaml_set "$yaml"
+#   json=$(yaml_get_json)
+#
+# $1 - string
+#   The YAML value to set.
+#
+# Returns 0
+function yaml_set() {
+  yaml_content="$1"
+  return 0
+}
+
+# Echos the YAML string as YAML.
+#
+# Returns 0
+function yaml_get() {
+  echo "$yaml_content"
+}
+
+# Echos the YAML string as JSON.
+#
+# Returns 0
+function yaml_get_json() {
+  local yaml="$1"
+
+  echo $(php "$CLOUDY_ROOT/php/helpers.php" "yaml_to_json" "$yaml_content")
+}
+
 #
 # End Public API
 #
 
 # Begin Cloudy Core Bootstrap
-SCRIPT="$s";ROOT="$r";WDIR="$PWD";s="${BASH_SOURCE[0]}";while [ -h "$s" ];do dir="$(cd -P "$(dirname "$s")" && pwd)";s="$(readlink "$s")";[[ $s != /* ]] && s="$dir/$s";done;CLOUDY_ROOT="$(cd -P "$(dirname "$s")" && pwd)";source "$CLOUDY_ROOT/inc/cloudy.core.sh" || exit_with_failure "Missing cloudy/inc/cloudy.core.sh"
+export SCRIPT="$s";export CLOUDY_NAME="$(path_filename $SCRIPT)";export ROOT="$r";export WDIR="$PWD";s="${BASH_SOURCE[0]}";while [ -h "$s" ];do dir="$(cd -P "$(dirname "$s")" && pwd)";s="$(readlink "$s")";[[ $s != /* ]] && s="$dir/$s";done;export CLOUDY_ROOT="$(cd -P "$(dirname "$s")" && pwd)";source "$CLOUDY_ROOT/inc/cloudy.core.sh" || exit_with_failure "Missing cloudy/inc/cloudy.core.sh"
