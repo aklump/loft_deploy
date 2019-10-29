@@ -9,7 +9,7 @@ additional_config:
 
 # True if staging can use pull against prod, false to prevent stage from pulling
 # from prod.
-stage_may_pull_prod: true
+stage_may_pull_prod: false
 
 migration:
   # The maximum age in seconds of a database backup before a user is warned during migration.
