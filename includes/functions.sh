@@ -72,9 +72,9 @@ function _mysql_staging() {
 }
 
 function _mysql_local() {
-  cmd="$ld_mysql --defaults-file=$local_db_cnf $local_db_name"
-  if [ "$1" ]; then
-    echo "$1"
+  cmd="$ld_mysql --defaults-file="$local_db_cnf" "$local_db_name""
+  if [[ "$1" ]]; then
+    echo_yellow_highlight "$1"
     cmd="$cmd --execute=\"$1\""
   fi
   eval $cmd
