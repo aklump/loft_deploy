@@ -11,3 +11,5 @@ If you application is inside a Lando container you will need to set it up correc
 
         bin:
           lando: /path/to/lando
+
+1. Be sure to update any hooks that use `drush` to `lando drush`.

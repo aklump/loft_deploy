@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Using Lando</title>
+  <link href="search/tipuesearch.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+
+<body class="page--lando">
+<header>
+  <div class="pager"><a href="user_files.html" class="prev user_files">&laquo;User (non-versioned) files component</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="index.html" class="next index">Index&raquo;</a></div></header>
+<section class="sub-header">
+  <div class="breadcrumbs"><a href="index.html">Index</a>
+         &raquo
+      </div>      <div class="search__wrapper">
+  <form action="search--results.html">
+    <input type="text" class="search-input" name="q" id="tipue_search_input" autocomplete="off" required>
+  </form>
+</div>
+  </section>
+
+
+<h1>Using Lando</h1>
+
+<section>
+
+<p>If you application is inside a Lando container you will need to set it up correctly.</p>
+
+<ol>
+<li><p>Configure the Database</p>
+
+<pre><code>database:
+  lando: database
+</code></pre></li>
+<li><p>Optionally, override the default <code>lando</code> script.</p>
+
+<pre><code>bin:
+  lando: /path/to/lando
+</code></pre></li>
+</ol>
+</section>
+
+<div class="search__results">
+  <div id="tipue_search_content"></div>
+</div>
+
+<footer>
+  <div class="pager"><a href="user_files.html" class="prev user_files">&laquo;User (non-versioned) files component</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="index.html" class="next index">Index&raquo;</a></div>  
+  <div id="footer-legaleeze">
+    <p class="legaleeze center">Version: 0.15.39 &bull; Last Updated: Mon, 28 Oct 2019 16:57:02 -0700</p>
+  </div>
+</footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <script src="search/tipuesearch_content.js"></script>
+  <script src="search/tipuesearch_set.js"></script>
+  <script src="search/tipuesearch.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      $('#tipue_search_input').tipuesearch()
+    })
+  </script>
+<script src="js/core.js"></script>
+</body>
+</html>
+
