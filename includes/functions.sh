@@ -1340,6 +1340,9 @@ function _current_db_paths() {
 #
 function export_db() {
   _current_db_paths $1
+  local title="$3"
+
+  [[ "$3" ]] || title="Exporting database..."
 
   # Allow modification of the output directory via --dir
   if has_option "dir"; then
@@ -1373,7 +1376,7 @@ function export_db() {
     local_db_host="localhost"
   fi
 
-  ([[ "$3" ]] && echo_heading $3) || echo_heading "Exporting database..."
+  echo_heading "$title"
 
   # Do we need to process a db_tables_no_data file?
   handle_sql_files
@@ -1451,7 +1454,7 @@ function import_db() {
     return 1
   fi
 
-  echo "Data will be read from: $(dirname $filepath)/$(echo_yellow_highlight $(basename $filepath))"
+  echo "Data importing from: $(echo_blue "$(path_unresolve "$WDIR" "$filepath")")"
   echo
 
   has_option 'y' || [ $import_db_silent = true ] || confirm --danger "You are about to overwrite your entire database. Are you sure?" || return 2

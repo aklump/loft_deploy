@@ -155,7 +155,6 @@ done
  # End Bootstrap
  #
 
-
 # The user's operation
 op=$(get_command)
 
