@@ -1032,7 +1032,7 @@ function _reset_copy() {
   local to=''
   local output=''
 
-  has_option 'y' || confirm --caution "Reset $source_server individual files, are you sure?" || return 2
+  has_option 'y' || confirm --danger "Overwrite $source_server individual files, are you sure?" || return 2
 
   echo "Resetting individual $source_server files from cache..."
   for from in "${destination[@]}"; do
@@ -1177,7 +1177,7 @@ function reset_db() {
     end "Expecting to find $config_dir/$source/db/fetched.sql or fetched.sql.gz; file not found."
   fi
 
-  has_option nobu || export_db "reset_backup-$(date8601 -c)" '' 'Creating a backup of the local db...'
+  has_option nobu || export_db "reset_backup-$(date8601 -c)" "" "Creating a backup of the local db..."
 
   import_db_silent=true
   import_db "$fetched_db_dump"
@@ -2116,6 +2116,11 @@ function _access_check() {
       ;;
     'config-export')
       return 0
+      ;;
+    'reset')
+      eval $(get_config stage_may_pull_prod false)
+      [[ "$stage_may_pull_prod" == true ]] && return 0
+      return 1
       ;;
     'pull')
       eval $(get_config stage_may_pull_prod false)
