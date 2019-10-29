@@ -7,3 +7,4 @@ push_tags = auto
 push_master = auto
 push_develop = no
 patch_prefix = .
+info_file = loft_deploy.yml

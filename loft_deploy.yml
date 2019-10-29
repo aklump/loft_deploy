@@ -1,4 +1,7 @@
 title: "Loft Deploy"
+name: "Loft Deploy"
+description: "A handy script to assist in deployment of websites"
+version: 0.15.40
 default_command: "help"
 additional_config:
   # Per-user configuration should be placed in the home directory.
