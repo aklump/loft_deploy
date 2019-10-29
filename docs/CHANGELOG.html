@@ -2,7 +2,7 @@
 
 <html>
 <head>
-  <title>CHANGELOG</title>
+  <title>Changelog</title>
   <link href="search/tipuesearch.css" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
@@ -21,21 +21,34 @@
   </section>
 
 
-<h1>CHANGELOG</h1>
+<h1>Changelog</h1>
 
-<section><h2>0.14.13</h2>
+<section>
+
+<h2>[0.16.0] - 2019-10-28</h2>
+
+<h3>Added</h3>
+
+<ul>
+<li>Added support for using with Lando containers.</li>
+<li>Add configuration option <code>stage_may_pull_prod</code> to allow stage to pull from prod.  Set this to true in your configuration.</li>
+<li>Improved feedback and messages.</li>
+<li>Added local role as argument <code>$8</code> to hooks.</li>
+</ul>
+
+<h2>[0.14.13]</h2>
 
 <ul>
 <li>Changes in config.yml are now detected and caches are cleared automatically.</li>
 </ul>
 
-<h2>0.14.10</h2>
+<h2>[0.14.10]</h2>
 
 <ul>
 <li>Removed <code>scp</code> operation; you should now use the <code>copy_production_to</code> feature instead.</li>
 </ul>
 
-<h2>0.14</h2>
+<h2>[0.14]</h2>
 
 <ul>
 <li>Change to YAML configuration files (see <a href="update.html">update.html</a> for how to)</li>
@@ -49,7 +62,7 @@
 <footer>
   <div class="pager"><a href="index.html" class="prev index">&laquo;Loft Deploy</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="configuration.html" class="next configuration">Configuration Examples&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.15.40 &bull; Last Updated: Mon, 28 Oct 2019 19:42:48 -0700</p>
+    <p class="legaleeze center">Version: 1.0 &bull; Last Updated: Mon, 28 Oct 2019 19:58:31 -0700</p>
   </div>
 </footer>
 
