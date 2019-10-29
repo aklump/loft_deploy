@@ -2040,7 +2040,7 @@ function _handle_hook() {
     local hook="$config_dir/hooks/$hook_stub.sh"
     has_option v && echo "├──  Looking for hook: ${hook##*/}"
     local basename=$(basename $hook)
-    declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "$op_status" "" "" "" "" "" "$config_dir/hooks/")
+    declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "$op_status" "$local_role" "" "" "" "" "$config_dir/hooks/")
     if test -e "$hook"; then
       echo_heading "Calling hook: $basename"
       source "$hook" "${hook_args[@]}"

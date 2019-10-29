@@ -92,5 +92,6 @@ See also [sanitization using hooks](@sanitize).
 | $5 | path to the copy stage directory |
 | $6 | role of the server being handled | prod, staging |
 | $7 | operation status | true or false |
+| $8 | local role | dev, staging, prod |
 | ${13} | path to hooks dir | /do/re/hooks  |
 
