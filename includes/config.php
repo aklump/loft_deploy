@@ -77,13 +77,15 @@ try {
 
   // Load the env_files if we have them.
   $env_vars = [];
-  foreach ($_config->local->env_file ?? [] as $filename) {
-    $filename = path_resolve($filename);
-    if (file_exists($filename)) {
-      if (!($parsed = parse_ini_file($filename))) {
-        throw new \RuntimeException(sprintf('Problem reading from "%s".', $filename));
+  if (!empty($_config->local->env_file)) {
+    foreach ($_config->local->env_file as $filename) {
+      $filename = path_resolve($filename);
+      if (file_exists($filename)) {
+        if (!($parsed = parse_ini_file($filename))) {
+          throw new \RuntimeException(sprintf('Problem reading from "%s".', $filename));
+        }
+        $env_vars += $parsed;
       }
-      $env_vars += $parsed;
     }
   }
 

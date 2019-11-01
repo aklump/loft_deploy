@@ -89,6 +89,9 @@
                 },
                 "files": {
                     "$ref": "#/definitions/files"
+                },
+                "env_file": {
+                    "type": "array"
                 }
             }
         },
