@@ -291,7 +291,6 @@ function load_config() {
   # these are defaults
   # https://dev.mysql.com/doc/refman/8.0/en/mysql-options.html
   local_db_host='localhost'
-  local_db_protocol='socket'
   production_root=''
 
   # For Pantheon support we need to find terminus.
@@ -341,6 +340,13 @@ function load_config() {
     local_db_user=${settings[2]}
     local_db_pass=${settings[3]}
     local_db_port=${settings[4]}
+  fi
+
+  if [[ ! "$local_db_protocol" ]]; then
+    local_db_protocol='tcp'
+    if [[ "$local_db_host" == 'localhost' ]] || [[ "$local_db_host" == '127.0.0.1' ]]; then
+      local_db_protocol='socket'
+    fi
   fi
 
   # Generate the mysql credentials file.
