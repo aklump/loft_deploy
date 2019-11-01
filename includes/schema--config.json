@@ -285,6 +285,29 @@
                             "required": [
                                 "database"
                             ]
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "database": {
+                                    "type": "object",
+                                    "properties": {
+                                        "backups": {
+                                            "type": "string"
+                                        },
+                                        "uri": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "backups",
+                                        "uri"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "database"
+                            ]
                         }
                     ]
                 }

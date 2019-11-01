@@ -21,6 +21,7 @@ try {
     exit(1);
   }
   require $autoload;
+
   $config_dir = $argv[1];
   $schema = $argv[2];
   $config_file = FilePath::create("$config_dir/config.yml");
@@ -28,6 +29,25 @@ try {
   // Validate our schema file.
   if (!file_exists($schema)) {
     throw new \RuntimeException("JSON schema \"$schema\" does not exist.");
+  }
+
+  /**
+   * Resolve a path relative to directory containing .loft_deploy.
+   *
+   * @param string $path
+   *
+   * @return false|string
+   */
+  function path_resolve($path) {
+    global $config;
+    if (strpos($path, '/') !== 0) {
+      $path = rtrim($config['local']['basepath'], '/') . "/$path";
+      if ($p = realpath($path)) {
+        $path = $p;
+      }
+    }
+
+    return $path;
   }
 
   $schema_json = json_decode(file_get_contents($schema));
@@ -55,13 +75,22 @@ try {
     throw new \RuntimeException("Schema validation failed.");
   }
 
-  $local_path = function ($path) use ($config) {
-    return substr($path, 0, 1) === '/' ? $path : rtrim($config['local']['basepath'], '/') . '/' . rtrim($path, '/');
-  };
+  // Load the env_files if we have them.
+  $env_vars = [];
+  foreach ($_config->local->env_file ?? [] as $filename) {
+    $filename = path_resolve($filename);
+    if (file_exists($filename)) {
+      if (!($parsed = parse_ini_file($filename))) {
+        throw new \RuntimeException(sprintf('Problem reading from "%s".', $filename));
+      }
+      $env_vars += $parsed;
+    }
+  }
+
 
   if (isset($config['bin'])) {
     foreach ($config['bin'] as $key => $item) {
-      $data['ld_' . $key] = $local_path($item);
+      $data['ld_' . $key] = path_resolve($item);
     }
   }
 
@@ -77,9 +106,16 @@ try {
 
       case 'database':
         foreach ($item as $k => $v) {
+
+          // Translate environment vars.
+          if (substr($v, 0, 1) === '$') {
+            $env_var_key = ltrim($v, '$');
+            $v = $env_vars[$env_var_key];
+          }
+
           switch ($k) {
             case 'backups':
-              $data['local_db_dir'] = $local_path($v);
+              $data['local_db_dir'] = path_resolve($v);
               break;
 
             case 'password':
@@ -88,6 +124,18 @@ try {
 
             case 'lando':
               $data['local_lando_db_service'] = $v;
+              break;
+
+            case 'uri':
+              if (($parts = parse_url($v)) === FALSE) {
+                throw new \InvalidArgumentException(sprintf("Cannot parse configuration value for local.uri of \"%s\".", $v));
+              };
+              $db['local_db_host'] = $parts['host'];
+              $db['local_db_port'] = $parts['port'];
+              $db['local_db_user'] = $parts['user'];
+              $db['local_db_pass'] = $parts['pass'];
+              $db['local_db_name'] = trim($parts['path'], '/');
+              $data = array_filter($db) + $data;
               break;
 
             default:
@@ -102,7 +150,7 @@ try {
           switch ($k) {
             case 'root':
             case 'settings':
-              $data['local_drupal_' . $k] = $local_path($v);
+              $data['local_drupal_' . $k] = path_resolve($v);
               break;
 
             case 'database':
@@ -122,7 +170,7 @@ try {
           if ($i > 0) {
             $k .= $i + 1;
           }
-          $data[$k] = $local_path($v);
+          $data[$k] = path_resolve($v);
         }
         break;
 
@@ -130,8 +178,8 @@ try {
       case 'copy_local_to':
       case 'copy_production_to':
       case 'copy_staging_to':
-        $data['local_' . $key] = implode(':', array_map(function ($path) use ($local_path) {
-          return $local_path($path);
+        $data['local_' . $key] = implode(':', array_map(function ($path) {
+          return path_resolve($path);
         }, $item));
         break;
 
