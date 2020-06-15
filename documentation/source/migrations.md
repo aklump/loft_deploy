@@ -4,13 +4,13 @@
 
 You may wish to migrate a database and/or files from another server, which does not have Loft Deploy installed.  As long as you can `scp` and `rsync` from this other server you can use this feature.  If you cannot then see the section _The Push Option_ for a method to push the files to your destination server.
 
-Migrations are unique in that they do implement the file excludes or the database filters.  In other words, all tables, and all files.
+Migrations are unique in that they DO NOT honor the file excludes or the database filters.  In other words, the migration process moves ALL tables, and ALL files.
 
 Hooks are available, you can see the hooks if you run a migration with the `-v` option.
 
 **Also, migrations affect the destination server immediately,** they are unlike the fetch/pull strategy.  When you migrate, the database is directly imported and the files are immediately deleted to match the source.
 
-In a migration, the database is backed up unless you use the `--nobu` option.  The files are NOT backed up.
+In a migration, the database is backed up unless you use the `--nobu` option.  The files are NOT backed up, so be sure you're ready as destination files are deleted without an undo.
 
 ## On the source server
 

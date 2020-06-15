@@ -6,8 +6,8 @@
 
 list_clear
 file="$5/1~.env.$6"
-hooks_env_set_var $file "MAILCHIMP_API_KEY"
-hooks_env_sanitize_url $file "DATABASE_URL"
+hooks_env_set_var $file "MAILCHIMP_API_KEY" || return 1
+hooks_env_sanitize_url $file "DATABASE_URL" || return 1
 list_add_item "Sensitive data removed from: ${file##*/}"
 echo_green_list
 echo

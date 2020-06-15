@@ -9,6 +9,9 @@ cd "$4/web" || return 1
 
 list_clear
 
+# Disable this to speed things up.
+lando nodebug
+
 # Sanitize the database.
 drush sql-sanitize --sanitize-password=pass -y || return 1
 

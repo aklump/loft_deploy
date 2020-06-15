@@ -105,7 +105,6 @@ class Scrubber {
    */
   public function envSanitizeUrl($var_name) {
     $regex = '/(' . $var_name . ').*?=(["\']?)(.+?)["\']?$/m';
-    $before = $this->contents;
     $this->contents = preg_replace_callback($regex, function ($value) {
       $url = parse_url($value[3]);
       $url['pass'] = 'PASSWORD';
@@ -120,8 +119,7 @@ class Scrubber {
    * Save the contents of the buffer over the original file.
    *
    * @return bool
-   *   This will return false if the processed contents are the same as the
-   *   unprocessed contents.
+   *   This will return false there has been an error.
    */
   public function save(): bool {
     if (NULL === $this->contents) {

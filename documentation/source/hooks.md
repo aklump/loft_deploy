@@ -66,7 +66,8 @@ You can add mysql commands against the local environment in a hook using `loft_d
 
 ## Hook Functions
 
-For a list of all functions available in your hooks see _includes/function.sh_.
+* You may use [Cloudy](https://github.com/aklump/cloudy) functions in your hooks.
+* See other Loft Deploy functions in _includes/function.sh_.
 
 See also [sanitization using hooks](@sanitize).
  
