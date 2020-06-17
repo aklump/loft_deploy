@@ -1503,7 +1503,7 @@ function _drop_tables() {
 #
 function complete_elapsed() {
   echo
-  echo "👍  $(tty -s && tput setaf 4)${1//./} in $SECONDS seconds.$(tty -s && tput op)"
+  echo "👍  $(tty -s && tput setaf 4)${1//./} in $(echo_elapsed).$(tty -s && tput op)"
   echo
 
   return 0
