@@ -40,7 +40,7 @@ function _cloudy_bootstrap() {
         for alias in ${aliases[@]}; do
            if ! has_option $alias; then
                CLOUDY_OPTIONS=("${CLOUDY_OPTIONS[@]}" "$alias")
-               eval "CLOUDY_OPTION__$(string_upper $alias)=\"$value\""
+               eval "CLOUDY_OPTION__$(md5_string $alias)=\"$value\""
            fi
         done
     done
@@ -54,7 +54,7 @@ function _cloudy_bootstrap() {
             if has_option $alias && ! has_option $master_option; then
                 value=$(get_option "$alias")
                 CLOUDY_OPTIONS=("${CLOUDY_OPTIONS[@]}" "$master_option")
-                eval "CLOUDY_OPTION__$(string_upper ${master_option//-/_})=\"$value\""
+                eval "CLOUDY_OPTION__$(md5_string $master_option)=\"$value\""
             fi
         done
     done
@@ -154,7 +154,7 @@ function _cloudy_get_config() {
     local cached_var_name
     local cached_var_name_keys
     local file_list
-    local config_path_base=${cloudy_config___config_path_base}
+    local config_path_base=${cloudy_config_22b41169ff3731365de5e8293e01c831}
 
     # Determine if we have an absolute relative path base or, if not prepend $ROOT.
     [[ "${config_path_base:0:1}" != '/' ]] && config_path_base="${ROOT}/$config_path_base"
@@ -163,22 +163,25 @@ function _cloudy_get_config() {
     config_path_base=${config_path_base%/}
 
     parse_args "$@"
-    config_path=${parse_args__args[0]//-/_}
-    cached_var_name="cloudy_config___${config_path//./___}"
+    config_path=${parse_args__args[0]}
 
-    # This is the name of the variable containing the keys for $cached_var_name
-    cached_var_name_keys=${cached_var_name/cloudy_config___/cloudy_config_keys___}
+    # We have to use a hash or sometimes the name created will not work for a
+    # BASH variable.
+    local config_path_hash=$(md5_string $config_path)
+    cached_var_name="cloudy_config_${config_path_hash}"
+    cached_var_name_keys="cloudy_config_keys_${config_path_hash}"
 
+    # The --keys option has been used
     get_array_keys=${parse_args__options__keys}
-    [[ "$get_array_keys" ]] && cached_var_name="cloudy_config_keys___${config_path//./___}"
+    [[ "$get_array_keys" ]] && cached_var_name="$cached_var_name_keys"
     default_value=${parse_args__args[1]}
+
     # Use the synonym if --as is passed
     var_name=${parse_args__options__as:-${config_path//./_}}
 
     [[ "${parse_args__options__a}" == true ]] && default_type='array'
     mutator=${parse_args__options__mutator}
 
-    # todo Can we simplify this a bit?
     var_value=$(eval "echo "\$$cached_var_name"")
 
     if [[ "$var_value" ]]; then
@@ -223,8 +226,10 @@ function _cloudy_get_config() {
         code=''
         for key in "${var_keys[@]}"; do
 
+            cached_var_name=cloudy_config_$(md5_string ${config_path}.${key})
+
             if [[ "$mutator" == "_cloudy_realpath" ]]; then
-                local path=$(eval "echo \$${cached_var_name}___${key}")
+                local path=$(eval "echo \$$cached_var_name")
 
                 # Replace ~ with the actual home page
                 path=$(echo ${path/\~/"$HOME"})
@@ -255,14 +260,14 @@ function _cloudy_get_config() {
                     let i++
                 done
                 if [[ ${#file_list[@]} -eq 1 ]]; then
-                    eval "${cached_var_name}___${key}="${file_list[0]}""
+                    eval "$cached_var_name="${file_list[0]}""
                 else
-                    eval "${cached_var_name}___${key}=("${file_list[@]}")"
+                    eval "$cached_var_name=("${file_list[@]}")"
                 fi
             fi
 
-            var_code=$(declare -p ${cached_var_name}___${key})
-            code="${code}${var_code/${cached_var_name}___${key}/${var_name}_${key}};"
+            var_code=$(declare -p $cached_var_name)
+            code="${code}${var_code/$cached_var_name/${var_name}_${key}};"
         done
     else
         if [[ "$mutator" == "_cloudy_realpath" ]]; then
@@ -299,7 +304,6 @@ function _cloudy_get_config() {
             done
             eval "$cached_var_name=("${file_list[@]}")"
         fi
-
         code=$(declare -p $cached_var_name)
         code="${code//$cached_var_name=/$var_name=}"
     fi
@@ -770,7 +774,7 @@ parse_args "$@"
 declare -a CLOUDY_ARGS=("${parse_args__args[@]}")
 declare -a CLOUDY_OPTIONS=("${parse_args__options[@]}")
 for option in "${CLOUDY_OPTIONS[@]}"; do
-    eval "CLOUDY_OPTION__$(string_upper ${option//-/_})=\"\$parse_args__options__${option//-/_}\""
+    eval "CLOUDY_OPTION__$(md5_string $option)=\"\$parse_args__options__${option//-/_}\""
 done
 
 # Define shared variables

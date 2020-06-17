@@ -63,6 +63,22 @@ function get_title() {
     echo $title
 }
 
+##
+ # Echo the md5 hash of a string.
+ #
+ # $1 = string The string to hash
+ #
+ # Returns 0 if the string was able to be hashed.
+ #
+function md5_string() {
+  local string="$1"
+
+  type md5sum >/dev/null 2>&1; [ $? -eq 0 ] && printf '%s' "$string" | md5sum | cut -d ' ' -f 1 && return 0
+  type md5 >/dev/null 2>&1; [ $? -eq 0 ] && printf '%s' "$string" | md5 | cut -d ' ' -f 1 && return 0
+
+  return 1
+}
+
 # Echos the version of the script.
 #
 # Returns nothing.
@@ -140,7 +156,7 @@ function validate_input() {
     for name in "${CLOUDY_OPTIONS[@]}"; do
        array_has_value__array=(${_cloudy_get_valid_operations_by_command__array[@]})
        array_has_value $name || fail_because "Invalid option: $name"
-       eval "value=\"\$CLOUDY_OPTION__$(string_upper ${name//-/_})\""
+       eval "value=\"\$CLOUDY_OPTION__$(md5_string $name)\""
 
        # Assert the provided value matches schema.
        eval $(_cloudy_validate_input_against_schema "commands.$command.options.$name" "$name" "$value")
@@ -284,7 +300,7 @@ function get_option() {
     local param=$1
     local default=$2
 
-    local var_name="\$CLOUDY_OPTION__$(string_upper ${1//-/_})"
+    local var_name="\$CLOUDY_OPTION__$(md5_string $param)"
     local value=$(eval "echo $var_name")
     [[ "$value" ]] && echo "$value" && return 0
     echo "$default" && return 2
@@ -732,7 +748,7 @@ function list_has_items() {
 }
 
 ##
- # Echo an array as a bulletted list.
+ # Echo an array as a bulleted list (does not clear list)
  #
  # @param $echo_list__array
  #
@@ -740,6 +756,7 @@ function list_has_items() {
  # @code
  #   list_add_item "List item"
  #   echo_list
+ #   list_clear
  # @endcode
  #
  # @see echo_list__array=("${some_array_to_echo[@]}")
@@ -776,11 +793,38 @@ function echo_blue_list() {
     _cloudy_echo_list 34 34 -i=0
 }
 
-# Echo the elapsed time in seconds since the beginning of the script.
+# Echo the elapsed time since the beginning of the script.
 #
 # Returns nothing.
 function echo_elapsed() {
-    echo $SECONDS
+  if [[ $SECONDS -lt 61 ]]; then
+    printf "%d sec\n" $SECONDS
+  elif [[ $SECONDS -lt 3601 ]]; then
+    ((m=($SECONDS%3600)/60))
+    ((s=$SECONDS%60))
+    printf "%d min %d sec\n" $m $s
+  else
+    ((h=$SECONDS/3600))
+    ((m=($SECONDS%3600)/60))
+    ((s=$SECONDS%60))
+
+    hword="hours"
+    if [[ $h -eq 1 ]]; then
+      hword="hour"
+    fi
+
+    mword="minutes"
+    if [[ $m -eq 1 ]]; then
+      mword="minute"
+    fi
+
+    sword="seconds"
+    if [[ $m -eq 1 ]]; then
+      sword="second"
+    fi
+
+    printf "%d %s %d %s %d %s\n" $h $hword $m $mword $s $sword
+  fi
 }
 
 #
@@ -987,13 +1031,8 @@ function exit_with_success_code_only() {
 function exit_with_success_elapsed() {
     local message=$1
     local duration=$SECONDS
-    local elapsed="$duration seconds"
 
-    if [ $duration -gt 600 ]; then
-        let duration=(duration / 60)
-        elapsed="$duration minutes"
-    fi
-    _cloudy_exit_with_success "$(_cloudy_message "$message" "$CLOUDY_SUCCESS" " in $elapsed.")"
+    _cloudy_exit_with_success "$(_cloudy_message "$message" "$CLOUDY_SUCCESS" " in $(echo_elapsed).")"
 }
 
 # Add a warning message to be shown on success exit; not shown on failure exits.
@@ -1310,7 +1349,7 @@ function event_listen() {
 function path_relative_to_config_base() {
     local path="$1"
 
-    local config_path_base=${cloudy_config___config_path_base}
+    local config_path_base=${cloudy_config_22b41169ff3731365de5e8293e01c831}
     [[ "${config_path_base:0:1}" != '/' ]] && config_path_base="${ROOT}/$config_path_base"
     config_path_base=${config_path_base%/}
     path_resolve "$config_path_base" "$path"
