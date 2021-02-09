@@ -14,13 +14,23 @@ A bridge across website instances/environments to simplify the exchange of datab
 
 ## Quick Start
 
-Add to your codebase, and deploy across environments as you would any other change:
+_Before you begin, to save from lot's of password entries, you should ensure key-based authentication is working between server instances._
+
+Add to your codebase:
 
 ```bash
 $ cd /path/to/local/app
 $ composer require aklump/loft-deploy
 ```
 
+Add the following to _.gitignore_ for your project.
+
+```text
+.loft_deploy/
+```
+Now deploy across environments as you would any other change.
+
+---
 On your production server do the following to configure it:
 
 ```bash
@@ -28,9 +38,11 @@ $ cd /path/to/production/app
 $ ./vendor/bin/loft_deploy.sh init prod
 $ ./vendor/bin/loft_deploy.sh config
 $ ./vendor/bin/loft_deploy.sh configtest
+$ ./vendor/bin/loft_deploy.sh config-export
 ```
 
-On your local machine, configure it:
+---
+On your local machine, configure it, adding the snippet generated in the previous step via `config-export`.
 
 ```bash
 $ cd /path/to/local/app
@@ -48,6 +60,7 @@ $ ./vendor/bin/loft_deploy.sh pull
 
 1. [Composer](https://getcomposer.org/)
 1. PHP
+1. Key-based server authentication
 
 {% include('_ldp.md') %}
 
