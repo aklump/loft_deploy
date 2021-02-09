@@ -18,7 +18,8 @@
         "jakeasmith/http_build_url": "^1"
     },
     "bin": [
-        "loft_deploy.sh"
+        "loft_deploy.sh",
+        "bin/ldp.sh"
     ],
     "scripts": {
         "post-package-install": [
