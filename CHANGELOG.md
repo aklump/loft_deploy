@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.18.0] - 2021-02-08
+  
+### Changed
+- Made installation loads easy via Composer.
+- Added ldp.sh script with instructions.
+
 ## [0.16.0] - 2019-10-28
 ### Added
 - Added support for using with Lando containers.
