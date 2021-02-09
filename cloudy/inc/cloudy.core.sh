@@ -773,7 +773,6 @@ function _cloudy_validate_input_against_schema() {
 #
 # Begin Core Controller Section.
 #
-_cloudy_bootstrap_php || exit_with_failure "Invalid PHP"
 
 # Expand some vars from our controlling script.
 export CONFIG="$(cd $(dirname "$r/$CONFIG") && pwd)/$(basename $CONFIG)"
@@ -816,6 +815,8 @@ if [ ! -d "$CACHE_DIR" ]; then
 fi
 
 event_dispatch "pre_config" || exit_with_failure "Non-zero returned by on_pre_config()."
+_cloudy_bootstrap_php || exit_with_failure "Invalid PHP"
+
 compile_config__runtime_files=$(event_dispatch "compile_config")
 config_cache_id=$("$CLOUDY_PHP" $CLOUDY_ROOT/php/helpers.php get_config_cache_id "$ROOT\n$compile_config__runtime_files")
 
