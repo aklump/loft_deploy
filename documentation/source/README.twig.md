@@ -25,6 +25,12 @@ $ cd /path/to/app
 $ ldp init {prod,dev,staging}
 ```
 
+Now edit the configuration file one of two ways:
+
+1. `$ ldp config`
+1. Open _/path/to/app/.loft_deploy/config_ in your favorite editor.
+1. Test your configuration until you see no warnings `$ ldp configtest`
+
 ## Documentation
 
 After downloading, open `docs/index.html` for documentation.

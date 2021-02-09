@@ -163,7 +163,8 @@ function _update_0_7_6() {
 #
 function init() {
   if [ -d .loft_deploy ]; then
-    end "$start_dir is already initialized."
+    fail_because "$start_dir/.loft_deploy already exits.  Your project is already initialized."
+    exit_with_failure
   fi
   if [ $# -ne 1 ]; then
     end "Please specific one of: dev, staging or prod.  e.g. loft_deploy init dev"
@@ -172,7 +173,10 @@ function init() {
     chmod 0644 "$config_dir/.htaccess"
     cp "$ROOT/init/config/$1.yml" "$config_dir/config.yml"
     cd "$start_dir"
-    complete "Initialization almost done; please configure and save $config_dir/config.yml.  Then run: clearcache"
+    succeed_because "Project root is $start_dir"
+    succeed_because ".loft_deploy has been created."
+    succeed_because "Please configure Loft Deploy using \"config\""
+    exit_with_success
     end
   else
     end "Invalid argument: $1"
@@ -265,7 +269,7 @@ function get_sql_ready_db_tables_data() {
 #
 function load_config() {
   if ! _upsearch $(basename $config_dir); then
-    fail_because "Please create .loft_deploy or make sure you are in a child directory."
+    fail_because "Have you called \"init\" in your project's root yet?"
     exit_with_failure "No configuration file found"
   fi
 
@@ -319,7 +323,7 @@ function load_config() {
   #
   # Database is coming in from Drupal settings file.
   #
-  if [ "$local_drupal_settings" ]; then
+  if [[ "$local_drupal_settings" ]]; then
     read -r -a settings <<<$(php "$ROOT/includes/drupal_settings.php" "$local_drupal_root" "$local_drupal_settings" "$local_drupal_db")
     local_db_host=${settings[0]}
     local_db_name=${settings[1]}
@@ -332,7 +336,7 @@ function load_config() {
   #
   elif [[ "$local_lando_db_service" ]]; then
     lando=$(php "$ROOT/includes/lando_settings.php" "$ld_lando" "$local_lando_db_service" "$($ld_lando info --format=json)")
-    [[ $? -ne 0 ]] && exit_with_failure "Failed to deterine the Lando database configuration".
+    [[ $? -ne 0 ]] && exit_with_failure "Failed to determine the Lando database configuration".
     read -r -a settings <<<"$lando"
     local_db_protocol='tcp'
     local_db_host=${settings[0]}
@@ -1577,6 +1581,23 @@ function print_header() {
   echo
 }
 
+function _offer_suggested_bin() {
+  local cmd="$1"
+
+  local found="$(which $cmd)"
+  if [[ "$found" ]]; then
+    found=" We did find \"$found\", maybe you can use that?"
+  fi
+  echo "$found"
+}
+
+function _tool_not_found() {
+  local tool=$1
+  local default=$2
+
+  echo "Loft Deploy must have access to a $tool executable; the default \"$default\" was not found.  Please set bin.$tool in your config file.$(_offer_suggested_bin $tool)"
+}
+
 ##
 # Run a config test and printout results
 #
@@ -1592,23 +1613,23 @@ function configtest() {
 
   # Test for tools
   if ! [ -e "$ld_mysql" ]; then
-    warning "\"$ld_mysql\" not found; you must set bin.mysql in your config file"
+    warning "$(_tool_not_found mysql $ld_mysql)"
     configtest_return=false
   fi
   if ! [ -e "$ld_mysqldump" ]; then
-    warning "\"$ld_mysqldump\" not found; you must set bin.mysql in your config file"
+    warning "$(_tool_not_found mysqldump $ld_mysqldump )"
     configtest_return=false
   fi
   if ! [ -e "$ld_gunzip" ]; then
-    warning "\"$ld_gunzip\" not found; you must set bin.mysql in your config file"
+    warning "$(_tool_not_found gunzip $ld_gunzip )"
     configtest_return=false
   fi
   if ! [ -e "$ld_gzip" ]; then
-    warning "\"$ld_gzip\" not found; you must set bin.mysql in your config file"
+    warning "$(_tool_not_found gzip $ld_gzip )"
     configtest_return=false
   fi
   if ! [ -e "$ld_scp" ]; then
-    warning "\"$ld_scp\" not found; you must set bin.mysql in your config file"
+    warning "$(_tool_not_found scp $ld_scp )"
     configtest_return=false
   fi
 
@@ -1733,7 +1754,7 @@ function configtest() {
 
   if [ "$local_files" ] && [ ! -d "$local_files" ]; then
     configtest_return=false
-    warning "local_files: $local_files does not exist."
+    warning "local.files: $local_files does not exist. To fix this warning create that directory."
   fi
 
   # Test if files directory is inside of the parent of the config dir
@@ -1872,7 +1893,7 @@ function show_info() {
     table_add_row "DRUPAL_ROOT" "$local_drupal_root"
     table_add_row "Drupal" "$local_drupal_settings"
   fi
-  if [ "$local_lando_db_service" ]; then
+  if [[ "$local_lando_db_service" ]]; then
     table_add_row "Lando DB Service" "$local_lando_db_service"
   fi
 
@@ -1909,22 +1930,39 @@ function show_info() {
   fi
 
   # Fetch Dates.
+  local default_fetch_date="Never"
   if _access_check 'fetch_db'; then
     if [[ -f "$config_dir/prod/cached_db.txt" ]]; then
-      table_add_row "Production Database" "$(cat $config_dir/prod/cached_db.txt)"
+      time="$(cat $config_dir/prod/cached_db.txt)"
+      if [[ ! "$time" ]]; then
+        time="$default_fetch_date"
+      fi
+      table_add_row "Production Database" $time
     fi
     if [[ -f "$config_dir/staging/cached_db.txt" ]]; then
-      table_add_row "Staging Database" "$(cat $config_dir/staging/cached_db.txt)"
+      time="$(cat $config_dir/staging/cached_db.txt)"
+      if [[ ! "$time" ]]; then
+        time="$default_fetch_date"
+      fi
+      table_add_row "Staging Database" $time
     fi
   fi
 
   if _access_check 'fetch_files'; then
     if [[ -f "$config_dir/prod/cached_files.txt" ]]; then
-      table_add_row "Production Files" "$(cat $config_dir/prod/cached_files.txt)"
+      time="$(cat $config_dir/prod/cached_files.txt)"
+      if [[ ! "$time" ]]; then
+        time="$default_fetch_date"
+      fi
+      table_add_row "Production Files" $time
     fi
 
     if [[ -f "$config_dir/staging/cached_files.txt" ]]; then
-      table_add_row "Staging Files" "$(cat $config_dir/staging/cached_files.txt)"
+      time="$(cat $config_dir/staging/cached_files.txt)"
+      if [[ ! "$time" ]]; then
+        time="$default_fetch_date"
+      fi
+      table_add_row "Staging Files" $time
     fi
   fi
   if table_has_rows; then
