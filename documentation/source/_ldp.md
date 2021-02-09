@@ -1,16 +1,3 @@
-# Loft Deploy
-
-A bridge across website instances/environments to simplify the exchange of database and files not under SCM.
-
-## Installation
-
-Install in your project root using Composer.
-
-```bash
-$ cd /path/to/app
-$ composer require aklump/loft-deploy
-```
-
 ## Using the `ldp` command
 
 To make working with Loft Deploy easier you should install the `ldp` command,
@@ -43,24 +30,3 @@ within your project.
 No problem because _ldp.sh_ works across all versions of Loft Deploy, the
 symlink to project A will work for project B and C. That is to say, you need
 only install one symlink for many projects, even if those many projects have different versions of _Loft Deploy_ installed.
-
-## Configuration
-
-Once installed initiate configuration:
-```bash
-./vendor/bin/loft_deploy.sh init {prod,dev,staging}
-```
-
-## Documentation
-
-After downloading, open `docs/index.html` for documentation.
-
-## Contact
-
-* **In the Loft Studios**
-* Aaron Klump - Developer
-* PO Box 29294 Bellingham, WA 98228-1294
-* _aim_: theloft101
-* _skype_: intheloftstudios
-* _d.o_: aklump
-* <http://www.InTheLoftStudios.com>
