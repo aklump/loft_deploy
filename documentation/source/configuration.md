@@ -1,3 +1,6 @@
+---
+id: config
+---
 # Configuration Examples
 
 * See _includes/schema--config.json_ for more info.
