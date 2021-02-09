@@ -1888,7 +1888,7 @@ function get_var() {
 function show_info() {
   echo_heading 'Local'
   table_add_row "Role" "$(echo $local_role | tr [:lower:] [:upper:])"
-  table_add_row "Config" "$config_dir"
+  table_add_row "Config" $(path_unresolve "$(pwd)" "$config_dir")
   if [ "$local_drupal_settings" ]; then
     table_add_row "DRUPAL_ROOT" "$local_drupal_root"
     table_add_row "Drupal" "$local_drupal_settings"
@@ -1902,29 +1902,30 @@ function show_info() {
   table_add_row "DB User" "$local_db_user"
   [[ "$local_db_port" ]] && table_add_row "DB Port" "$local_db_port"
   table_add_row "DB Protocol" "$local_db_protocol"
-  table_add_row "DB Dumps" "$local_db_dir"
+  table_add_row "DB Dumps" $(path_unresolve "$(pwd)" "$local_db_dir")
 
-  table_add_row "Files" "$local_files"
-  [ "$local_files2" ] && table_add_row "Files2" "$local_files2"
-  [ "$local_files3" ] && table_add_row "Files3" "$local_files3"
+  table_add_row "Files" $(path_unresolve "$(pwd)" "$local_files")
+  [ "$local_files2" ] && table_add_row "Files2" $(path_unresolve "$(pwd)" "$local_files2")
+  [ "$local_files3" ] && table_add_row "Files3" $(path_unresolve "$(pwd)" "$local_files3")
 
   echo_slim_table
 
   if _access_check 'fetch_files'; then
     list_clear
     if [[ "$ld_rsync_ex" ]] && [[ "$(cat $ld_rsync_exclude_file)" ]]; then
-      list_add_item "$ld_rsync_exclude_file"
+      list_add_item $(path_unresolve "$(pwd)" "$ld_rsync_exclude_file")
     fi
 
     if [[ "$ld_rsync_ex2" ]] && [[ "$(cat $ld_rsync_exclude_file2)" ]]; then
-      list_add_item "$ld_rsync_exclude_file2"
+      list_add_item $(path_unresolve "$(pwd)" "$ld_rsync_exclude_file2")
     fi
 
     if [[ "$ld_rsync_ex3" ]] && [[ "$(cat $ld_rsync_exclude_file3)" ]]; then
-      list_add_item "$ld_rsync_exclude_file3"
+      list_add_item $(path_unresolve "$(pwd)" "$ld_rsync_exclude_file3")
     fi
     if list_has_items; then
-      echo "Some files are $(echo_yellow "ignored") because of these file(s):"
+#      echo_yellow_highlight "Ignoring files listed in:"
+      echo_heading "Ignoring files listed in:"
       echo_list && echo && echo
     fi
   fi
