@@ -1,30 +1,30 @@
 {
     "license": "BSD-3-Clause",
-    "name": "aklump/loft-deploy",
-    "description": "A bridge across website instances/environments to simplify the exchange of database and files not under SCM.",
-    "version": "0.17.1",
+    "name": "aklump\/loft-deploy",
+    "description": "A bridge across website instances\/environments to simplify the exchange of database and files not under SCM.",
+    "version": "0.17.2",
     "authors": [
         {
             "name": "Aaron Klump",
             "email": "sourcecode@intheloftstudios.com",
-            "homepage": "https://www.intheloftstudios.com",
+            "homepage": "https:\/\/www.intheloftstudios.com",
             "role": "Developer"
         }
     ],
     "require": {
         "php": ">=5.6",
-        "symfony/yaml": "^3.4",
-        "justinrainbow/json-schema": "^5.2",
-        "aklump/loft-lib": "^1.0",
-        "jakeasmith/http_build_url": "^1"
+        "symfony\/yaml": "^3.4",
+        "justinrainbow\/json-schema": "^5.2",
+        "aklump\/loft-lib": "^1.0",
+        "jakeasmith\/http_build_url": "^1"
     },
     "bin": [
         "loft_deploy.sh",
-        "bin/ldp.sh"
+        "bin\/ldp.sh"
     ],
     "scripts": {
         "post-package-install": [
-            "echo 'For help with Loft Deploy run ./vendor/bin/loft_deploy.sh help'"
+            "echo 'For help with Loft Deploy run .\/vendor\/bin\/loft_deploy.sh help'"
         ]
     }
 }
