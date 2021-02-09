@@ -10,15 +10,36 @@ A bridge across website instances/environments to simplify the exchange of datab
 
 ## Quick Start
 
+Add to your codebase, and deploy across environments as you would any other change:
+
 ```bash
-$ cd /path/to/app
+$ cd /path/to/local/app
 $ composer require aklump/loft-deploy
+```
+
+On your production server do the following to configure it:
+
+```bash
+$ cd /path/to/production/app
+$ ./vendor/bin/loft_deploy.sh init prod
+$ ./vendor/bin/loft_deploy.sh config
+$ ./vendor/bin/loft_deploy.sh configtest
+```
+
+On your local machine, configure it:
+
+```bash
+$ cd /path/to/local/app
 $ ./vendor/bin/loft_deploy.sh init dev
 $ ./vendor/bin/loft_deploy.sh config
 $ ./vendor/bin/loft_deploy.sh configtest
-$ ./vendor/bin/loft_deploy.sh help
 ```
 
+Now pull your non SCM assets from production to local:
+
+```bash
+$ ./vendor/bin/loft_deploy.sh pull
+```
 ## Requirements
 
 1. [Composer](https://getcomposer.org/)
@@ -65,6 +86,8 @@ The configuration file may be edited in one of two ways:
 1. Open _/path/to/app/.loft_deploy/config.yml_ in your editor of choice.
 
 Be sure to **test your configuration** until you see no warnings  `$ ldp configtest`.
+
+See also [configuration](@config)
 
 ## Usage
 
