@@ -140,7 +140,7 @@
                         },
                         "script": {
                             "type": "string",
-                            "pattern": "\\/loft_deploy(\\.sh)?$"
+                            "pattern": "\\/loft_deploy(\\.sh)?|ldp$"
                         },
                         "user": {
                             "$ref": "#/definitions/user"
