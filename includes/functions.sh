@@ -270,7 +270,7 @@ function get_sql_ready_db_tables_data() {
 function load_config() {
   if ! _upsearch $(basename $config_dir); then
     fail_because "Have you called \"init\" in your project's root yet?"
-    exit_with_failure "No configuration file found"
+    exit_with_failure "Environment config (.loft_deploy/config.yml) not found"
   fi
 
   motd=''

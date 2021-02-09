@@ -7,7 +7,7 @@
  * exit with 0 on success, >0 on failure.
  */
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/autoload.php';
 
 $callback_args = $argv;
 array_shift($callback_args);

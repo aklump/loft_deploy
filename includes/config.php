@@ -15,12 +15,7 @@ use Symfony\Component\Yaml\Yaml;
 
 
 try {
-  $autoload = dirname(__FILE__) . '/../vendor/autoload.php';
-  if (!file_exists($autoload)) {
-    echo "Missing dependencies.  Have you run composer install?" . PHP_EOL;
-    exit(1);
-  }
-  require $autoload;
+  require_once __DIR__ . '/autoload.php';
 
   $config_dir = $argv[1];
   $schema = $argv[2];
