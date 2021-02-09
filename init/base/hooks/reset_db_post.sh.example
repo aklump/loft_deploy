@@ -24,7 +24,10 @@ list_add_item "Database sanitized."
 #drush pm-disable memcache, memcache_admin, features, honeypot, mollom -y || return 1
 #list_add_item "Production modules disabled."
 
-# Enable development modules.
+# Import config split
+lando drush config-split:import || return 1
+
+# Enable development modules (this may not be needed if you use config split)
 #drush en gop3_dev bulk_export update alter_partials_dev -y || return 1
 #list_add_item "Development modules enabled."
 
