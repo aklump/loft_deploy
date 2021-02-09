@@ -114,15 +114,6 @@ function get_version() {
 # Input validation.
 validate_input || exit_with_failure "Input validation failed."
 
-# Determine the version of php to use based on:
-# 2. ENV var LOFT_DEPLOY_PHP
-# 3. the system 'php'
-ld_php="$(command -v php)"
-if [[ "$LOFT_DEPLOY_PHP" ]]; then
-    ld_php="$LOFT_DEPLOY_PHP"
-fi
-[[ ! -x "$ld_php" ]] && fail_because "$ld_php is not a path to a valid PHP executable" && exit_with_failure
-
 ##
  # Bootstrap
  #
