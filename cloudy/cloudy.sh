@@ -384,7 +384,7 @@ function function_exists() {
 #
 # @code
 #  string_split__string="do<br />re<br />mi"
-#  string_split '<br />' && local words=("${string_split__array}")
+#  string_split '<br />' && local words=("${string_split__array[@]}")
 # @endcode
 #
 # $1 - The delimiter string.
@@ -474,6 +474,19 @@ function get_command_arg() {
     let index=(index + 1)
     [ ${#CLOUDY_ARGS[@]} -gt $index ] && echo  ${CLOUDY_ARGS[$index]} && return 0
     echo $default && return 2
+}
+
+# Echo all command arguments
+#
+# If options are mixed in they will be stripped out, that is to say, if the
+# script was called like this "script.sh do -f re -h mi", this function will
+# echo "do re mi"
+#
+# Returns 0
+function get_command_args() {
+  local command_args=("${CLOUDY_ARGS[@]:1}")
+
+  echo "${command_args[@]}" && return 0
 }
 
 ##
