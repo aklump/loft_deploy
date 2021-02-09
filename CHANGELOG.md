@@ -1,10 +1,9 @@
 # Changelog
 
-## [0.18.0] - 2021-02-08
+## [0.17.0] - 2021-02-08
   
 ### Changed
-- Made installation loads easy via Composer.
-- Added ldp.sh script with instructions.
+- Made the project Composer installed.
 
 ## [0.16.0] - 2019-10-28
 ### Added
