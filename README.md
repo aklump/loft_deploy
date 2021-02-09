@@ -48,8 +48,15 @@ only install one symlink for many projects, even if those many projects have dif
 
 Once installed initiate configuration:
 ```bash
-./vendor/bin/loft_deploy.sh init {prod,dev,staging}
+$ cd /path/to/app
+$ ldp init {prod,dev,staging}
 ```
+
+Now edit the configuration file one of two ways:
+
+1. `$ ldp config`
+1. Open _/path/to/app/.loft_deploy/config_ in your favorite editor.
+1. Test your configuration until you see no warnings `$ ldp configtest`
 
 ## Documentation
 

@@ -71,8 +71,17 @@ only install one symlink for many projects, even if those many projects have dif
 
 <p>Once installed initiate configuration:</p>
 
-<pre><code class="bash">./vendor/bin/loft_deploy.sh init {prod,dev,staging}
+<pre><code class="bash">$ cd /path/to/app
+$ ldp init {prod,dev,staging}
 </code></pre>
+
+<p>Now edit the configuration file one of two ways:</p>
+
+<ol>
+<li><code>$ ldp config</code></li>
+<li>Open <em>/path/to/app/.loft_deploy/config</em> in your favorite editor.</li>
+<li>Test your configuration until you see no warnings <code>$ ldp configtest</code></li>
+</ol>
 
 <h2>Documentation</h2>
 
@@ -98,7 +107,7 @@ only install one symlink for many projects, even if those many projects have dif
 <footer>
   <div class="pager"><a href="hooks.html" class="prev hooks">&laquo;Hooks</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="migrations.html" class="next migrations">Migrations&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.16.7 &bull; Last Updated: Mon, 08 Feb 2021 17:55:50 -0800</p>
+    <p class="legaleeze center">Version: 0.17.0 &bull; Last Updated: Mon, 08 Feb 2021 19:52:44 -0800</p>
   </div>
 </footer>
 

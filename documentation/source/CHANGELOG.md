@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.18.0] - 2021-02-08
+## [0.17.0] - 2021-02-08
   
 ### Changed
 - Made the project Composer installed.
