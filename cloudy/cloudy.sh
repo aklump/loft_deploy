@@ -439,7 +439,7 @@ function array_sort() {
 # Returns 0 on success; 1 on failure.
 function array_sort_by_item_length() {
     local sorted
-    local eval=$(php "$CLOUDY_ROOT/php/helpers.php" "array_sort_by_item_length" "sorted" "${array_sort_by_item_length__array[@]}")
+    local eval=$("$CLOUDY_PHP" "$CLOUDY_ROOT/php/helpers.php" "array_sort_by_item_length" "sorted" "${array_sort_by_item_length__array[@]}")
     result=$?
     eval $eval
     array_sort_by_item_length__array=("${sorted[@]}")
@@ -1784,7 +1784,7 @@ function yaml_get() {
 function yaml_get_json() {
   local yaml="$1"
 
-  echo $(php "$CLOUDY_ROOT/php/helpers.php" "yaml_to_json" "$yaml_content")
+  echo $("$CLOUDY_PHP" "$CLOUDY_ROOT/php/helpers.php" "yaml_to_json" "$yaml_content")
 }
 
 #

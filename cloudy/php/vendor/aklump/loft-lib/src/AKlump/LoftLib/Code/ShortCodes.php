@@ -18,6 +18,38 @@ namespace AKlump\LoftLib\Code;
 final class ShortCodes {
 
   /**
+   * @var array
+   */
+  static $cache = [];
+
+  /**
+   * Prepare/alter $base before inflating.
+   *
+   * Use this method to cleanup markup before calling ::inflate on $base.  For
+   * example you may want to remove <p/> tags that are wrapping a shortcode
+   * that returns a <p/> so that you don't have nexted <p/> tags.
+   *
+   * @param string $base
+   *   The string that contains elements to be replaced.
+   * @param array $element_value_map
+   *   An array keyed by element name, whose values are callables that receive
+   *   ($base) only if the shortcode element name exists in $base.  Each
+   *   callable must return $base mutated as necessary.  The callback order is
+   *   dependent on the order of keys in $element_value_map, not the order of
+   *   the shortcodes as they appear in $base.
+   */
+  public static function prepare($base, array $element_value_map) {
+    $callables = array_intersect_key($element_value_map, array_flip(array_map(function ($item) {
+      return $item['name'];
+    }, static::getElements($base))));
+    foreach ($callables as $callable) {
+      $base = $callable($base);
+    }
+
+    return $base;
+  }
+
+  /**
    * Replace React-style element names with rendered array values.
    *
    * @param string $base
@@ -96,46 +128,60 @@ final class ShortCodes {
    *   - attributes array An array of key/value attributes if exists.s
    */
   public static function getElements($base) {
-    // Generate a set of paired matchers based on opening tags.
-    $self_closing = '\[\s*([a-z0-9_]*)\s*([^\]\/]*)\s*\]';
-    preg_match_all("/($self_closing)/", $base, $matches, PREG_SET_ORDER);
-    $matchers = array_map(function ($match) {
-      $tag = $match[2];
-      $self_closing = '\[\s*(%s)\s*([^\]\/]*)\s*\]';
-      $enclosing = '\[\s*(%s)\s*([^\]\/]*)\s*\](.*?)\[\/\s*%s+\]';
+    $cid = md5($base);
+    if (!isset(static::$cache['elements'][$cid])) {
 
-      return sprintf("/($enclosing)|($self_closing)/", $tag, $tag, $tag);
-    }, $matches);
-    $elements = [];
-    while ($regex = array_shift($matchers)) {
-      preg_match_all($regex, $base, $matches, PREG_SET_ORDER);
-      foreach ($matches as $match) {
-        $self_closing = !empty($match[5]);
-        if ($self_closing) {
-          $name = $match[6];
-          $attributes = !empty($match[7]) ? $match[7] : '';
-          $inner_html = '';
+      // Generate a set of paired matchers based on opening tags.
+      $self_closing = '\[\s*([a-z0-9_]*)\s*([^\]\/]*)\s*\]';
+      preg_match_all("/($self_closing)/", $base, $matches, PREG_SET_ORDER);
+      $matchers = array_map(function ($match) {
+        $tag = $match[2];
+        $self_closing = '\[\s*(%s)\s*([^\]\/]*)\s*\]';
+        $enclosing = '\[\s*(%s)\s*([^\]\/]*)\s*\](.*?)\[\/\s*%s+\]';
+
+        return sprintf("/($enclosing)|($self_closing)/", $tag, $tag, $tag);
+      }, $matches);
+      $elements = [];
+      while ($regex = array_shift($matchers)) {
+        preg_match_all($regex, $base, $matches, PREG_SET_ORDER);
+        foreach ($matches as $match) {
+          $self_closing = !empty($match[5]);
+          if ($self_closing) {
+            $name = $match[6];
+            $attributes = !empty($match[7]) ? $match[7] : '';
+            $inner_html = '';
+          }
+          else {
+            $name = $match[2];
+            $attributes = !empty($match[3]) ? $match[3] : '';
+            $inner_html = !empty($match[4]) ? $match[4] : '';
+          }
+          try {
+            $attributes = self::parseAttributesString($attributes);
+          }
+          catch (\Exception $exception) {
+            // Purposefully left blank, we'll silently ignore the offending
+            // element and go on to the next one.
+          }
+          if ($name) {
+            $elements[] = [
+              'name' => $name,
+              'inner_html' => strval($inner_html),
+              'attributes' => $attributes,
+            ];
+          }
         }
-        else {
-          $name = $match[2];
-          $attributes = !empty($match[3]) ? $match[3] : '';
-          $inner_html = !empty($match[4]) ? $match[4] : '';
-        }
-        $elements[] = [
-          'name' => $name,
-          'inner_html' => strval($inner_html),
-          'attributes' => self::parseAttributesString($attributes),
-        ];
       }
+      static::$cache['elements'][$cid] = $elements;
     }
 
-    return $elements;
+    return static::$cache['elements'][$cid];
   }
 
   /**
    * Convert a string of attributes to an array.
    *
-   * @param $string
+   * @param string $string
    *   The attribute string, e.g., 'foo="bar" bar-baz="alpha"'.
    *
    * @return array
@@ -143,8 +189,8 @@ final class ShortCodes {
    */
   private static function parseAttributesString($string) {
     $attributes = [];
-    if (trim($string)) {
-      $xml = simplexml_load_string('<div ' . $string . '/>');
+    if (strstr($string, '=') && ($string = trim($string, '  '))) {
+      $xml = @simplexml_load_string('<div ' . $string . '/>');
       if ($xml === FALSE) {
         throw new \RuntimeException("Malformed attributes: \"$string\"");
       }
