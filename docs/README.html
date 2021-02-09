@@ -35,12 +35,31 @@
 
 <h2>Quick Start</h2>
 
-<pre><code class="bash">$ cd /path/to/app
+<p>Add to your codebase, and deploy across environments as you would any other change:</p>
+
+<pre><code class="bash">$ cd /path/to/local/app
 $ composer require aklump/loft-deploy
+</code></pre>
+
+<p>On your production server do the following to configure it:</p>
+
+<pre><code class="bash">$ cd /path/to/production/app
+$ ./vendor/bin/loft_deploy.sh init prod
+$ ./vendor/bin/loft_deploy.sh config
+$ ./vendor/bin/loft_deploy.sh configtest
+</code></pre>
+
+<p>On your local machine, configure it:</p>
+
+<pre><code class="bash">$ cd /path/to/local/app
 $ ./vendor/bin/loft_deploy.sh init dev
 $ ./vendor/bin/loft_deploy.sh config
 $ ./vendor/bin/loft_deploy.sh configtest
-$ ./vendor/bin/loft_deploy.sh help
+</code></pre>
+
+<p>Now pull your non SCM assets from production to local:</p>
+
+<pre><code class="bash">$ ./vendor/bin/loft_deploy.sh pull
 </code></pre>
 
 <h2>Requirements</h2>
@@ -93,6 +112,8 @@ only install one symlink for many projects, even if those many projects have dif
 
 <p>Be sure to <strong>test your configuration</strong> until you see no warnings  <code>$ ldp configtest</code>.</p>
 
+<p>See also <a href="configuration.html">configuration</a></p>
+
 <h2>Usage</h2>
 
 <p>See inner documentation for how to use.</p>
@@ -120,7 +141,7 @@ PO Box 29294 Bellingham, WA 98228-1294</p>
 <footer>
   <div class="pager"><a href="hooks.html" class="prev hooks">&laquo;Hooks</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="migrations.html" class="next migrations">Migrations&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.17.2 &bull; Last Updated: Mon, 08 Feb 2021 20:15:38 -0800</p>
+    <p class="legaleeze center">Version: 0.17.3 &bull; Last Updated: Mon, 08 Feb 2021 20:40:50 -0800</p>
   </div>
 </footer>
 

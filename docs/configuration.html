@@ -7,7 +7,7 @@
   <link href="style.css" rel="stylesheet">
 </head>
 
-<body class="page--configuration">
+<body class="page--config">
 <header>
   <div class="pager"><a href="CHANGELOG.html" class="prev CHANGELOG">&laquo;Changelog</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="hooks.html" class="next hooks">Hooks&raquo;</a></div></header>
 <section class="sub-header">
@@ -147,14 +147,14 @@ staging:
 
 <h2>To indicate PHP version</h2>
 
-<p>If you need to specify a php version you must add the following to <em>.bash_profile</em> or <em>.bashrc</em>.  You cannot add PHP to the YAML configuration.</p>
+<p>You can override the PHP version by setting the environment variable <code>LOFT_DEPLOY_PHP</code> with the path to the correct version.   Note: You cannot add PHP to the YAML configuration.</p>
 
 <pre><code>export LOFT_DEPLOY_PHP="/Applications/MAMP/bin/php/php7.1.12/bin/php"
 </code></pre>
 
-<p>If you're calling this from a script you can do like this:</p>
+<p>If you're calling this from the CLI you can do like this:</p>
 
-<pre><code>export LOFT_DEPLOY_PHP=/Applications/MAMP/bin/php/php7.1.12/bin/php; cd /Users/aklump/Code/Projects/MyProject &amp;&amp; /Users/aklump/bin/loft_deploy export loft_dev_auto -fy
+<pre><code>export LOFT_DEPLOY_PHP=/Applications/MAMP/bin/php/php7.1.12/bin/php; ldp export foo_bar -fy
 </code></pre>
 </section>
 
@@ -165,7 +165,7 @@ staging:
 <footer>
   <div class="pager"><a href="CHANGELOG.html" class="prev CHANGELOG">&laquo;Changelog</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="hooks.html" class="next hooks">Hooks&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.17.2 &bull; Last Updated: Mon, 08 Feb 2021 20:15:38 -0800</p>
+    <p class="legaleeze center">Version: 0.17.3 &bull; Last Updated: Mon, 08 Feb 2021 20:40:50 -0800</p>
   </div>
 </footer>
 
