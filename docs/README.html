@@ -25,15 +25,30 @@
 
 <section>
 
-<p>A bridge across website instances/environments to simplify the exchange of database and files not under SCM.</p>
+<p><img src="images/loft-deploy.jpg" alt="Loft Deploy" /></p>
 
-<h2>Installation</h2>
+<h2>Summary</h2>
 
-<p>Install in your project root using Composer.</p>
+<p>A bridge across website instances/environments to simplify the exchange of database and files not under SCM.  This was first written having Drupal in mind, though it works for other frameworks as well.</p>
+
+<p><strong>Visit <a href="https://aklump.github.io/loft_deploy">https://aklump.github.io/loft_deploy</a> for full documentation.</strong></p>
+
+<h2>Quick Start</h2>
 
 <pre><code class="bash">$ cd /path/to/app
 $ composer require aklump/loft-deploy
+$ ./vendor/bin/loft_deploy.sh init dev
+$ ./vendor/bin/loft_deploy.sh config
+$ ./vendor/bin/loft_deploy.sh configtest
+$ ./vendor/bin/loft_deploy.sh help
 </code></pre>
+
+<h2>Requirements</h2>
+
+<ol>
+<li><a href="https://getcomposer.org/">Composer</a></li>
+<li>PHP</li>
+</ol>
 
 <h2>Using the <code>ldp</code> command</h2>
 
@@ -69,35 +84,33 @@ only install one symlink for many projects, even if those many projects have dif
 
 <h2>Configuration</h2>
 
-<p>Once installed initiate configuration:</p>
-
-<pre><code class="bash">$ cd /path/to/app
-$ ldp init {prod,dev,staging}
-</code></pre>
-
-<p>Now edit the configuration file one of two ways:</p>
+<p>The configuration file may be edited in one of two ways:</p>
 
 <ol>
-<li><code>$ ldp config</code></li>
-<li>Open <em>/path/to/app/.loft_deploy/config</em> in your favorite editor.</li>
-<li>Test your configuration until you see no warnings <code>$ ldp configtest</code></li>
+<li><code>$ ldp config</code> (using <code>$EDITOR</code>)</li>
+<li>Open <em>/path/to/app/.loft_deploy/config.yml</em> in your editor of choice.</li>
 </ol>
 
-<h2>Documentation</h2>
+<p>Be sure to <strong>test your configuration</strong> until you see no warnings  <code>$ ldp configtest</code>.</p>
 
-<p>After downloading, open <code>docs/index.html</code> for documentation.</p>
+<h2>Usage</h2>
 
-<h2>Contact</h2>
+<p>See inner documentation for how to use.</p>
 
-<ul>
-<li><strong>In the Loft Studios</strong></li>
-<li>Aaron Klump - Developer</li>
-<li>PO Box 29294 Bellingham, WA 98228-1294</li>
-<li><em>aim</em>: theloft101</li>
-<li><em>skype</em>: intheloftstudios</li>
-<li><em>d.o</em>: aklump</li>
-<li><a href="http://www.InTheLoftStudios.com">http://www.InTheLoftStudios.com</a></li>
-</ul>
+<h2>Contributing</h2>
+
+<p>If you find this project useful... please consider <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=4E5KZHDQCEUV8&amp;item_name=Gratitude%20for%20aklump%2Floft_deploy">making a donation</a>.</p>
+
+<h2>Contact The Developer</h2>
+
+<p>In the Loft Studios<br />
+Aaron Klump - Web Developer<br />
+sourcecode@intheloftstudios.com<br />
+360.690.6432<br />
+PO Box 29294 Bellingham, WA 98228-1294</p>
+
+<p><a href="http://www.intheloftstudios.com">http://www.intheloftstudios.com</a><br />
+<a href="https://github.com/aklump">https://github.com/aklump</a></p>
 </section>
 
 <div class="search__results">
@@ -107,7 +120,7 @@ $ ldp init {prod,dev,staging}
 <footer>
   <div class="pager"><a href="hooks.html" class="prev hooks">&laquo;Hooks</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="migrations.html" class="next migrations">Migrations&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.17.0 &bull; Last Updated: Mon, 08 Feb 2021 19:52:44 -0800</p>
+    <p class="legaleeze center">Version: 0.17.0 &bull; Last Updated: Mon, 08 Feb 2021 20:11:15 -0800</p>
   </div>
 </footer>
 

@@ -1,15 +1,28 @@
 # Loft Deploy
 
-A bridge across website instances/environments to simplify the exchange of database and files not under SCM.
+![Loft Deploy](docs/images/loft-deploy.jpg)
 
-## Installation
+## Summary
 
-Install in your project root using Composer.
+A bridge across website instances/environments to simplify the exchange of database and files not under SCM.  This was first written having Drupal in mind, though it works for other frameworks as well.
+
+**Visit <https://aklump.github.io/loft_deploy> for full documentation.**
+
+## Quick Start
 
 ```bash
 $ cd /path/to/app
 $ composer require aklump/loft-deploy
+$ ./vendor/bin/loft_deploy.sh init dev
+$ ./vendor/bin/loft_deploy.sh config
+$ ./vendor/bin/loft_deploy.sh configtest
+$ ./vendor/bin/loft_deploy.sh help
 ```
+
+## Requirements
+
+1. [Composer](https://getcomposer.org/)
+1. PHP
 
 ## Using the `ldp` command
 
@@ -46,28 +59,28 @@ only install one symlink for many projects, even if those many projects have dif
 
 ## Configuration
 
-Once installed initiate configuration:
-```bash
-$ cd /path/to/app
-$ ldp init {prod,dev,staging}
-```
+The configuration file may be edited in one of two ways:
 
-Now edit the configuration file one of two ways:
+1. `$ ldp config` (using `$EDITOR`)
+1. Open _/path/to/app/.loft_deploy/config.yml_ in your editor of choice.
 
-1. `$ ldp config`
-1. Open _/path/to/app/.loft_deploy/config_ in your favorite editor.
-1. Test your configuration until you see no warnings `$ ldp configtest`
+Be sure to **test your configuration** until you see no warnings  `$ ldp configtest`.
 
-## Documentation
+## Usage
 
-After downloading, open `docs/index.html` for documentation.
+See inner documentation for how to use.
 
-## Contact
+## Contributing
 
-* **In the Loft Studios**
-* Aaron Klump - Developer
-* PO Box 29294 Bellingham, WA 98228-1294
-* _aim_: theloft101
-* _skype_: intheloftstudios
-* _d.o_: aklump
-* <http://www.InTheLoftStudios.com>
+If you find this project useful... please consider [making a donation](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4E5KZHDQCEUV8&item_name=Gratitude%20for%20aklump%2Floft_deploy).
+
+## Contact The Developer
+
+In the Loft Studios  
+Aaron Klump - Web Developer  
+sourcecode@intheloftstudios.com  
+360.690.6432  
+PO Box 29294 Bellingham, WA 98228-1294
+
+<http://www.intheloftstudios.com>  
+<https://github.com/aklump>  
