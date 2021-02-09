@@ -111,10 +111,9 @@ function get_version() {
 validate_input || exit_with_failure "Input validation failed."
 
 # Determine the version of php to use based on:
-# 1. The option --php
 # 2. ENV var LOFT_DEPLOY_PHP
 # 3. the system 'php'
-ld_php="/usr/bin/php"
+ld_php="$(command -v php)"
 if [[ "$LOFT_DEPLOY_PHP" ]]; then
     ld_php="$LOFT_DEPLOY_PHP"
 fi

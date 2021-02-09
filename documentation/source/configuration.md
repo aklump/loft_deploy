@@ -83,10 +83,10 @@ You can define the binaries (except PHP) to use; more info in _includes/schema--
 
 ## To indicate PHP version
 
-If you need to specify a php version you must add the following to _.bash_profile_ or _.bashrc_.  You cannot add PHP to the YAML configuration.
+You can override the PHP version by setting the environment variable `LOFT_DEPLOY_PHP` with the path to the correct version.   Note: You cannot add PHP to the YAML configuration.
 
     export LOFT_DEPLOY_PHP="/Applications/MAMP/bin/php/php7.1.12/bin/php"
     
-If you're calling this from a script you can do like this:
+If you're calling this from the CLI you can do like this:
 
-    export LOFT_DEPLOY_PHP=/Applications/MAMP/bin/php/php7.1.12/bin/php; cd /Users/aklump/Code/Projects/MyProject && /Users/aklump/bin/loft_deploy export loft_dev_auto -fy
+    export LOFT_DEPLOY_PHP=/Applications/MAMP/bin/php/php7.1.12/bin/php; ldp export foo_bar -fy
