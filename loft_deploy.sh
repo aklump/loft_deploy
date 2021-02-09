@@ -100,6 +100,13 @@ cd "$WDIR"
 source "$r/cloudy/cloudy.sh"
 # End Cloudy Bootstrap
 
+function get_version() {
+    local version=$(grep "\"version\": \"" "$ROOT/composer.json")
+    version=${version/\"version\": \"/}
+    version=${version/\",/}
+    echo $version
+}
+
 # Input validation.
 validate_input || exit_with_failure "Input validation failed."
 
