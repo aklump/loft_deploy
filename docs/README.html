@@ -35,11 +35,22 @@
 
 <h2>Quick Start</h2>
 
-<p>Add to your codebase, and deploy across environments as you would any other change:</p>
+<p><em>Before you begin, to save from lot's of password entries, you should ensure key-based authentication is working between server instances.</em></p>
+
+<p>Add to your codebase:</p>
 
 <pre><code class="bash">$ cd /path/to/local/app
 $ composer require aklump/loft-deploy
 </code></pre>
+
+<p>Add the following to <em>.gitignore</em> for your project.</p>
+
+<pre><code class="text">.loft_deploy/
+</code></pre>
+
+<p>Now deploy across environments as you would any other change.</p>
+
+<hr />
 
 <p>On your production server do the following to configure it:</p>
 
@@ -47,9 +58,12 @@ $ composer require aklump/loft-deploy
 $ ./vendor/bin/loft_deploy.sh init prod
 $ ./vendor/bin/loft_deploy.sh config
 $ ./vendor/bin/loft_deploy.sh configtest
+$ ./vendor/bin/loft_deploy.sh config-export
 </code></pre>
 
-<p>On your local machine, configure it:</p>
+<hr />
+
+<p>On your local machine, configure it, adding the snippet generated in the previous step via <code>config-export</code>.</p>
 
 <pre><code class="bash">$ cd /path/to/local/app
 $ ./vendor/bin/loft_deploy.sh init dev
@@ -67,6 +81,7 @@ $ ./vendor/bin/loft_deploy.sh configtest
 <ol>
 <li><a href="https://getcomposer.org/">Composer</a></li>
 <li>PHP</li>
+<li>Key-based server authentication</li>
 </ol>
 
 <h2>Using the <code>ldp</code> command</h2>
@@ -141,7 +156,7 @@ PO Box 29294 Bellingham, WA 98228-1294</p>
 <footer>
   <div class="pager"><a href="hooks.html" class="prev hooks">&laquo;Hooks</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="migrations.html" class="next migrations">Migrations&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.17.4 &bull; Last Updated: Mon, 08 Feb 2021 21:33:12 -0800</p>
+    <p class="legaleeze center">Version: 0.17.5 &bull; Last Updated: Tue, 09 Feb 2021 14:48:32 -0800</p>
   </div>
 </footer>
 
