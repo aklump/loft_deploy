@@ -309,11 +309,11 @@ function load_config() {
   local mod_cached_path="$config_dir/cache/config.yml.modified.txt"
   [ -f "$mod_cached_path" ] || touch "$mod_cached_path"
   local last_modified_cached=$(cat "$config_dir/cache/config.yml.modified.txt")
-  local last_modified=$($ld_php -r "echo filemtime('$config_dir/config.yml');")
+  local last_modified=$("$CLOUDY_PHP" -r "echo filemtime('$config_dir/config.yml');")
 
   # Test if the yaml file was modified and automatically rebuild config.yml.sh
   if [[ "$last_modified_cached" != "$last_modified" ]]; then
-    $ld_php "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json" && echo_green "Changes detected in config.yml." || return 1
+    "$CLOUDY_PHP" "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json" && echo_green "Changes detected in config.yml." || return 1
     rm -f "$local_db_cnf"
     echo "$last_modified" >"$mod_cached_path"
   fi

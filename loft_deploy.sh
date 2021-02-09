@@ -62,7 +62,11 @@ CONFIG="loft_deploy.yml";
 # Uncomment this line to enable file logging.
 #LOGFILE="loft_deploy.log"
 
-# TODO: Event handlers and other functions go here or source another file.
+function on_pre_config() {
+  if [[ "$LOFT_DEPLOY_PHP" ]]; then
+    CLOUDY_PHP="$LOFT_DEPLOY_PHP"
+  fi
+}
 
 function on_compile_config() {
     # Make the instance configuration accessible to Cloudy.
@@ -70,15 +74,15 @@ function on_compile_config() {
 }
 
 function on_clear_cache() {
-    # Convert config from yaml to bash.
-    $ld_php "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json"
-    status=$?
-    if [ $status -ne 0 ]; then
-        fail_because "YAML config could not be converted." && return 1
-    fi
-    succeed_because "$(echo_green "config.yml.sh")"
-    load_config
-    generate_db_cnf && succeed_because "$(echo_green "local.cnf")"
+  # Convert config from yaml to bash.
+  "$CLOUDY_PHP" "$INCLUDES/config.php" "$config_dir" "$INCLUDES/schema--config.json"
+  status=$?
+  if [ $status -ne 0 ]; then
+    fail_because "YAML config could not be converted." && return 1
+  fi
+  succeed_because "$(echo_green "config.yml.sh")"
+  load_config
+  generate_db_cnf && succeed_because "$(echo_green "local.cnf")"
 }
 
 # Begin Cloudy Bootstrap
