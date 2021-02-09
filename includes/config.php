@@ -64,6 +64,13 @@ try {
   $bash = new ConfigBash($config_dir . '/cache', 'config.yml.sh', array('install' => TRUE));
 
   $config = Yaml::parse($config_file->load()->get());
+
+
+  // Some hand-picked tricky validation which precedes the json schema.
+  isset($config['local']) && validate_drupal_lando_collision('local', $config['local']);
+  isset($config['prod']) && validate_drupal_lando_collision('prod', $config['prod']);
+  isset($config['staging']) && validate_drupal_lando_collision('staging', $config['staging']);
+
   $validator = new Validator;
   $_config = json_decode(json_encode($config));
   $validator->validate($_config, $schema_json);
@@ -281,4 +288,20 @@ catch (\Exception $exception) {
   $error_items[] = $exception->getMessage();
   print Output::tree($error_items) . PHP_EOL;
   exit(1);
+}
+
+
+/**
+ * Validate that there is not a clash between lando and drupal settings.
+ *
+ * @param string $prefix
+ * @param array $config
+ */
+function validate_drupal_lando_collision(string $prefix, array $config) {
+  if (empty($config)) {
+    return;
+  }
+  if (!empty($config['drupal']['settings']) && !empty($config['database']['lando'])) {
+    throw new \RuntimeException("You cannot use \"{$prefix}.drupal.settings\" and \"{$prefix}.database.lando\" simultaneously.  Remove one or the other.");
+  }
 }
