@@ -2,14 +2,14 @@
 
 <html>
 <head>
-  <title>Update</title>
+  <title>Troubleshooting</title>
   <link href="search/tipuesearch.css" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
 
-<body class="page--update">
+<body class="page--troubleshooting">
 <header>
-  <div class="pager"><a href="troubleshooting.html" class="prev troubleshooting">&laquo;Troubleshooting</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="user_files.html" class="next user_files">User (non-versioned) files component&raquo;</a></div></header>
+  <div class="pager"><a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon Websites</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="update.html" class="next update">Update&raquo;</a></div></header>
 <section class="sub-header">
   <div class="breadcrumbs"><a href="index.html">Index</a>
          &raquo
@@ -21,21 +21,13 @@
   </section>
 
 
-<h1>Update</h1>
+<h1>Troubleshooting</h1>
 
 <section>
 
-<h2>Manual Update to 0.14</h2>
+<h2>Trouble Connecting to Prod or Staging</h2>
 
-<p>This update converts the old config style into YAML:</p>
-
-<ol>
-<li>Copy one of <em>install/config/*.yml</em> files to <em>.loft_deploy/config.yml</em>; based on the role of the local.</li>
-<li>Hand copy/paste config values from <em>.loft_deploy/config</em> into <em>.loft_deploy/config.yml</em>.</li>
-<li>Delete <em>.loft_deploy/config</em>.</li>
-<li>Run <code>ldp clearcache</code>.</li>
-<li>Run <code>ldp configtest</code> and adjust as necessary.</li>
-</ol>
+<p>You may need force a load of <em>~/.profile</em> by using the <code>production.ssh</code> configuration.</p>
 </section>
 
 <div class="search__results">
@@ -43,7 +35,7 @@
 </div>
 
 <footer>
-  <div class="pager"><a href="troubleshooting.html" class="prev troubleshooting">&laquo;Troubleshooting</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="user_files.html" class="next user_files">User (non-versioned) files component&raquo;</a></div>  
+  <div class="pager"><a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon Websites</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="update.html" class="next update">Update&raquo;</a></div>  
   <div id="footer-legaleeze">
     <p class="legaleeze center">Version: 0.17.7 &bull; Last Updated: Tue, 09 Feb 2021 17:44:03 -0800</p>
   </div>
