@@ -324,7 +324,7 @@ function load_config() {
   # Database is coming in from Drupal settings file.
   #
   if [[ "$local_drupal_settings" ]]; then
-    read -r -a settings <<<$(php "$ROOT/includes/drupal_settings.php" "$local_drupal_root" "$local_drupal_settings" "$local_drupal_db")
+    read -r -a settings <<<$("$CLOUDY_PHP" "$ROOT/includes/drupal_settings.php" "$local_drupal_root" "$local_drupal_settings" "$local_drupal_db")
     local_db_host=${settings[0]}
     local_db_name=${settings[1]}
     local_db_user=${settings[2]}
@@ -335,7 +335,7 @@ function load_config() {
   # Database in using a Lando connection.
   #
   elif [[ "$local_lando_db_service" ]]; then
-    lando=$(php "$ROOT/includes/lando_settings.php" "$ld_lando" "$local_lando_db_service" "$($ld_lando info --format=json)")
+    lando=$("$CLOUDY_PHP" "$ROOT/includes/lando_settings.php" "$ld_lando" "$local_lando_db_service" "$($ld_lando info --format=json)")
     [[ $? -ne 0 ]] && exit_with_failure "Failed to determine the Lando database configuration".
     read -r -a settings <<<"$lando"
     local_db_protocol='tcp'
@@ -2306,7 +2306,7 @@ function hooks_yaml_set_var() {
     return 1
   fi
 
-  php "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" "$value" yamlSetVar
+  "$CLOUDY_PHP" "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" "$value" yamlSetVar
   local result=$?
 
   if [[ $result -ne 0 ]]; then
@@ -2345,7 +2345,7 @@ function hooks_set_vars_to_null() {
     return 1
   fi
 
-  php "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" setVariableByName
+  "$CLOUDY_PHP" "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" setVariableByName
   local result=$?
 
   [[ $result -eq 0 ]] && echo_green "├── $var_names_csv set to NULL."
@@ -2358,7 +2358,7 @@ function hooks_set_vars_to_null() {
 function hooks_env_sanitize_url() {
   local file="$1"
   local var_names_csv="$2"
-  php "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" envSanitizeUrl
+  "$CLOUDY_PHP" "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" envSanitizeUrl
   local result=$?
 
   [[ $result -eq 0 ]] && echo_green "├── Password(s) in $var_names_csv have been masked."
@@ -2377,7 +2377,7 @@ function hooks_env_set_var() {
   local var_names_csv="$2"
   local value="$3"
 
-  php "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" "$value" envSetVar
+  "$CLOUDY_PHP" "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" "$value" envSetVar
   local result=$?
   [[ "$value" ]] || value="''"
 
