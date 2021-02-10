@@ -1613,19 +1613,19 @@ function configtest() {
     configtest_return=false
   fi
   if ! [ -e "$ld_mysqldump" ]; then
-    warning "$(_tool_not_found mysqldump $ld_mysqldump )"
+    warning "$(_tool_not_found mysqldump $ld_mysqldump)"
     configtest_return=false
   fi
   if ! [ -e "$ld_gunzip" ]; then
-    warning "$(_tool_not_found gunzip $ld_gunzip )"
+    warning "$(_tool_not_found gunzip $ld_gunzip)"
     configtest_return=false
   fi
   if ! [ -e "$ld_gzip" ]; then
-    warning "$(_tool_not_found gzip $ld_gzip )"
+    warning "$(_tool_not_found gzip $ld_gzip)"
     configtest_return=false
   fi
   if ! [ -e "$ld_scp" ]; then
-    warning "$(_tool_not_found scp $ld_scp )"
+    warning "$(_tool_not_found scp $ld_scp)"
     configtest_return=false
   fi
 
@@ -1920,7 +1920,7 @@ function show_info() {
       list_add_item $(path_unresolve "$(pwd)" "$ld_rsync_exclude_file3")
     fi
     if list_has_items; then
-#      echo_yellow_highlight "Ignoring files listed in:"
+      #      echo_yellow_highlight "Ignoring files listed in:"
       echo_heading "Ignoring files listed in:"
       echo_list && echo && echo
     fi
