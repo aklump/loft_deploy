@@ -2411,8 +2411,8 @@ function ssh_prod() {
   fi
 
   local prefix=''
-  if [[ "$prod_ssh" ]]; then
-    prefix="${prod_ssh};"
+  if [[ "$production_ssh" ]]; then
+    prefix="${production_ssh};"
   fi
 
   $program ${production_server}${production_ssh_port} "${prefix}cd ${production_root};${command}"
