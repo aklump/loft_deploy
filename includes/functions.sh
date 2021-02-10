@@ -367,20 +367,16 @@ function load_config() {
   fi
 
   # Setup the port by prefixing with -p
-  production_ssh_port=''
   production_scp_port=''
   production_rsync_port=''
   if [ "$production_port" ]; then
-    production_ssh_port=" -p $production_port "
     production_scp_port=" -P $production_port "
   fi
 
   # Setup the port by prefixing with -p
-  staging_ssh_port=''
   staging_scp_port=''
   staging_rsync_port=''
   if [ "$staging_port" ]; then
-    staging_ssh_port=" -p $staging_port "
     staging_scp_port=" -P $staging_port "
   fi
 
@@ -393,7 +389,7 @@ function load_config() {
 function load_production_config() {
   echo_heading "Checking production config..."
   if [ "$production_server" ] && [ "$production_script" ]; then
-    production=($(ssh $production_server$production_ssh_port "cd $production_root && $production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_files2; $production_script get local_files3; $production_script get local_db_port; $production_script get local_copy_source;"))
+    production=($(ssh_prod "$production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_files2; $production_script get local_files3; $production_script get local_db_port; $production_script get local_copy_source;"))
     production_db_host="${production[0]}"
     production_db_name="${production[1]}"
     production_db_user="${production[2]}"
@@ -419,7 +415,7 @@ function load_production_config() {
 function load_staging_config() {
   echo_heading "Checking staging config..."
   if [ "$staging_server" ] && [ "$staging_script" ]; then
-    staging=($(ssh $staging_server$staging_ssh_port "cd $staging_root && $staging_script get local_db_host; $staging_script get local_db_name; $staging_script get local_db_user; $staging_script get local_db_pass; $staging_script get local_db_dir; $staging_script get local_files; $staging_script get local_files2; $staging_script get local_files3; $staging_script get local_db_port; $staging_script get local_copy_source;"))
+    staging=($(ssh_staging "$staging_script get local_db_host; $staging_script get local_db_name; $staging_script get local_db_user; $staging_script get local_db_pass; $staging_script get local_db_dir; $staging_script get local_files; $staging_script get local_files2; $staging_script get local_files3; $staging_script get local_db_port; $staging_script get local_copy_source;"))
     staging_db_host="${staging[0]}"
     staging_db_name="${staging[1]}"
     staging_db_user="${staging[2]}"
@@ -757,9 +753,9 @@ function _fetch_db_production() {
 
     show_switch
     if has_option v; then
-      ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix"
+      ssh_prod ". $production_script export $_export_suffix"
     else
-      ssh $production_server$production_ssh_port "cd $production_root && . $production_script export $_export_suffix" >/dev/null
+      ssh_prod ". $production_script export $_export_suffix" >/dev/null
     fi
     wait
     [[ $? -eq 0 ]] && echo_green "├── Database exported and ready to download." || echo_red "Remote export failed."
@@ -774,9 +770,9 @@ function _fetch_db_production() {
 
     # delete it from remote
     if has_option v; then
-      ssh $production_server$production_ssh_port "rm $_remote_file"
+      ssh_prod "rm $_remote_file"
     else
-      ssh $production_server$production_ssh_port "rm $_remote_file" >/dev/null
+      ssh_prod "rm $_remote_file" >/dev/null
     fi
     show_switch
 
@@ -805,7 +801,7 @@ function _fetch_db_staging() {
   echo "Exporting staging db..."
   local _export_suffix='fetch_db'
   show_switch
-  ssh $staging_server "cd $staging_root && . $staging_script export $_export_suffix"
+  ssh_staging ". $staging_script export $_export_suffix"
   wait
 
   echo "Downloading from staging..."
@@ -818,7 +814,7 @@ function _fetch_db_staging() {
 
   # delete it from remote
   echo "Deleting the staging copy..."
-  ssh $staging_server "rm $_remote_file"
+  ssh_staging "rm $_remote_file"
   show_switch
 }
 
@@ -1304,13 +1300,13 @@ function push_db() {
 
   # Log into staging and import the database.
   show_switch
-  ssh $staging_server "cd $staging_root && . $staging_script -y import $staging_db_dir/$filename" || status=false
+  ssh_staging ". $staging_script -y import $staging_db_dir/$filename" || status=false
 
   # Strip off the gz suffix then delete file from staging.  We pushed the
   # gzipped file, but it was unzipped during import, leaveing a file without
   # the .gz suffix orphaned on the remote server.
   _remote_file=${_remote_file%.*}
-  ssh $staging_server "[ ! -e $_remote_file ] || rm $_remote_file" || status=false
+  ssh_staging "[ ! -e $_remote_file ] || rm $_remote_file" || status=false
   show_switch
 
   # Delete our local copy
@@ -1655,7 +1651,7 @@ function configtest() {
   fi
 
   # Assert production script is found on remote
-  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_script}' ]"; then
+  if [ "$production_root" ] && ! ssh_prod "[ -f '${production_script}' ]"; then
     configtest_return=false
     warning "production_script: ${production_script} not found. Make sure you're not using ~ in the path."
   fi
@@ -1675,7 +1671,7 @@ function configtest() {
 
   # Test that local prod connects to a remote environment with a prod role
   if [ "$prod_server" ]; then
-    role=$(ssh $prod_server$prod_ssh_port "cd $prod_root && . $prod_script get local_role")
+    role=$(ssh_prod ". $prod_script get local_role")
     if [ "$role" != 'prod' ]; then
       configtest_return=false
       warning "Prod server as defined locally reports it's role as '$role'"
@@ -1689,7 +1685,7 @@ function configtest() {
   fi
 
   # Assert staging script is found on remote
-  if [ "$staging_root" ] && ! ssh $staging_server$staging_ssh_port "[ -f '${staging_script}' ]"; then
+  if [ "$staging_root" ] && ! ssh_staging "[ -f '${staging_script}' ]"; then
     configtest_return=false
     warning "staging_script: ${staging_script} not found. Make sure you're not using ~ in the path."
   fi
@@ -1700,7 +1696,7 @@ function configtest() {
 
   # Test that local staging connects to a remote environment with a staging role
   if [ "$staging_server" ]; then
-    role=$(ssh $staging_server$staging_ssh_port "cd $staging_root && . $staging_script get local_role")
+    role=$(ssh_staging ". $staging_script get local_role")
     if [ "$role" != 'staging' ]; then
       configtest_return=false
       warning "Staging server as defined locally reports it's role as '$role'"
@@ -1716,7 +1712,7 @@ function configtest() {
   # Assert the production script is found.
 
   # Assert that the production file directory exists
-  if [ "$production_server" ] && [ "$production_files" ] && ! ssh $production_server$production_ssh_port "test -e $production_files"; then
+  if [ "$production_server" ] && [ "$production_files" ] && ! ssh_prod "test -e $production_files"; then
     configtest_return=false
     warning "Your production files directory doesn't exist: $production_files"
   fi
@@ -1769,12 +1765,12 @@ function configtest() {
     warning 'Your local db directory is outside of your configuration root.'
   fi
 
-  if [ "$production_server" ] && ! ssh $production_server$production_ssh_port "test -e $production_db_dir"; then
+  if [ "$production_server" ] && ! ssh_prod "test -e $production_db_dir"; then
     configtest_return=false
     warning "Production db dir doesn't exist: $production_db_dir"
   fi
 
-  if [ "$staging_server" ] && ! ssh $staging_server "test -e $staging_db_dir"; then
+  if [ "$staging_server" ] && ! ssh_staging "test -e $staging_db_dir"; then
     configtest_return=false
     warning "Staging db dir doesn't exist: $staging_db_dir"
   fi
@@ -1786,13 +1782,13 @@ function configtest() {
   fi
 
   # Connection test for prod
-  if [ "$production_server" ] && ! ssh -q $production_server$production_ssh_port exit; then
+  if [ "$production_server" ] && ! ssh_prod "exit" >/dev/null; then
     configtest_return=false
     warning "Can't connect to production server."
   fi
 
   # Connection test for staging
-  if [ "$staging_server" ] && ! ssh -q $staging_server exit; then
+  if [ "$staging_server" ] && ! ssh_staging "exit" >/dev/null; then
     configtest_return=false
     warning "Can't connect to staging server."
   fi
@@ -1804,19 +1800,19 @@ function configtest() {
   fi
 
   # Connection test to production/config test for production
-  if [ "$production_root" ] && ! ssh $production_server$production_ssh_port "[ -f '${production_root}/.loft_deploy/config.yml' ]"; then
+  if [ "$production_root" ] && ! ssh_prod "[ -f '${production_root}/.loft_deploy/config.yml' ]"; then
     configtest_return=false
     warning "production config.yml not found in  ${production_root}/.loft_deploy"
   fi
 
   # Connection test to staging/config test for staging
-  if [ "$staging_root" ] && ! ssh $staging_server$staging_ssh_port "[ -f '${staging_root}/.loft_deploy/config.yml' ]"; then
+  if [ "$staging_root" ] && ! ssh_staging "[ -f '${staging_root}/.loft_deploy/config.yml' ]"; then
     configtest_return=false
     warning "staging config.yml not found in  ${staging_root}/.loft_deploy"
   fi
 
   # Connection test to staging script test for staging
-  if [ "$staging_root" ] && ! ssh $staging_server "[ -f '${staging_script}' ]"; then
+  if [ "$staging_root" ] && ! ssh_staging "[ -f '${staging_script}' ]"; then
     configtest_return=false
     warning "staging_script: ${staging_script} not found. Make sure you're not using ~ in the path."
   fi
@@ -2398,4 +2394,48 @@ function get_public_ip() {
   [[ "$ip" ]] && echo "$ip" && exit 0
 
   exit 1
+}
+
+# Execute an a command via SSH to the prod server
+#
+# $1 - The command to execute
+#
+# Returns the ssh status
+function ssh_prod() {
+  local command="$1"
+
+  local program=$(command -v ssh)
+  production_ssh_port=''
+  if [ "$production_port" ]; then
+    production_ssh_port=" -p $production_port "
+  fi
+
+  local prefix=''
+  if [[ "$prod_ssh" ]]; then
+    prefix="${prod_ssh};"
+  fi
+
+  $program ${production_server}${production_ssh_port} "${prefix}cd ${production_root};${command}"
+}
+
+# Execute an a command via SSH to the prod server
+#
+# $1 - The command to execute
+#
+# Returns the ssh status
+function ssh_staging() {
+  local command="$1"
+
+  local program=$(command -v ssh)
+  staging_ssh_port=''
+  if [[ "$staging_port" ]]; then
+    staging_ssh_port=" -p $staging_port "
+  fi
+
+  local prefix=''
+  if [[ "$staging_ssh" ]]; then
+    prefix="${staging_ssh};"
+  fi
+
+  $program ${staging_server}${staging_ssh_port} "${prefix}cd ${staging_root};${command}"
 }

@@ -29,6 +29,7 @@ local:
     settings: web/sites/default/settings.php
     database: default
 production:
+#  ssh: ". ~/.profile; export LOFT_CORE_PHP=/usr/local/bin/php72"
   config: /var/www/some-site/.loft_deploy
   script: /usr/local/bin/loft_deploy
   user: username

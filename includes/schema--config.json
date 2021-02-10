@@ -153,6 +153,14 @@
                         },
                         "password": {
                             "type": "string"
+                        },
+                        "ssh": {
+                            "type": "string",
+                            "description": "A command (or string of commands) to be executed at the beginning of each ssh session; it can be used to export variables or source remote-only scripts as needed before running the remote loft_deploy.",
+                            "examples": [
+                                "~/.profile",
+                                "export LOFT_DEPLOY_PHP=/usr/local/bin/php72"
+                            ]
                         }
                     },
                     "additionalProperties": false,
