@@ -17,4 +17,4 @@ if [[ ! "$LOFT_DEPLOY" ]]; then
   echo "loft_deploy.sh not found. Have you installed it? [composer require aklump/loft-deploy]" && exit 1
 fi
 
-. "$LOFT_DEPLOY" $@
+. "$LOFT_DEPLOY" "$@"
