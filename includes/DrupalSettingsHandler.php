@@ -30,6 +30,12 @@ class DrupalSettingsHandler {
       throw new \RuntimeException(sprintf('%s settings file is not readable.', $this->pathToSettings));
     }
 
+    if (!defined('DRUPAL_ROOT')) {
+      define('DRUPAL_ROOT', $this->webroot);
+    }
+    if (!defined('CONFIG_SYNC_DIRECTORY')) {
+      define('CONFIG_SYNC_DIRECTORY', 'sync');
+    }
     require $this->pathToSettings;
 
     global $db_url;
@@ -58,7 +64,12 @@ class DrupalSettingsHandler {
     if (!is_readable($this->pathToSettings)) {
       throw new \RuntimeException(sprintf('%s settings file is not readable.', $this->pathToSettings));
     }
-
+    if (!defined('DRUPAL_ROOT')) {
+      define('DRUPAL_ROOT', $this->webroot);
+    }
+    if (!defined('CONFIG_SYNC_DIRECTORY')) {
+      define('CONFIG_SYNC_DIRECTORY', 'sync');
+    }
     require $this->pathToSettings;
 
     global $db_url;
@@ -83,7 +94,12 @@ class DrupalSettingsHandler {
     if (!is_readable($this->pathToSettings)) {
       throw new \RuntimeException(sprintf('%s settings file is not readable.', $this->pathToSettings));
     }
-
+    if (!defined('DRUPAL_ROOT')) {
+      define('DRUPAL_ROOT', $this->webroot);
+    }
+    if (!defined('CONFIG_SYNC_DIRECTORY')) {
+      define('CONFIG_SYNC_DIRECTORY', 'sync');
+    }
     require $this->pathToSettings;
 
     global $databases;
@@ -103,11 +119,10 @@ class DrupalSettingsHandler {
     \Drupal\Core\DrupalKernel::createFromRequest($request, $autoloader, $environment);
 
     $databases = \Drupal\Core\Database\Database::getConnectionInfo();
-    $database_key = $argv[3] ?? 'default';
-    if (!$databases[$database_key]) {
-      throw new \RuntimeException(sprintf("There appears to be no database defined in settings.php with the key of \"%s\"", $database_key));
+    if (!$databases[$this->databaseKey]) {
+      throw new \RuntimeException(sprintf("There appears to be no database defined in settings.php with the key of \"%s\"", $this->databaseKey));
     }
 
-    return $databases[$database_key];
+    return $databases[$this->databaseKey];
   }
 }

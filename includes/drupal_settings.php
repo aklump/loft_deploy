@@ -4,10 +4,6 @@
  * @file
  * Extract the database from the Drupal settings.
  */
-
-define('DRUPAL_ROOT', $argv[1]);
-define('CONFIG_SYNC_DIRECTORY', 'sync');
-
 require_once __DIR__ . '/DrupalSettingsHandler.php';
 
 $database_key = !empty($argv[3]) ? $argv[3] : 'default';
