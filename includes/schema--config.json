@@ -217,8 +217,7 @@
                                         }
                                     },
                                     "required": [
-                                        "root",
-                                        "settings"
+                                        "root"
                                     ]
                                 }
                             },

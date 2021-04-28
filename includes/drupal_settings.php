@@ -1,72 +1,34 @@
 <?php
+
 /**
- * Read a drupal settings file dynamically pulling out the db credentials
+ * @file
+ * Extract the database from the Drupal settings.
  */
 
 define('DRUPAL_ROOT', $argv[1]);
 define('CONFIG_SYNC_DIRECTORY', 'sync');
 
-// These are for Drupal8
-$app_root = $argv[1];
-$site_path = 'sites/' . $argv[3];
+require_once __DIR__ . '/DrupalSettingsHandler.php';
 
-//
-//
-// These functions are called in settings.php and should not be removed.
-//
-function t($text) {
-  return $text;
-}
-
-function conf_path() {}
-//
-//
-// End "bootstrap"
-//
-
-$path_to_settings = $argv[2];
-$db_key = !empty($argv[3]) ? $argv[3] : 'default';
-$fallback = 'default';
+$database_key = !empty($argv[3]) ? $argv[3] : 'default';
+$handler = new DrupalSettingsHandler($argv[1], $database_key, $argv[2]);
 
 try {
-  if (!is_readable($path_to_settings)) {
-    throw new \RuntimeException("$path_to_settings settings file is not readable.");
-  }
-
-  require $path_to_settings;
-
-  // Drupal 6
-  if (isset($db_url)) {
-    $parts = parse_url($db_url);
-    $db = array(
-      'driver' => $parts['scheme'],
-      'host' => $parts['host'],
-      'database' => trim($parts['path'], '/'),
-      'username' => $parts['user'],
-      'password' => $parts['pass'],
-      'port' => isset($parts['port']) ? $parts['port'] : '',
-    );
-  }
-  // Drupal 7, 8
-  else if (isset($databases[$db_key][$fallback])) {
-    $db = $databases[$db_key][$fallback] + array_fill_keys(array('database', 'username', 'password', 'port'), NULL);
-  }
-  else {
-    throw new \RuntimeException("Missing \$database variable.");
-  }
-
-  if (!in_array($db['driver'], array('mysql', 'mysqli'))) {
-    throw new \RuntimeException("Your driver {$db['driver']} is not yet supported by loft_deploy");
-  }
-
+  $version = $handler->getDrupalVersion();
+  $db = $handler->getDatabaseConfig($version);
+  $return = [];
   $return[] = empty($db['host']) ? 'localhost' : $db['host'];
   $return[] = $db['database'];
   $return[] = $db['username'];
   $return[] = $db['password'];
   $return[] = $db['port'];
-
-} catch (Exception $e) {
-  $return = array_fill(0, 4, '?');
 }
-$return = implode(" ", $return);
-echo $return;
+catch (Exception $e) {
+  echo "? ? ? ? ?";
+  exit(1);
+}
+echo implode(" ", $return);
+exit(0);
+
+
+
