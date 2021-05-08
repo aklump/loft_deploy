@@ -77,7 +77,7 @@ See also [sanitization using hooks](@sanitize).
 * Always `return` 0, or a non-zero if the hook fails.
 * Never `exit` in a hook file.
 * Give feedback as to what happened, rather that what is about to happen, e.g. Files downloaded. instead of "Downloading files..." when echoing bullet points.
-* See _install/base/hooks/example.sh_ for a code example.
+* See _init/base/hooks/example.sh_ for a code example.
 
 | var | description |
 |----------|----------|
