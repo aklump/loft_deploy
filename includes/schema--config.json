@@ -1,5 +1,11 @@
 {
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "definitions": {
+        "files": {
+            "type": "array",
+            "maxItems": 3,
+            "uniqueItems": true
+        },
         "title": {
             "type": "string"
         },
@@ -40,11 +46,6 @@
             "type": "string",
             "pattern": "\/.+"
         },
-        "files": {
-            "type": "array",
-            "maxItems": 3,
-            "uniqueItems": true
-        },
         "role": {
             "type": "string",
             "enum": [
@@ -53,52 +54,208 @@
                 "staging"
             ]
         },
-        "local": {
+        "local_drupal": {
+            "description": "Define the integration to a Drupal instance.",
             "type": "object",
             "properties": {
-                "title": {
-                    "$ref": "#/definitions/title"
-                },
-                "copy_source": {
-                    "type": "array",
-                    "uniqueItems": false
-                },
-                "copy_local_to": {
-                    "type": "array",
-                    "uniqueItems": true
-                },
-                "copy_production_to": {
-                    "type": "array",
-                    "uniqueItems": true
-                },
-                "copy_staging_to": {
-                    "type": "array",
-                    "uniqueItems": true
-                },
-                "location": {
+                "root": {
                     "type": "string"
                 },
-                "url": {
-                    "$ref": "#/definitions/url"
+                "settings": {
+                    "type": "string",
+                    "pattern": "settings\\.php$"
                 },
-                "basepath": {
-                    "$ref": "#/definitions/basepath"
-                },
-                "role": {
-                    "$ref": "#/definitions/role"
-                },
-                "files": {
-                    "$ref": "#/definitions/files"
-                },
-                "env_file": {
-                    "type": "array"
+                "database": {
+                    "type": "string"
                 }
-            }
+            },
+            "required": [
+                "root"
+            ]
+        },
+        "database_protocol": {
+            "type": "string",
+            "enum": [
+                "tcp",
+                "socket",
+                "pipe",
+                "memory"
+            ]
+        },
+        "database_backups": {
+            "type": "string"
+        },
+        "database_lando": {
+            "type": "string",
+            "pattern": "^(@drupal\\.host|.+)$"
+        },
+        "local": {
+            "allOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "title": {
+                            "$ref": "#/definitions/title"
+                        },
+                        "copy_source": {
+                            "type": ["array", "object"],
+                            "uniqueItems": false
+                        },
+                        "copy_local_to": {
+                            "type": ["array", "object"],
+                            "uniqueItems": true
+                        },
+                        "copy_production_to": {
+                            "type": ["array", "object"],
+                            "uniqueItems": true
+                        },
+                        "copy_staging_to": {
+                            "type": ["array", "object"],
+                            "uniqueItems": true
+                        },
+                        "location": {
+                            "type": "string"
+                        },
+                        "url": {
+                            "$ref": "#/definitions/url"
+                        },
+                        "basepath": {
+                            "$ref": "#/definitions/basepath"
+                        },
+                        "role": {
+                            "$ref": "#/definitions/role"
+                        },
+                        "files": {
+                            "$ref": "#/definitions/files"
+                        },
+                        "env_file": {
+                            "type": "array"
+                        }
+                    }
+                },
+                {
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "database": {
+                                    "type": "object",
+                                    "properties": {
+                                        "backups": {
+                                            "$ref": "#/definitions/database_backups"
+                                        },
+                                        "lando": {
+                                            "$ref": "#/definitions/database_lando"
+                                        }
+                                    },
+                                    "required": [
+                                        "backups"
+                                    ]
+                                },
+                                "drupal": {
+                                    "$ref": "#/definitions/local_drupal"
+                                }
+                            },
+                            "required": [
+                                "database",
+                                "drupal"
+                            ]
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "database": {
+                                    "type": "object",
+                                    "properties": {
+                                        "backups": {
+                                            "$ref": "#/definitions/database_backups"
+                                        },
+                                        "host": {
+                                            "type": "string"
+                                        },
+                                        "port": {
+                                            "type": "integer"
+                                        },
+                                        "user": {
+                                            "type": "string"
+                                        },
+                                        "password": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "protocol": {
+                                            "$ref": "#/definitions/database_protocol"
+                                        }
+                                    },
+                                    "required": [
+                                        "backups",
+                                        "host",
+                                        "user",
+                                        "password",
+                                        "name"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "database"
+                            ]
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "database": {
+                                    "type": "object",
+                                    "properties": {
+                                        "backups": {
+                                            "$ref": "#/definitions/database_backups"
+                                        },
+                                        "lando": {
+                                            "$ref": "#/definitions/database_lando"
+                                        }
+                                    },
+                                    "required": [
+                                        "backups",
+                                        "lando"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "database"
+                            ]
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "database": {
+                                    "type": "object",
+                                    "properties": {
+                                        "backups": {
+                                            "$ref": "#/definitions/database_backups"
+                                        },
+                                        "uri": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "backups",
+                                        "uri"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "database"
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         "remote": {
             "oneOf": [
                 {
-                    "$id": "To support Pantheon servers.",
+                    "description": "To support Pantheon servers.",
                     "type": "object",
                     "properties": {
                         "files": {
@@ -131,7 +288,7 @@
                     ]
                 },
                 {
-                    "$id": "To support SSH connections.",
+                    "description": "To support SSH connections.",
                     "type": "object",
                     "properties": {
                         "config": {
@@ -174,7 +331,6 @@
             ]
         }
     },
-    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
         "stage_may_pull_prod": {
@@ -185,141 +341,6 @@
             "allOf": [
                 {
                     "$ref": "#/definitions/local"
-                },
-                {
-                    "oneOf": [
-                        {
-                            "type": "object",
-                            "properties": {
-                                "database": {
-                                    "type": "object",
-                                    "properties": {
-                                        "backups": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "backups"
-                                    ]
-                                },
-                                "drupal": {
-                                    "type": "object",
-                                    "properties": {
-                                        "root": {
-                                            "type": "string"
-                                        },
-                                        "settings": {
-                                            "type": "string",
-                                            "pattern": "settings\\.php$"
-                                        },
-                                        "database": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "root"
-                                    ]
-                                }
-                            },
-                            "required": [
-                                "database",
-                                "drupal"
-                            ]
-                        },
-                        {
-                            "type": "object",
-                            "properties": {
-                                "database": {
-                                    "type": "object",
-                                    "properties": {
-                                        "backups": {
-                                            "type": "string"
-                                        },
-                                        "host": {
-                                            "type": "string"
-                                        },
-                                        "port": {
-                                            "type": "integer"
-                                        },
-                                        "user": {
-                                            "type": "string"
-                                        },
-                                        "password": {
-                                            "type": "string"
-                                        },
-                                        "name": {
-                                            "type": "string"
-                                        },
-                                        "protocol": {
-                                            "type": "string",
-                                            "enum": [
-                                                "tcp",
-                                                "socket",
-                                                "pipe",
-                                                "memory"
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "backups",
-                                        "host",
-                                        "user",
-                                        "password",
-                                        "name"
-                                    ]
-                                }
-                            },
-                            "required": [
-                                "database"
-                            ]
-                        },
-                        {
-                            "type": "object",
-                            "properties": {
-                                "database": {
-                                    "type": "object",
-                                    "properties": {
-                                        "backups": {
-                                            "type": "string"
-                                        },
-                                        "lando": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "backups",
-                                        "lando"
-                                    ]
-                                }
-                            },
-                            "required": [
-                                "database"
-                            ]
-                        },
-                        {
-                            "type": "object",
-                            "properties": {
-                                "database": {
-                                    "type": "object",
-                                    "properties": {
-                                        "backups": {
-                                            "type": "string"
-                                        },
-                                        "uri": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "backups",
-                                        "uri"
-                                    ]
-                                }
-                            },
-                            "required": [
-                                "database"
-                            ]
-                        }
-                    ]
                 }
             ],
             "required": [
@@ -353,10 +374,10 @@
                     "type": "object",
                     "properties": {
                         "host": {
-                            "$ref": "/#/definitions/host"
+                            "$ref": "#/definitions/host"
                         },
                         "user": {
-                            "$ref": "/#/definitions/user"
+                            "$ref": "#/definitions/user"
                         }
                     }
                 }

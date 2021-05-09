@@ -319,25 +319,31 @@ function load_config() {
   fi
 
   test -f "$config_dir/cache/config.yml.sh" && source "$config_dir/cache/config.yml.sh"
-
   #
-  # Database in using a Lando connection.
+  # Database is coming in from Drupal settings file.
   #
-  if [[ "$local_lando_db_service" ]]; then
-    lando=$("$CLOUDY_PHP" "$ROOT/includes/lando_settings.php" "$ld_lando" "$local_lando_db_service" "$($ld_lando info --format=json)")
-    [[ $? -ne 0 ]] && exit_with_failure "Failed to determine the Lando database configuration".
-    read -r -a settings <<<"$lando"
-    local_db_protocol='tcp'
+  if [[ "$local_drupal_root" ]]; then
+    read -r -a settings <<<$("$CLOUDY_PHP" "$ROOT/includes/drupal_settings.php" "$local_drupal_root" "$local_drupal_settings" "$local_drupal_db")
     local_db_host=${settings[0]}
     local_db_name=${settings[1]}
     local_db_user=${settings[2]}
     local_db_pass=${settings[3]}
     local_db_port=${settings[4]}
+  fi
+
   #
-  # Database is coming in from Drupal settings file.
+  # Database in using a Lando connection.
   #
-  elif [[ "$local_drupal_root" ]]; then
-    read -r -a settings <<<$("$CLOUDY_PHP" "$ROOT/includes/drupal_settings.php" "$local_drupal_root" "$local_drupal_settings" "$local_drupal_db")
+  if [[ "$local_lando_db_service" ]]; then
+
+    if [[ "$local_lando_db_service" == '@drupal' ]]; then
+      local_lando_db_service="$local_db_host"
+    fi
+
+    lando=$("$CLOUDY_PHP" "$ROOT/includes/lando_settings.php" "$ld_lando" "$local_lando_db_service" "$($ld_lando info --format=json)")
+    [[ $? -ne 0 ]] && exit_with_failure "Failed to determine the Lando database configuration".
+    read -r -a settings <<<"$lando"
+    local_db_protocol='tcp'
     local_db_host=${settings[0]}
     local_db_name=${settings[1]}
     local_db_user=${settings[2]}
