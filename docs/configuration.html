@@ -2,14 +2,14 @@
 
 <html>
 <head>
-  <title>Configuration Examples</title>
+  <title>The _config.yml_ File Explained</title>
   <link href="search/tipuesearch.css" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
 
 <body class="page--config">
 <header>
-  <div class="pager"><a href="CHANGELOG.html" class="prev CHANGELOG">&laquo;Changelog</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="hooks.html" class="next hooks">Hooks&raquo;</a></div></header>
+  <div class="pager"><a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon Websites</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="troubleshooting.html" class="next troubleshooting">Troubleshooting&raquo;</a></div></header>
 <section class="sub-header">
   <div class="breadcrumbs"><a href="index.html">Index</a>
          &raquo
@@ -21,46 +21,15 @@
   </section>
 
 
-<h1>Configuration Examples</h1>
+<h1>The _config.yml_ File Explained</h1>
 
 <section>
 
+<h2>Remote Servers</h2>
+
 <ul>
 <li>See <em>includes/schema--config.json</em> for more info.</li>
-<li>NOTE: If you change DB credentials in the settings file, you will need to call <code>ldp clearcache</code> manually.</li>
-</ul>
-
-<h2>Example A: Drupal Database</h2>
-
-<ul>
-<li>Local site using Drupal <em>settings.php</em> for database connection.</li>
-<li><p>Production and staging connection via SSH</p>
-
-<pre><code>local:
-  location: ITLS
-  url: website.local
-  basepath: /Users/aklump/Code/Projects/Client/Website/site/dist/
-  role: dev
-  files:
-  - private/default/files
-  - web/sites/default/files
-  database:
-    backups: private/default/db/purgeable
-  drupal:
-    root: web
-    settings: web/sites/default/settings.php
-    database: default
-production:
-  config: /var/www/website/.loft_deploy
-  script: /usr/local/bin/loft_deploy
-  user: USERNAME
-  ip: NN.NN.NNN.NNN
-staging:
-  config: /var/www/stage.website/.loft_deploy
-  script: /usr/local/bin/loft_deploy
-  user: USERNAME
-  ip: NN.NN.NNN.NNN
-</code></pre></li>
+<li>Production and staging connection via SSH</li>
 </ul>
 
 <table>
@@ -72,89 +41,145 @@ staging:
 </thead>
 <tbody>
 <tr>
-  <td>location</td>
-  <td>The business name of the physical location</td>
+  <td>config</td>
+  <td>Absolute path to the <em>.loft_deploy</em> directory</td>
 </tr>
 <tr>
-  <td>url</td>
-  <td>The URL of the local website without protocol</td>
+  <td>script</td>
+  <td>Absolute path to the <em>ldp</em> binary</td>
 </tr>
 <tr>
-  <td>basepath</td>
-  <td>The local path to the project, this is prepended to all other paths in <em>local</em>, which do not begin with a forward slash</td>
+  <td>user</td>
+  <td>SSH username</td>
 </tr>
 <tr>
-  <td>role</td>
-  <td>one of: dev, staging, production</td>
-</tr>
-<tr>
-  <td>files</td>
-  <td>up to three relative or absolute local file paths, which will be used in the files operations</td>
-</tr>
-<tr>
-  <td>database</td>
-  <td>See below</td>
-</tr>
-<tr>
-  <td>drupal</td>
-  <td>See below</td>
+  <td>ip</td>
+  <td>SSH hostname or IP address</td>
 </tr>
 </tbody>
 </table>
 
-<h2>Example B: Any MySQL DB</h2>
+<pre><code class="yaml">production:
+  config: /var/www/website/.loft_deploy
+  script: /usr/local/bin/ldp
+  user: USERNAME
+  ip: NN.NN.NNN.NNN
 
-<ul>
-<li>Local site using explicit mysql credentials.</li>
-<li><p>No production nor staging servers.</p>
+staging:
+  config: /var/www/test.website/.loft_deploy
+  script: /usr/local/bin/ldp
+  user: USERNAME
+  ip: NN.NN.NNN.NNN
+</code></pre>
 
-<pre><code>local:
+<h2>Local Server Config</h2>
+
+<pre><code class="yaml">local:
   location: ITLS
   url: website.local
   basepath: /Users/aklump/Code/Projects/Client/Website/site/dist/
   role: dev
   files:
-  - private/default/files
-  - web/sites/default/files
+    - private/default/files
+    - web/sites/default/files
+</code></pre>
+
+<p>| local property | description |
+|----------|----------|
+| location | The business name of the physical location |
+| url | The URL of the local website without protocol |
+| basepath | The absolute local path to the project root; used to resolve relative links in the <code>local</code> configuration.  (This is prepended to all other paths in _
+local_, which do not begin with a forward slash) |
+| role | One of: dev, staging, production |
+| files | Up to three relative or absolute local file paths, which will be used in the files operations |
+| drupal | Use this with a Drupal application to read in the database settings automatically. |
+| drupal.root | <em>Required.</em>  Relative path to the Drupal web root. |
+| drupal.settings | &lt; Drupal 8 only. Relative path to the <em>settings.php</em>. |
+| drupal.database | The database key if other than <code>default</code>. |
+| database | <em>See different configurations below...</em> |
+| database.backups | <em>Required.</em> Relative path to the backup directory for database exports. |</p>
+
+<h2>Local Database Connection Configurations</h2>
+
+<h3>Example A: Any MySQL DB</h3>
+
+<ul>
+<li>Local site using explicit mysql credentials.</li>
+<li>No production nor staging servers.</li>
+</ul>
+
+<pre><code class="yaml">local:
   database:
     backups: private/default/db/purgeable
     host: localhost
     user: DB_USER
     password: "PASSWORD-GOES-HERE"
     name: DB_NAME
-</code></pre></li>
+</code></pre>
+
+<h3>Example B: A Drupal Application</h3>
+
+<ul>
+<li>Local site using Drupal <em>settings.php</em> for database connection.</li>
+<li>NOTE: If you change DB credentials in Drupal's <em>settings.php</em>, you will need
+to call <code>ldp clearcache</code> manually.</li>
+<li>Starting in Drupal 8, you do not need to include <code>local.drupal.settings</code>.</li>
+<li><code>local.drupal.database</code> will default to <code>default</code>, when not provided.</li>
 </ul>
 
-<h2>Example C: Lando</h2>
+<pre><code class="yaml">local:
+  drupal:
+    root: web
+    settings: web/sites/default/settings.php
+    database: default
+  database:
+    backups: private/default/db/purgeable
+</code></pre>
 
-<p>When using Lando you need to indicate the name of the Lando database service.</p>
+<h3 id="lando">Example C: Using Lando</h3>
 
-<pre><code>    local:
-      ...
-      database:
-        backups: private/default/db/purgeable
-        lando: database
+<p>When using Lando you need to indicate the name of the Lando database service.
+This will be used to resolve the local/host database connections.</p>
+
+<pre><code class="yaml">local:
+  database:
+    backups: private/default/db/purgeable
+    lando: database
+</code></pre>
+
+<p>However, <strong>if also using Drupal, you must</strong> set the value to <code>@drupal</code> as in
+this second example; this indicates that lando should convert the Drupal settings to the external/host credentials before passing them off to Loft Deploy.</p>
+
+<pre><code class="yaml">local:
+  drupal:
+    root: web
+  database:
+    backups: private/default/db/purgeable
+    lando: '@drupal'
 </code></pre>
 
 <h2>Indicating Specific Binaries</h2>
 
-<p>You can define the binaries (except PHP) to use; more info in <em>includes/schema--config.json</em>.</p>
+<p>You can define the binaries (except PHP) to use; more info in _
+includes/schema--config.json_.</p>
 
-<pre><code>    bin:
-      mysql: /Applications/MAMP/Library/bin/mysql
-      gzip: /usr/bin/gzip
+<pre><code class="yaml">bin:
+  mysql: /Applications/MAMP/Library/bin/mysql
+  gzip: /usr/bin/gzip
 </code></pre>
 
 <h2>To indicate PHP version</h2>
 
-<p>You can override the PHP version by setting the environment variable <code>LOFT_DEPLOY_PHP</code> with the path to the correct version.   Note: You cannot add PHP to the YAML configuration.</p>
+<p>You can override the PHP version by setting the environment
+variable <code>LOFT_DEPLOY_PHP</code> with the path to the correct version. Note: You
+cannot add PHP to the YAML configuration.</p>
 
-<pre><code>export LOFT_DEPLOY_PHP="/Applications/MAMP/bin/php/php7.1.12/bin/php"
+<pre><code class="bash">export LOFT_DEPLOY_PHP="/Applications/MAMP/bin/php/php7.1.12/bin/php"
 </code></pre>
 
 <p>If you're calling this from the CLI you can do like this:</p>
 
-<pre><code>export LOFT_DEPLOY_PHP=/Applications/MAMP/bin/php/php7.1.12/bin/php; ldp export foo_bar -fy
+<pre><code class="bash">export LOFT_DEPLOY_PHP=/Applications/MAMP/bin/php/php7.1.12/bin/php; ldp export foo_bar -fy
 </code></pre>
 </section>
 
@@ -163,9 +188,9 @@ staging:
 </div>
 
 <footer>
-  <div class="pager"><a href="CHANGELOG.html" class="prev CHANGELOG">&laquo;Changelog</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="hooks.html" class="next hooks">Hooks&raquo;</a></div>  
+  <div class="pager"><a href="pantheon.html" class="prev pantheon">&laquo;Support for Pantheon Websites</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="troubleshooting.html" class="next troubleshooting">Troubleshooting&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.17.8 &bull; Last Updated: Tue, 09 Feb 2021 18:08:26 -0800</p>
+    <p class="legaleeze center">Version: 0.18.0 &bull; Last Updated: Wed, 09 Jun 2021 10:01:44 -0700</p>
   </div>
 </footer>
 
