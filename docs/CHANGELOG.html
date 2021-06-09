@@ -9,7 +9,7 @@
 
 <body class="page--changelog">
 <header>
-  <div class="pager"><a href="index.html" class="prev index">&laquo;Loft Deploy</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="configuration.html" class="next config">Configuration Examples&raquo;</a></div></header>
+  <div class="pager"><a href="index.html" class="prev index">&laquo;Loft Deploy</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="hooks.html" class="next hooks">Hooks&raquo;</a></div></header>
 <section class="sub-header">
   <div class="breadcrumbs"><a href="index.html">Index</a>
          &raquo
@@ -25,6 +25,16 @@
 
 <section>
 
+<h2>[0.18.0] - 2021-05-08</h2>
+
+<h3>Added</h3>
+
+<ul>
+<li>When using Lando with Drupal you should now configure
+using <code>database.lando: @drupal</code> and remove <code>drupal.settings</code>.
+Read <a href="lando.html">the documention</a> for more info.</li>
+</ul>
+
 <h2>[0.17.0] - 2021-02-08</h2>
 
 <h3>Changed</h3>
@@ -39,7 +49,8 @@
 
 <ul>
 <li>Added support for using with Lando containers.</li>
-<li>Add configuration option <code>stage_may_pull_prod</code> to allow stage to pull from prod.  Set this to true in your configuration.</li>
+<li>Add configuration option <code>stage_may_pull_prod</code> to allow stage to pull from
+prod. Set this to true in your configuration.</li>
 <li>Improved feedback and messages.</li>
 <li>Added local role as argument <code>$8</code> to hooks.</li>
 </ul>
@@ -53,7 +64,8 @@
 <h2>[0.14.10]</h2>
 
 <ul>
-<li>Removed <code>scp</code> operation; you should now use the <code>copy_production_to</code> feature instead.</li>
+<li>Removed <code>scp</code> operation; you should now use the <code>copy_production_to</code> feature
+instead.</li>
 </ul>
 
 <h2>[0.14]</h2>
@@ -68,9 +80,9 @@
 </div>
 
 <footer>
-  <div class="pager"><a href="index.html" class="prev index">&laquo;Loft Deploy</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="configuration.html" class="next config">Configuration Examples&raquo;</a></div>  
+  <div class="pager"><a href="index.html" class="prev index">&laquo;Loft Deploy</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="hooks.html" class="next hooks">Hooks&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.17.8 &bull; Last Updated: Tue, 09 Feb 2021 18:08:26 -0800</p>
+    <p class="legaleeze center">Version: 0.18.0 &bull; Last Updated: Wed, 09 Jun 2021 10:01:43 -0700</p>
   </div>
 </footer>
 
