@@ -25,7 +25,7 @@ fi
 
 # Enable development modules.
 lando nxdb_drush config-split:import dev -y || return 1
-lando nxdb_drush config:import -y || return 1
+# DO NOT DO config:import OR YOU LOOSE ABILITY TO EXPORT PROD CONFIG CHANGES!.
 lando nxdb_drush cache:rebuild -y >/dev/null || return 1
 list_add_item "Drupal cache cleared."
 
