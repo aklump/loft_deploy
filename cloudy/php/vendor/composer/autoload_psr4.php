@@ -10,6 +10,7 @@ return array(
     'Symfony\\Component\\Yaml\\' => array($vendorDir . '/symfony/yaml'),
     'Mimey\\' => array($vendorDir . '/ralouphie/mimey/src'),
     'JsonSchema\\' => array($vendorDir . '/justinrainbow/json-schema/src/JsonSchema'),
+    'Jasny\\' => array($vendorDir . '/jasny/dotkey/src'),
     'Illuminate\\Support\\' => array($vendorDir . '/illuminate/support'),
     'Illuminate\\Contracts\\' => array($vendorDir . '/illuminate/contracts'),
     'Doctrine\\Inflector\\' => array($vendorDir . '/doctrine/inflector/lib/Doctrine/Inflector'),

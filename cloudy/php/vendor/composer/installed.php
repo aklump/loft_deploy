@@ -1,121 +1,128 @@
-<?php return array (
-  'root' => 
-  array (
-    'pretty_version' => 'dev-master',
-    'version' => 'dev-master',
-    'aliases' => 
-    array (
+<?php return array(
+    'root' => array(
+        'pretty_version' => 'dev-master',
+        'version' => 'dev-master',
+        'type' => 'library',
+        'install_path' => __DIR__ . '/../../',
+        'aliases' => array(),
+        'reference' => 'acc30579349bd812bcb0140e2a22f3828064b22f',
+        'name' => '__root__',
+        'dev' => true,
     ),
-    'reference' => '73aae40ada3d2050dbb04a1b0b97a9010a62e679',
-    'name' => '__root__',
-  ),
-  'versions' => 
-  array (
-    '__root__' => 
-    array (
-      'pretty_version' => 'dev-master',
-      'version' => 'dev-master',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '73aae40ada3d2050dbb04a1b0b97a9010a62e679',
+    'versions' => array(
+        '__root__' => array(
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'reference' => 'acc30579349bd812bcb0140e2a22f3828064b22f',
+            'dev_requirement' => false,
+        ),
+        'aklump/data' => array(
+            'pretty_version' => '0.0.28',
+            'version' => '0.0.28.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../aklump/data',
+            'aliases' => array(),
+            'reference' => '0c15963143161f595acdbc8078533992ced9cbc5',
+            'dev_requirement' => false,
+        ),
+        'aklump/loft-lib' => array(
+            'pretty_version' => '1.4.0',
+            'version' => '1.4.0.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../aklump/loft-lib',
+            'aliases' => array(),
+            'reference' => '7c377c03598b90389c1bc9ff75139eee51584a10',
+            'dev_requirement' => false,
+        ),
+        'doctrine/inflector' => array(
+            'pretty_version' => '1.4.4',
+            'version' => '1.4.4.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../doctrine/inflector',
+            'aliases' => array(),
+            'reference' => '4bd5c1cdfcd00e9e2d8c484f79150f67e5d355d9',
+            'dev_requirement' => false,
+        ),
+        'illuminate/contracts' => array(
+            'pretty_version' => 'v5.4.36',
+            'version' => '5.4.36.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../illuminate/contracts',
+            'aliases' => array(),
+            'reference' => '67f642e018f3e95fb0b2ebffc206c3200391b1ab',
+            'dev_requirement' => false,
+        ),
+        'illuminate/support' => array(
+            'pretty_version' => 'v5.4.36',
+            'version' => '5.4.36.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../illuminate/support',
+            'aliases' => array(),
+            'reference' => 'feab1d1495fd6d38970bd6c83586ba2ace8f299a',
+            'dev_requirement' => false,
+        ),
+        'jasny/dotkey' => array(
+            'pretty_version' => 'v1.0.2',
+            'version' => '1.0.2.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../jasny/dotkey',
+            'aliases' => array(),
+            'reference' => '034a3c30ef07ddb276da51c24ab5500316d35ff2',
+            'dev_requirement' => false,
+        ),
+        'justinrainbow/json-schema' => array(
+            'pretty_version' => '5.2.11',
+            'version' => '5.2.11.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../justinrainbow/json-schema',
+            'aliases' => array(),
+            'reference' => '2ab6744b7296ded80f8cc4f9509abbff393399aa',
+            'dev_requirement' => false,
+        ),
+        'paragonie/random_compat' => array(
+            'pretty_version' => 'v2.0.20',
+            'version' => '2.0.20.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../paragonie/random_compat',
+            'aliases' => array(),
+            'reference' => '0f1f60250fccffeaf5dda91eea1c018aed1adc2a',
+            'dev_requirement' => false,
+        ),
+        'ralouphie/mimey' => array(
+            'pretty_version' => '2.1.0',
+            'version' => '2.1.0.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../ralouphie/mimey',
+            'aliases' => array(),
+            'reference' => '8f74e6da73f9df7bd965e4e123f3d8fb9acb89ba',
+            'dev_requirement' => false,
+        ),
+        'symfony/polyfill-ctype' => array(
+            'pretty_version' => 'v1.23.0',
+            'version' => '1.23.0.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/polyfill-ctype',
+            'aliases' => array(),
+            'reference' => '46cd95797e9df938fdd2b03693b5fca5e64b01ce',
+            'dev_requirement' => false,
+        ),
+        'symfony/yaml' => array(
+            'pretty_version' => 'v3.4.47',
+            'version' => '3.4.47.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/yaml',
+            'aliases' => array(),
+            'reference' => '88289caa3c166321883f67fe5130188ebbb47094',
+            'dev_requirement' => false,
+        ),
+        'tightenco/collect' => array(
+            'dev_requirement' => false,
+            'replaced' => array(
+                0 => 'v5.4.36',
+            ),
+        ),
     ),
-    'aklump/data' => 
-    array (
-      'pretty_version' => '0.0.28',
-      'version' => '0.0.28.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '0c15963143161f595acdbc8078533992ced9cbc5',
-    ),
-    'aklump/loft-lib' => 
-    array (
-      'pretty_version' => '1.1.5',
-      'version' => '1.1.5.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '2b82e5eb59709398773dd65a6d5dc1bb803ec8ad',
-    ),
-    'doctrine/inflector' => 
-    array (
-      'pretty_version' => '1.4.3',
-      'version' => '1.4.3.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '4650c8b30c753a76bf44fb2ed00117d6f367490c',
-    ),
-    'illuminate/contracts' => 
-    array (
-      'pretty_version' => 'v5.4.36',
-      'version' => '5.4.36.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '67f642e018f3e95fb0b2ebffc206c3200391b1ab',
-    ),
-    'illuminate/support' => 
-    array (
-      'pretty_version' => 'v5.4.36',
-      'version' => '5.4.36.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => 'feab1d1495fd6d38970bd6c83586ba2ace8f299a',
-    ),
-    'justinrainbow/json-schema' => 
-    array (
-      'pretty_version' => '5.2.10',
-      'version' => '5.2.10.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '2ba9c8c862ecd5510ed16c6340aa9f6eadb4f31b',
-    ),
-    'paragonie/random_compat' => 
-    array (
-      'pretty_version' => 'v2.0.19',
-      'version' => '2.0.19.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '446fc9faa5c2a9ddf65eb7121c0af7e857295241',
-    ),
-    'ralouphie/mimey' => 
-    array (
-      'pretty_version' => '2.1.0',
-      'version' => '2.1.0.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '8f74e6da73f9df7bd965e4e123f3d8fb9acb89ba',
-    ),
-    'symfony/polyfill-ctype' => 
-    array (
-      'pretty_version' => 'v1.22.0',
-      'version' => '1.22.0.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => 'c6c942b1ac76c82448322025e084cadc56048b4e',
-    ),
-    'symfony/yaml' => 
-    array (
-      'pretty_version' => 'v3.4.47',
-      'version' => '3.4.47.0',
-      'aliases' => 
-      array (
-      ),
-      'reference' => '88289caa3c166321883f67fe5130188ebbb47094',
-    ),
-    'tightenco/collect' => 
-    array (
-      'replaced' => 
-      array (
-        0 => 'v5.4.36',
-      ),
-    ),
-  ),
 );

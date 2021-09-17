@@ -7,6 +7,7 @@
 
 use AKlump\Data\Data;
 use Symfony\Component\Yaml\Yaml;
+use Jasny\DotKey;
 
 /**
  * Root directory of the Cloudy instance script.
@@ -53,6 +54,22 @@ function yaml_to_json($yaml) {
   }
 
   return json_encode($data);
+}
+
+/**
+ * Get a value from a JSON string.
+ *
+ * @param string $path
+ *   The dot path of the data to get.
+ * @param string $json
+ *   A valid JSON string.
+ *
+ * @return mixed
+ *   The value at $path.
+ */
+function json_get_value($path, $json) {
+  $subject = json_decode($json);
+  return DotKey::on($subject)->get($path);
 }
 
 /**

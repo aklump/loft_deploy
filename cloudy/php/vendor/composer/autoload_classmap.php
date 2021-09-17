@@ -219,6 +219,7 @@ return array(
     'Illuminate\\Support\\Traits\\CapsuleManagerTrait' => $vendorDir . '/illuminate/support/Traits/CapsuleManagerTrait.php',
     'Illuminate\\Support\\Traits\\Macroable' => $vendorDir . '/illuminate/support/Traits/Macroable.php',
     'Illuminate\\Support\\ViewErrorBag' => $vendorDir . '/illuminate/support/ViewErrorBag.php',
+    'Jasny\\DotKey' => $vendorDir . '/jasny/dotkey/src/DotKey.php',
     'JsonSchema\\Constraints\\BaseConstraint' => $vendorDir . '/justinrainbow/json-schema/src/JsonSchema/Constraints/BaseConstraint.php',
     'JsonSchema\\Constraints\\CollectionConstraint' => $vendorDir . '/justinrainbow/json-schema/src/JsonSchema/Constraints/CollectionConstraint.php',
     'JsonSchema\\Constraints\\Constraint' => $vendorDir . '/justinrainbow/json-schema/src/JsonSchema/Constraints/Constraint.php',

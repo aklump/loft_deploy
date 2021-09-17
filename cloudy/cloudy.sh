@@ -1,5 +1,64 @@
 #!/usr/bin/env bash
 
+json_content=''
+
+# Set a JSON string to be later read by json_get_value().
+#
+# Call this once to put your json string into memory, then make unlimited calls
+# to json_get_value as necessary.  You may check the return code to ensure JSON syntax
+# is valid.  If your string contains single quotes, you will need to escape them.
+#
+# $1 - A JSON string, wrapped by single quotes.
+#
+# @code
+#   json_set '{"foo":{"bar":"baz et al"}}'
+# @endcode
+#
+# Returns 0 if the JSON is valid; 1 otherwise.
+function json_set() {
+  json_content="$1"
+
+  $CLOUDY_PHP -r "json_decode('$json_content') === null ? exit(1) : exit(0);"
+}
+
+# Load a JSON file to be read by json_get_value.
+#
+# $1 - Path to a valid JSON file
+#
+# Returns 0 if JSON is valid. 1 if not.
+function json_load_file() {
+  local path_to_json="$1"
+
+  json_set "$(cat "$path_to_json")"
+}
+
+# Echo the JSON string as set
+#
+# @code
+#   json="$(json_get)"
+# @endcode
+#
+function json_get() {
+  echo "$json_content"
+}
+
+# Echo a value by dot-path in the set/loaded JSON.
+#
+# If the path is invalid, an empty string is echoed.  Be sure to wrap in double quotes to protect values that contain spaces.
+#
+# $1 - The dot path, e.g. 'foo.bar'
+#
+# @code
+#   json_set '{"foo":{"bar":"baz et al"}}'
+#   value="$(json_get_value foo.bar)"
+# @endcode
+#
+function json_get_value() {
+  local path="$1"
+
+  echo $("$CLOUDY_PHP" "$CLOUDY_ROOT/php/helpers.php" "json_get_value" "$path" "$json_content")
+}
+
 # Prompt for a Y or N confirmation.
 #
 # $1 - The confirmation message
@@ -401,6 +460,38 @@ function string_split() {
     fi
 }
 
+# Echo $array_csv__array as CSV
+#
+# @option --prose Use comma+space and then the word "all" as the final separator
+# as when writing English prose, e.g. "do, re and mi".
+# @option --quotes Wrap each item with double quotes
+#
+# @code
+#   array_csv__array=('foo bar' 'baz' zulu)
+#   csv=$(array_csv)
+# @endcode
+function array_csv() {
+  local csv
+  local i=0
+  local length=${#array_csv__array[@]}
+  parse_args $@
+  for item in "${array_csv__array[@]}"; do
+    if [[ "$parse_args__options__quotes" ]]; then
+      item='"'$item'"'
+    fi
+    if [[ "$parse_args__options__prose" ]]; then
+      if [ $((i+=1)) -eq $length ]; then
+        csv="$csv and $item"
+      else
+        csv="$csv, $item"
+      fi
+    else
+      csv="$csv,$item"
+    fi
+  done
+  echo ${csv#,}
+}
+
 # Echo a string, which is an array joined by a substring.
 #
 # array_join__array
@@ -685,6 +776,25 @@ function echo_green_highlight() {
   _cloudy_echo_color 37 "$1" 1 42
 }
 
+# Echo a message indicating a passed test result.
+#
+# $1 - The message to print
+#
+function echo_pass() {
+  local message=$1
+  echo "$(echo_green_highlight ' ✔️') $(echo_green "$message")"
+}
+
+# Echo a message indicating a failed test result.
+#
+# $1 - The message to print
+#
+function echo_fail() {
+  local message=$1
+  echo "$(echo_red_highlight ' ✔️') $(echo_red "$message")"
+}
+
+
 # Echo a string with yellow text.
 #
 # $1 - The string to echo.
@@ -931,8 +1041,7 @@ function handle_init() {
             if [[ "$file" == "gitignore" ]]; then
                 destination=$(realpath "$ROOT/../../../opt/.gitignore")
                 [ -d $(dirname "$destination") ] || mkdir -p $(dirname $destination)
-                # todo This will write more than once, so this is not very elegant.  Should figure that out somehow.
-                touch "$destination" && cat "$init_source_dir/$file" >> "$destination" && succeed_because "$destination merged."
+                touch "$destination" && cat "$init_source_dir/$file" >> "$destination" && sort -u "$destination" -o "$destination" && succeed_because "$destination merged."
             elif ! [ -e "$destination" ]; then
                 [ -d $(dirname "$destination") ] || mkdir -p $(dirname $destination)
                 cp "$init_source_dir/$file" "$destination" && succeed_because "$(realpath $destination) created." || fail_because "Could not copy $file."
@@ -1091,48 +1200,100 @@ function succeed_because() {
     return 0
 }
 
-# Test a global config variable to see if it points to an existing path.
+# Checks if a variable has been evaluated into memory and points to an existing path.
 #
-# $1 - The config path, used by get_config
+# $1 - The alias.  Or if not aliased, the config path used by `get_config`.
+# $2 - (Optional) The config path, if aliased.
+# @option as=name - @deprecated
+#
+# Both of these aliase examples are the same, though the --as is an older syntax
+# that has been deprecated.
+#
+# @code
+#   exit_with_failure_if_empty_config 'database.host'
+#
+#   ## Using an alias...
+#   exit_with_failure_if_empty_config 'host' 'database.host'
+#
+#   ## Aliased, deprecated syntax.
+#   exit_with_failure_if_empty_config 'database.host' --as=host
+# @endcode
 #
 # Returns 0 if the variable exists and points to a file; exits otherwise with 1.
 function exit_with_failure_if_config_is_not_path() {
-    local config_path="$1"
+    local alias=$1
+    local config_path=$2
 
     parse_args "$@"
+    if [ ${#parse_args__args[@]} -eq 1 ]; then
+      alias=''
+      config_path=$1
+      if [[ "$parse_args__options__as" ]]; then
+        alias="$parse_args__options__as"
+        config_path="$1"
+      fi
+    else
+      alias=$1
+      config_path=$2
+    fi
+
     if [[ "$parse_args__options__status" ]]; then
       CLOUDY_EXIT_STATUS=$parse_args__options__status
     fi
-    local variable=${config_path//./_}
-    if [[ "$parse_args__options__as" ]]; then
-        variable="$parse_args__options__as"
-    fi
 
-    local config_name=$(echo_blue "$config_path")
-    local config_value="$(eval "echo \$$variable")"
+    if [[ "$alias" ]]; then
+      value="$(eval "echo \$$alias")"
+    else
+      value="$(eval "echo \$${config_path//./_}")"
+    fi
 
     exit_with_failure_if_empty_config $@
 
+    value=$(path_relative_to_config_base $value)
+
     # Make sure it's a path.
-    [ ! -e "$config_value" ] && exit_with_failure "Failed because the path \"$config_value\" , does not exist; defined in configuration as $config_name."
+    [ ! -e "$value" ] && exit_with_failure "Failed because the path \"$value\" , does not exist; defined in configuration as $config_path."
 
     return 0
 }
 
-##
- # Checks for a non-empty variable in memory or exit with failure.
- #
- # Asks the user to add to their configuration filepath.
- #
- # @param string
- #   This should be the same as passed to get_config, using dot separation.
- # @option as=name
- #   If the configuration has been renamed, send the memory var name --as=varname.
- #
+# Checks if a variable has been evaluated into memory yet or exits with failure.
+#
+# $1 - The alias.  Or if not aliased, the config path used by `get_config`.
+# $2 - (Optional) The config path, if aliased.
+# @option as=name - @deprecated
+#
+# Both of these aliase examples are the same, though the --as is an older syntax
+# that has been deprecated.
+#
+# @code
+#   exit_with_failure_if_empty_config 'database.host'
+#
+#   ## Using an alias...
+#   exit_with_failure_if_empty_config 'host' 'database.host'
+#
+#   ## Aliased, deprecated syntax.
+#   exit_with_failure_if_empty_config 'database.host' --as=host
+# @endcode
+#
+# Returns 0 if the variable is in memory.
 function exit_with_failure_if_empty_config() {
-    local variable=$1
+    local alias=$1
+    local config_path=$2
 
     parse_args "$@"
+    if [ ${#parse_args__args[@]} -eq 1 ]; then
+      alias=''
+      config_path=$1
+      if [[ "$parse_args__options__as" ]]; then
+        alias="$parse_args__options__as"
+        config_path="$1"
+      fi
+    else
+      alias=$1
+      config_path=$2
+    fi
+
     if [[ "$parse_args__options__status" ]]; then
       CLOUDY_EXIT_STATUS=$parse_args__options__status
     fi
@@ -1141,19 +1302,19 @@ function exit_with_failure_if_empty_config() {
     local value
     local error
 
-    if [[ "$parse_args__options__as" ]]; then
-      code="eval \$(get_config_as \"$parse_args__options__as\" \"$variable\")"
-      error="\"$variable\" as \"$parse_args__options__as\""
-      value="$(eval "echo \$$parse_args__options__as")"
+    if [[ "$alias" ]]; then
+      code="eval \$(get_config_as \"$alias\" \"$config_path\")"
+      error="\"$config_path\" as \"$alias\""
+      value="$(eval "echo \$$alias")"
     else
-      code="eval \$(get_config \"$variable\")"
-      error="\"$variable\""
-      value="$(eval "echo \$${variable//./_}")"
+      code="eval \$(get_config \"$config_path\")"
+      error="\"$config_path\""
+      value="$(eval "echo \$${config_path//./_}")"
     fi
 
     if [[ ! "$value" ]]; then
       write_log_error "Missing configuration value.  Trying to use $error. Has it been set in config? Is it being read into memory? e.g. $code"
-      exit_with_failure "Failed due to missing configuration; please add \"$variable\"."
+      exit_with_failure "Failed due to missing configuration; please add \"$config_path\"."
     fi
 
     return 0
@@ -1470,7 +1631,20 @@ function path_extension() {
 type realpath >/dev/null 2>&1
 if [ $? -gt 0 ]; then
     function realpath() {
-         readlink -f -- "$@"
+      if [ -d "$1" ]; then
+        # @link https://stackoverflow.com/questions/284662/how-do-you-normalize-a-file-path-in-bash
+        cd "$1"; pwd
+        return 0
+      fi
+
+      local parent=$(dirname "$1")
+      if [ -d "$parent" ]; then
+        cd "$parent"; echo "$(pwd)/$(basename $1)"
+        return 0
+      fi
+
+      echo "$1"
+      return 0
     }
 fi
 
@@ -1505,7 +1679,18 @@ function tempdir() {
 function string_upper() {
     local string="$1"
 
-    echo "$string" | tr [a-z] [A-Z]
+    echo "$string" | tr [:lower:] [:upper:]
+}
+
+# Echo the string with it's first letter in uppercase.
+#
+# $1 - The string to convert
+#
+# Returns nothing.
+function string_ucfirst() {
+    local string="$1"
+
+    echo "$(echo "${string:0:1}" | tr [:lower:] [:upper:])${string:1}"
 }
 
 # Echo the lowercase version of a string.
@@ -1516,7 +1701,7 @@ function string_upper() {
 function string_lower() {
     local string="$1"
 
-    echo "$string" | tr [A-Z] [a-z]
+    echo "$string" | tr [:upper:] [:lower:]
 }
 
 #

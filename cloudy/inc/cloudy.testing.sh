@@ -15,15 +15,22 @@ function is_being_tested() {
 # Perform all tests in a file.
 #
 # $1 - The path to a test file.
+# @option --continue Use this for subsequent calls to this function where you
+# want the results to be added together; that is to say, use this so as NOT to
+# reset the test count, failure count, etc.
 #
 # Returns 0 if all tests pass; 1 otherwise.
 function do_tests_in() {
-    local CLOUDY_ACTIVE_TESTFILE=$(path_relative_to_root "$1")
+    local testfile=$1
 
-    CLOUDY_ASSERTION_COUNT=0
-    CLOUDY_TEST_COUNT=0
-    CLOUDY_FAILED_ASSERTION_COUNT=0
-    CLOUDY_SKIPPED_TESTS_COUNT=0
+    parse_args $@
+    local CLOUDY_ACTIVE_TESTFILE=$(path_relative_to_root "${parse_args__args[0]}")
+    if [[ "$parse_args__options__continue" != true ]]; then
+      CLOUDY_ASSERTION_COUNT=0
+      CLOUDY_TEST_COUNT=0
+      CLOUDY_FAILED_ASSERTION_COUNT=0
+      CLOUDY_SKIPPED_TESTS_COUNT=0
+    fi
 
     [ ! -f "$CLOUDY_ACTIVE_TESTFILE" ] && fail_because "Test file: \"$CLOUDY_ACTIVE_TESTFILE\" not found." && return 1
 

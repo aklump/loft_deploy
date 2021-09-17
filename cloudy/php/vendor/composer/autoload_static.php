@@ -25,6 +25,7 @@ class ComposerStaticInit161edfef4d39909e83d990466d457059
         'J' => 
         array (
             'JsonSchema\\' => 11,
+            'Jasny\\' => 6,
         ),
         'I' => 
         array (
@@ -59,6 +60,10 @@ class ComposerStaticInit161edfef4d39909e83d990466d457059
         'JsonSchema\\' => 
         array (
             0 => __DIR__ . '/..' . '/justinrainbow/json-schema/src/JsonSchema',
+        ),
+        'Jasny\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/jasny/dotkey/src',
         ),
         'Illuminate\\Support\\' => 
         array (
@@ -300,6 +305,7 @@ class ComposerStaticInit161edfef4d39909e83d990466d457059
         'Illuminate\\Support\\Traits\\CapsuleManagerTrait' => __DIR__ . '/..' . '/illuminate/support/Traits/CapsuleManagerTrait.php',
         'Illuminate\\Support\\Traits\\Macroable' => __DIR__ . '/..' . '/illuminate/support/Traits/Macroable.php',
         'Illuminate\\Support\\ViewErrorBag' => __DIR__ . '/..' . '/illuminate/support/ViewErrorBag.php',
+        'Jasny\\DotKey' => __DIR__ . '/..' . '/jasny/dotkey/src/DotKey.php',
         'JsonSchema\\Constraints\\BaseConstraint' => __DIR__ . '/..' . '/justinrainbow/json-schema/src/JsonSchema/Constraints/BaseConstraint.php',
         'JsonSchema\\Constraints\\CollectionConstraint' => __DIR__ . '/..' . '/justinrainbow/json-schema/src/JsonSchema/Constraints/CollectionConstraint.php',
         'JsonSchema\\Constraints\\Constraint' => __DIR__ . '/..' . '/justinrainbow/json-schema/src/JsonSchema/Constraints/Constraint.php',
