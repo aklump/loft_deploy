@@ -727,7 +727,6 @@ function _fetch_db_production() {
 
   echo_heading "Fetch Production Database"
   echo_green "$LI $(time_local) Beginning export."
-  echo_red "$LI Table locking may prevent production from responding during export."
   echo_red "$LI Press CTRL-C at any time to abort."
 
   local _export_suffix='fetch_db'
@@ -1349,7 +1348,7 @@ function export_db() {
   _current_db_paths $1
   local title="$3"
 
-  [[ "$3" ]] || title="Exporting database..."
+  [[ "$3" ]] || title="Export Local Database"
 
   # Allow modification of the output directory via --dir
   if has_option "dir"; then
@@ -1384,7 +1383,7 @@ function export_db() {
   fi
 
   echo_heading "$title"
-
+  echo_red "$LI Press CTRL-C at any time to abort."
   # Do we need to process a db_tables_no_data file?
   handle_sql_files
 
@@ -1392,17 +1391,19 @@ function export_db() {
   # from some tables or not
   data=$(get_sql_ready_db_tables_data)
   if [[ "$data" ]]; then
-    echo_yellow "$LI Omitting data from some tables..."
+    echo_green "$LI $(time_local) Exporting with omitted data."
     # Omit table content.
-    $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name --no-data >"$file"
+    $ld_mysqldump$ld_export_flags --defaults-file=$local_db_cnf $local_db_name --no-data >"$file"
     # Omit certain create tables.
-    $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name $data --no-create-info >>"$file"
+    $ld_mysqldump$ld_export_flags --defaults-file=$local_db_cnf $local_db_name $data --no-create-info >>"$file"
   else
-    $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name -r "$file"
+    echo_yellow "$LI $(time_local) Exporting all data."
+    $ld_mysqldump$ld_export_flags --defaults-file=$local_db_cnf $local_db_name -r "$file"
   fi
   local status=$?
 
   if [[ $status -eq 0 ]]; then
+    echo_green "$LI $(time_local) Compressing file."
     if [ "$2" == '-y' ]; then
       $ld_gzip -f "$file"
     else
@@ -1461,18 +1462,19 @@ function import_db() {
     return 1
   fi
 
-  echo "Data importing from: $(echo_blue "$(path_unresolve "$WDIR" "$filepath")")"
-  echo
+  echo_green "$LI Source: $(echo_blue "$(path_unresolve "$WDIR" "$filepath")")"
 
   has_option 'y' || [ $import_db_silent = true ] || confirm --danger "You are about to overwrite your entire database. Are you sure?" || return 2
-  echo "Importing data into $local_db_host:$local_db_name..."
+  echo_green "$LI $(time_local) Start import to $local_db_host:$local_db_name..."
   _drop_tables || return 1
 
   if [[ "${filepath##*.}" == 'gz' ]]; then
+    echo_green "$LI $(time_local) Unzipping data..."
     $ld_gunzip "$filepath" || return 1
     filepath=${filepath%.*}
   fi
-  $ld_mysql --defaults-file=$local_db_cnf $local_db_name <$filepath && echo_green "└── ${filepath##*/} has been imported."
+  echo_green "$LI $(time_local) Processing sql..."
+  $ld_mysql --defaults-file=$local_db_cnf $local_db_name <$filepath && echo_green "└── $(time_local) ${filepath##*/} has been imported."
   return $?
 }
 
@@ -1488,7 +1490,7 @@ function _drop_tables() {
   done
 
   if [[ "$status" == true ]]; then
-    echo_green "$LI All tables dropped from $local_db_name."
+    echo_green "$LI $(time_local) All tables dropped from $local_db_name."
     return 0
   fi
 

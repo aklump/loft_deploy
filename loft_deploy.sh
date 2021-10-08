@@ -119,6 +119,10 @@ validate_input || exit_with_failure "Input validation failed."
 #
 eval $(get_config_as "ld_mysql" "bin.mysql" "/usr/bin/mysql")
 eval $(get_config_as "ld_mysqldump" "bin.mysqldump" "/usr/bin/mysqldump")
+eval $(get_config -a "mysqldump_flags")
+for flag in "${mysqldump_flags[@]}"; do
+   ld_mysqldump_flags="$ld_mysqldump_flags --${flag#--}"
+done
 eval $(get_config_as "ld_gzip" "bin.gzip" "/usr/bin/gzip")
 eval $(get_config_as "ld_gunzip" "bin.gunzip" "/usr/bin/gunzip")
 eval $(get_config_as "ld_scp" "bin.scp" "/usr/bin/scp")
@@ -270,8 +274,8 @@ case $op in
 'import')
   [[ "$status" == true ]] && import_db ${SCRIPT_ARGS[1]} || status=false
   handle_post_hook $op $status || status=false
-  [[ "$status" == true ]] && exit_with_success_elapsed "Import complete."
-  exit_with_failure "Import failed."
+  [[ "$status" == true ]] && exit_with_success_elapsed "$(time_local) Import complete."
+  exit_with_failure "$(time_local) Import failed."
   ;;
 
 'export')
@@ -279,8 +283,8 @@ case $op in
   has_option "time" && suffix="${suffix}-$(date8601 -c)"
   [[ "$status" == true ]] && export_db ${suffix#-} || status=false
   handle_post_hook $op $status || status=false
-  [[ "$status" == true ]] && exit_with_success_elapsed 'Export complete.'
-  exit_with_failure 'Export failed.'
+  [[ "$status" == true ]] && exit_with_success_elapsed "$(time_local) Export complete."
+  exit_with_failure "$(time_local) Export failed."
   ;;
 
 'export-purge')
@@ -338,8 +342,8 @@ case $op in
     fetch_files || status=false
   fi
   handle_post_hook $op $status || status=false
-  [[ "$status" == true ]] && complete_elapsed "Fetch complete." && exit 0
-  exit_with_failure "Fetch failed."
+  [[ "$status" == true ]] && complete_elapsed "$(time_local) Fetch complete." && exit 0
+  exit_with_failure "$(time_local) Fetch failed."
   ;;
 
 'reset')
@@ -350,15 +354,15 @@ case $op in
     reset_files && echo "Local files have been reset to match $source_server." || status=false
   fi
   handle_post_hook $op $status || status=false
-  [[ "$status" == true ]] && complete_elapsed "Reset complete." && exit 0
-  exit_with_failure "Reset failed."
+  [[ "$status" == true ]] && complete_elapsed "$(time_local) Reset complete." && exit 0
+  exit_with_failure "$(time_local) Reset failed."
   ;;
 
 'pull')
   [[ "$status" == true ]] && do_pull || status=false
   handle_post_hook $op $status || status=false
-  [[ "$status" == true ]] && complete_elapsed "Pull complete." && exit 0
-  exit_with_failure "Pull failed."
+  [[ "$status" == true ]] && complete_elapsed "$(time_local) Pull complete." && exit 0
+  exit_with_failure "$(time_local) Pull failed."
   ;;
 
 'push')
@@ -370,8 +374,8 @@ case $op in
   fi
 
   handle_post_hook $op $status || status=false
-  [[ "$status" == true ]] && complete_elapsed "Push complete." && exit 0
-  exit_with_failure "Push failed."
+  [[ "$status" == true ]] && complete_elapsed "$(time_local) Push complete." && exit 0
+  exit_with_failure "$(time_local) Push failed."
   ;;
 
 'hook')
