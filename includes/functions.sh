@@ -392,7 +392,7 @@ function load_config() {
 # Logs in to production server for dynamic variables
 #
 function load_production_config() {
-  echo_heading "Checking production config..."
+  echo_green "$LI Loading production config..."
   if [ "$production_server" ] && [ "$production_script" ]; then
     production=($(ssh_prod "$production_script get local_db_host; $production_script get local_db_name; $production_script get local_db_user; $production_script get local_db_pass; $production_script get local_db_dir; $production_script get local_files; $production_script get local_files2; $production_script get local_files3; $production_script get local_db_port; $production_script get local_copy_source;"))
     production_db_host="${production[0]}"
@@ -418,7 +418,7 @@ function load_production_config() {
 # Logs in to staging for dynamic variables
 #
 function load_staging_config() {
-  echo_heading "Checking staging config..."
+  echo_green "$LI Loading staging config..."
   if [ "$staging_server" ] && [ "$staging_script" ]; then
     staging=($(ssh_staging "$staging_script get local_db_host; $staging_script get local_db_name; $staging_script get local_db_user; $staging_script get local_db_pass; $staging_script get local_db_dir; $staging_script get local_files; $staging_script get local_files2; $staging_script get local_files3; $staging_script get local_db_port; $staging_script get local_copy_source;"))
     staging_db_host="${staging[0]}"
@@ -716,7 +716,6 @@ function fetch_db() {
 # Fetch the remote db and import it to local
 #
 function _fetch_db_production() {
-
   # @todo Add status var here with return value.
 
   if [[ ! -d "$config_dir/prod/db" ]]; then
@@ -724,9 +723,13 @@ function _fetch_db_production() {
   fi
 
   # Cleanup local
-  rm $config_dir/prod/db/fetched.sql* >/dev/null 2>&1
+  rm "$config_dir"/prod/db/fetched.sql* >/dev/null 2>&1
 
-  echo_heading "Exporting production db..."
+  echo_heading "Fetch Production Database"
+  echo_green "$LI $(time_local) Beginning export."
+  echo_red "$LI Table locking may prevent production from responding during export."
+  echo_red "$LI Press CTRL-C at any time to abort."
+
   local _export_suffix='fetch_db'
   local _local_file="$config_dir/prod/db/fetched.sql.gz"
 
@@ -742,10 +745,10 @@ function _fetch_db_production() {
     $ld_terminus auth:login --machine-token=$terminus_machine_token --quiet
 
     if ! has_option y && ! confirm "Creating a backup takes more time, shall we save time and download the lastest dashboard backup?"; then
-      echo "Creating new backup using Terminus..."
+      echo "$(time_local) Creating new backup using Terminus..."
       $ld_terminus backup:create $terminus_site.live --element=db
     fi
-    echo "Downloading latest backup from Pantheon..."
+    echo "$(time_local) Downloading latest backup from Pantheon..."
     $ld_terminus backup:get $terminus_site.live --element=db --to="$_local_file"
     $ld_terminus auth:logout
 
@@ -757,21 +760,14 @@ function _fetch_db_production() {
     fi
 
     show_switch
-    if has_option v; then
-      ssh_prod ". $production_script export $_export_suffix"
-    else
-      ssh_prod ". $production_script export $_export_suffix" >/dev/null
-    fi
+    ssh_prod ". $production_script export $_export_suffix"
     wait
-    [[ $? -eq 0 ]] && echo_green "├── Database exported and ready to download." || echo_red "Remote export failed."
+    [[ $? -eq 0 ]] && echo_green "$LI $(time_local) Database exported and ready to download." || echo_red "$(time_local) Remote export failed."
 
     local _remote_file="$production_db_dir/${production_db_name}-$_export_suffix.sql.gz"
-    if has_option v; then
-      scp $production_scp_port"$production_server:$_remote_file" "$_local_file"
-    else
-      scp $production_scp_port"$production_server:$_remote_file" "$_local_file" >/dev/null
-    fi
-    [[ $? -eq 0 ]] && echo_green "└── Database downloaded from production." || echo_red "Download failed."
+    # @todo compare the usage with the -z for large files.
+    rsync --progress -e ssh $production_scp_port"$production_server:$_remote_file" "$_local_file"
+    [[ $? -eq 0 ]] && echo_green "└── $(time_local) Database downloaded from production." || echo_red "$(time_local) Download failed."
 
     # delete it from remote
     if has_option v; then
@@ -803,7 +799,7 @@ function _fetch_db_staging() {
   # Cleanup local
   rm $config_dir/prod/db/fetched.sql* >/dev/null 2>&1
 
-  echo "Exporting staging db..."
+  echo "Fetch Staging Database"
   local _export_suffix='fetch_db'
   show_switch
   ssh_staging ". $staging_script export $_export_suffix"
@@ -893,8 +889,8 @@ function _fetch_copy() {
   local output=''
   local error=''
   for from in "${source[@]}"; do
-    [[ "$output" ]] && echo_green "├── $output"
-    [[ "$error" ]] && echo_green "├── $error"
+    [[ "$output" ]] && echo_green "$LI $output"
+    [[ "$error" ]] && echo_green "$LI $error"
     to=$config_dir/$source_server/copy/$i~${destination[$i]##*/}
     if [[ ! "$to" ]]; then
       error="No local path configured for: ${from##*/}"
@@ -1047,8 +1043,8 @@ function _reset_copy() {
 
   echo "Resetting individual $source_server files from cache..."
   for from in "${destination[@]}"; do
-    [[ "$output" ]] && echo_green "├── $output"
-    [[ "$error" ]] && echo_red "├── $error"
+    [[ "$output" ]] && echo_green "$LI $output"
+    [[ "$error" ]] && echo_red "$LI $error"
     from="$config_dir/$source_server/copy/"$i~${from##*/}
     to=${destination[$i]}
     local verbose=''
@@ -1097,8 +1093,8 @@ function _reset_local_copy() {
 
   echo "Copying individual local files..."
   for from in "${source[@]}"; do
-    [[ "$output" ]] && echo_green "├── $output"
-    [[ "$error" ]] && echo_red "├── $error"
+    [[ "$output" ]] && echo_green "$LI $output"
+    [[ "$error" ]] && echo_red "$LI $error"
     to=${destination[$i]}
     local verbose=''
     has_option v && verbose=' -v'
@@ -1396,7 +1392,7 @@ function export_db() {
   # from some tables or not
   data=$(get_sql_ready_db_tables_data)
   if [[ "$data" ]]; then
-    echo_yellow "├── Omitting data from some tables..."
+    echo_yellow "$LI Omitting data from some tables..."
     # Omit table content.
     $ld_mysqldump --defaults-file=$local_db_cnf $local_db_name --no-data >"$file"
     # Omit certain create tables.
@@ -1487,16 +1483,16 @@ function _drop_tables() {
   local status=true
   tables=$($ld_mysql --defaults-file=$local_db_cnf $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables')
   for t in $tables; do
-    has_option v && echo "├── $t"
+    has_option v && echo "$LI $t"
     $ld_mysql --defaults-file=$local_db_cnf $local_db_name -e "DROP TABLE $t" || status=false
   done
 
   if [[ "$status" == true ]]; then
-    echo_green "├── All tables dropped from $local_db_name."
+    echo_green "$LI All tables dropped from $local_db_name."
     return 0
   fi
 
-  echo_red "├── Could not drop all tables."
+  echo_red "$LI Could not drop all tables."
   return 1
 }
 
@@ -2087,7 +2083,7 @@ function _handle_hook() {
 
   for hook_stub in "${hooks[@]}"; do
     local hook="$config_dir/hooks/$hook_stub.sh"
-    has_option v && echo "├──  Looking for hook: ${hook##*/}"
+    has_option v && echo "$LI  Looking for hook: ${hook##*/}"
     local basename=$(basename $hook)
     declare -a hook_args=("$op" "$production_server" "$staging_server" "$local_basepath" "$config_dir/$source_server/copy" "$source_server" "$op_status" "$local_role" "" "" "" "" "$config_dir/hooks/")
     if test -e "$hook"; then
@@ -2240,12 +2236,12 @@ function hooks_empty_drupal_conf() {
   local key=$2
 
   if [[ ! -f "$file" ]]; then
-    echo_red "├── file \"$file\" does not exist."
+    echo_red "$LI file \"$file\" does not exist."
     return 1
   fi
   local key_escaped="${key//\]\[/\\]\\[}"
   sed -i '' "s/[\"']$key_escaped[\"'].*$/'$key_escaped'] = NULL;/g" $file || return 2
-  echo_green "├── \"$key\" set to NULL."
+  echo_green "$LI \"$key\" set to NULL."
   return 0
 }
 
@@ -2274,7 +2270,7 @@ function hooks_empty_array_key() {
   local file="$1"
 
   if [[ ! -f "$file" ]]; then
-    echo_red "├── file \"$file\" does not exist."
+    echo_red "$LI file \"$file\" does not exist."
     return 1
   fi
   local key=$2
@@ -2293,7 +2289,7 @@ function hooks_empty_array_key() {
 
   [[ "$before" == "$(cat $file)" ]] && success=false
 
-  [[ $success == true ]] && echo_green "├── $key set to NULL." && return 0
+  [[ $success == true ]] && echo_green "$LI $key set to NULL." && return 0
   return 2
 }
 
@@ -2303,7 +2299,7 @@ function hooks_yaml_set_var() {
   local value="$3"
 
   if [[ ! -f "$file" ]]; then
-    echo_red "├── file \"$file\" does not exist."
+    echo_red "$LI file \"$file\" does not exist."
     return 1
   fi
 
@@ -2311,10 +2307,10 @@ function hooks_yaml_set_var() {
   local result=$?
 
   if [[ $result -ne 0 ]]; then
-    echo_red "├── hooks_yaml_set_var failed setting \"$var_names_csv\" on $(basename $file)"
+    echo_red "$LI hooks_yaml_set_var failed setting \"$var_names_csv\" on $(basename $file)"
     return 1
   fi
-  echo_green "├── $var_names_csv set to NULL."
+  echo_green "$LI $var_names_csv set to NULL."
   return $result
 }
 
@@ -2342,14 +2338,14 @@ function hooks_set_vars_to_null() {
   local var_names_csv="$2"
 
   if [[ ! -f "$file" ]]; then
-    echo_red "├── file \"$file\" does not exist."
+    echo_red "$LI file \"$file\" does not exist."
     return 1
   fi
 
   "$CLOUDY_PHP" "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" setVariableByName
   local result=$?
 
-  [[ $result -eq 0 ]] && echo_green "├── $var_names_csv set to NULL."
+  [[ $result -eq 0 ]] && echo_green "$LI $var_names_csv set to NULL."
   return $result
 }
 
@@ -2362,7 +2358,7 @@ function hooks_env_sanitize_url() {
   "$CLOUDY_PHP" "$ROOT/includes/scrubber.php" "$file" "$var_names_csv" envSanitizeUrl
   local result=$?
 
-  [[ $result -eq 0 ]] && echo_green "├── Password(s) in $var_names_csv have been masked."
+  [[ $result -eq 0 ]] && echo_green "$LI Password(s) in $var_names_csv have been masked."
   return $result
 }
 
@@ -2383,10 +2379,10 @@ function hooks_env_set_var() {
   [[ "$value" ]] || value="''"
 
   if [[ $result -ne 0 ]]; then
-    echo_red "├── hooks_env_set_var failed setting \"$var_names_csv\" on $(basename $file)"
+    echo_red "$LI hooks_env_set_var failed setting \"$var_names_csv\" on $(basename $file)"
     return 1
   fi
-  echo_green "├── $var_names_csv set to: $value."
+  echo_green "$LI $var_names_csv set to: $value."
   return $result
 }
 
