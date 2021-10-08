@@ -415,15 +415,12 @@ case $op in
   ;;
 
 'terminus')
-  cmd="auth:login --machine-token=$terminus_machine_token"
-
-  # Todo need to array_shift and then pass the entire bit to terminus to make
-  # this really work correctly.
-  if [[ "${SCRIPT_ARGS[1]}" ]]; then
-    cmd="${SCRIPT_ARGS[1]}"
-  fi
-  $ld_terminus $cmd && echo_green "└── $config_dir/vendor/bin/terminus" || exit_with_failure
-  end
+  _validate_terminus
+  eval $(get_config_as site_name "production.pantheon.site")
+  auth_login="auth:login --machine-token=$terminus_machine_token"
+  "$ld_terminus" $auth_login
+  succeed_because "$auth_login"
+  exit_with_success "Authenticated to $site_name"
   ;;
 
 'config-export')

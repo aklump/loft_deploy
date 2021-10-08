@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.20.0] - 2021-10-08
+
+### Changed
+
+- Terminus must now be installed at the app level w/Composer; no longer in the .loft_deploy directory. See documentation for info.
+
 ## [0.19.0] - 2021-10-08
 
 ### Added

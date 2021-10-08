@@ -4,9 +4,8 @@ This guide will show you how to connect to Pantheon websites.  **Be aware that y
 
 ## Install Terminus
 
-- Once your local _.loft_deploy_ exists you may install Terminus.
-- Descend into that directory, e.g. `cd .loft_deploy`
-- Install using composer `composer require pantheon-systems/terminus`
+- Install with Composer at the same level as you installed Loft Deploy, e.g. `composer require pantheon-systems/terminus`
+- Check installation using `loft_deploy.sh configtest`
 
 ## Configure Terminus
 
@@ -27,7 +26,7 @@ Pantheon includes the private files directory inside of the public files directo
 
         private
 
-Then you should setup the second array element as `files/private` as shown above and then that will transfer your private directory, if you so desire.
+Then you should set up the second array element as `files/private` as shown above and then that will transfer your private directory, if you so desire.
 
 ### Configuration Hints
 
@@ -44,9 +43,6 @@ Then you should setup the second array element as `files/private` as shown above
 1. Authenticate using the Loft Deploy credentials with the following:
         
         ldp terminus site:list
-        
-1. You will then see the absolute path to the terminus binary to use for further commands.        
-
 
 ---    
 ## Files

@@ -297,12 +297,7 @@ function load_config() {
   local_db_host='localhost'
   production_root=''
 
-  # For Pantheon support we need to find terminus.
-  ld_terminus="$config_dir/vendor/bin/terminus"
-
-  # Legacy Support.
-  test -f "$config_dir/config" && source $config_dir/config
-
+  ld_terminus="$APP_ROOT/vendor/bin/terminus"
   local_db_cnf="$config_dir/cache/local.cnf"
 
   # As of v 0.14 we have yaml support, which is the defacto.
@@ -734,9 +729,7 @@ function _fetch_db_production() {
 
   # Support for Pantheon.
   if [ "$terminus_site" ]; then
-    if [ ! "$ld_terminus" ]; then
-      end "Missing dependency terminus; please install per https://github.com/pantheon-systems/terminus/blob/master/README.md#installation"
-    fi
+    _validate_terminus
     if [ ! "$terminus_machine_token" ]; then
       end "Create or add your terminus machine token as \$terminus_machine_token https://pantheon.io/docs/machine-tokens/"
     fi
@@ -1636,13 +1629,12 @@ function configtest() {
   # Test for Pantheon support
   if [ "$terminus_site" ]; then
 
-    if [ ! -f "$ld_terminus" ]; then
-      warning "Terminus has not been installed; cd .loft_deploy && composer require terminus"
+    if ! $(_validate_terminus) &>/dev/null; then
       configtest_return=false
     fi
 
     # assert can login
-    if ! $ld_terminus auth:login --machine-token="$terminus_machine_token"; then
+    if ! "$ld_terminus" auth:login --machine-token="$terminus_machine_token" &>/dev/null; then
       warning "Terminus cannot login; check variable terminus_machine_token."
       configtest_return=false
     fi
@@ -2450,4 +2442,15 @@ function ssh_staging() {
 function _in_the_background {
   ionice -c 2 -n 7 -p $BASHPID >/dev/null
   renice  +10 -p  $BASHPID >/dev/null
+}
+
+# Ensure the terminus is installed or exit.
+#
+# Returns nothing
+function _validate_terminus {
+  if [ ! -e "$ld_terminus" ]; then
+    fail_because "Try composer require --dev pantheon-systems/terminus"
+    fail_because "Missing path $ld_terminus"
+    exit_with_failure "Terminus not installed"
+  fi
 }

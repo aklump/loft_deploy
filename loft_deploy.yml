@@ -68,7 +68,7 @@ commands:
   pass:
     help: 'Display password(s)'
   terminus:
-    help: 'Login to terminus with prod credentials.'
+    help: 'Authenticate Terminus with the production site.'
   hook:
     help: 'Run the indicated hook, e.g. hook reset'
   clear-cache:
