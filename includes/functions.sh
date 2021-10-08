@@ -1345,6 +1345,7 @@ function _current_db_paths() {
 #   A title to use instead of 'Exporting database...'
 #
 function export_db() {
+  _in_the_background
   _current_db_paths $1
   local title="$3"
 
@@ -1393,12 +1394,12 @@ function export_db() {
   if [[ "$data" ]]; then
     echo_green "$LI $(time_local) Exporting with omitted data."
     # Omit table content.
-    $ld_mysqldump$ld_export_flags --defaults-file=$local_db_cnf $local_db_name --no-data >"$file"
+    "$ld_mysqldump" --defaults-file="$local_db_cnf" $local_db_name --no-data$ld_mysqldump_flags >"$file"
     # Omit certain create tables.
-    $ld_mysqldump$ld_export_flags --defaults-file=$local_db_cnf $local_db_name $data --no-create-info >>"$file"
+    "$ld_mysqldump" --defaults-file="$local_db_cnf" $local_db_name $data --no-create-info$ld_mysqldump_flags >>"$file"
   else
     echo_yellow "$LI $(time_local) Exporting all data."
-    $ld_mysqldump$ld_export_flags --defaults-file=$local_db_cnf $local_db_name -r "$file"
+    "$ld_mysqldump" --defaults-file="$local_db_cnf" $local_db_name -r$ld_mysqldump_flags "$file"
   fi
   local status=$?
 
@@ -2441,4 +2442,12 @@ function ssh_staging() {
   fi
 
   $program ${staging_server}${staging_ssh_port} "${prefix}cd ${staging_root};${command}"
+}
+
+# Sets the process priority as low as possible to not affect server performance.
+#
+# Returns nothing
+function _in_the_background {
+  ionice -c 2 -n 7 -p $BASHPID >/dev/null
+  renice  +10 -p  $BASHPID >/dev/null
 }
