@@ -25,14 +25,20 @@
 
 <section>
 
+<h2>[0.19.0] - 2021-10-08</h2>
+
+<h3>Added</h3>
+
+<ul>
+<li>--single-transaction and --skip-lock-tables by default; configurable with "mysqldump_flags" to reduce lock timeouts during export.</li>
+</ul>
+
 <h2>[0.18.0] - 2021-05-08</h2>
 
 <h3>Added</h3>
 
 <ul>
-<li>When using Lando with Drupal you should now configure
-using <code>database.lando: @drupal</code> and remove <code>drupal.settings</code>.
-Read <a href="lando.html">the documention</a> for more info.</li>
+<li>When using Lando with Drupal you should now configure using <code>database.lando: @drupal</code> and remove <code>drupal.settings</code>. Read <a href="lando.html">the documention</a> for more info.</li>
 </ul>
 
 <h2>[0.17.0] - 2021-02-08</h2>
@@ -49,8 +55,7 @@ Read <a href="lando.html">the documention</a> for more info.</li>
 
 <ul>
 <li>Added support for using with Lando containers.</li>
-<li>Add configuration option <code>stage_may_pull_prod</code> to allow stage to pull from
-prod. Set this to true in your configuration.</li>
+<li>Add configuration option <code>stage_may_pull_prod</code> to allow stage to pull from prod. Set this to true in your configuration.</li>
 <li>Improved feedback and messages.</li>
 <li>Added local role as argument <code>$8</code> to hooks.</li>
 </ul>
@@ -64,8 +69,7 @@ prod. Set this to true in your configuration.</li>
 <h2>[0.14.10]</h2>
 
 <ul>
-<li>Removed <code>scp</code> operation; you should now use the <code>copy_production_to</code> feature
-instead.</li>
+<li>Removed <code>scp</code> operation; you should now use the <code>copy_production_to</code> feature instead.</li>
 </ul>
 
 <h2>[0.14]</h2>
@@ -82,7 +86,7 @@ instead.</li>
 <footer>
   <div class="pager"><a href="index.html" class="prev index">&laquo;Loft Deploy</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="hooks.html" class="next hooks">Hooks&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.18.3 &bull; Last Updated: Fri, 17 Sep 2021 13:02:25 -0700</p>
+    <p class="legaleeze center">Version: 0.19.0 &bull; Last Updated: Fri, 08 Oct 2021 13:14:37 -0700</p>
   </div>
 </footer>
 
