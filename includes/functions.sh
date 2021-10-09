@@ -541,7 +541,7 @@ function _do_migrate_pull() {
   echo_title "Migration from \"$migration_title\""
 
   local backup_message="Your database will be backed up, but your files will not."
-  has_option "nobu" && backup_message=$(echo_red "Nothing will be backed up.")
+  has_option "skip-backup" && backup_message=$(echo_red "Nothing will be backed up.")
 
   confirmation_message="Migration will overwrite your local $(echo_yellow_highlight "files and database")."
   if [[ "$migrate_files" == true ]] && [[ "$migrate_db" == false ]]; then
@@ -1176,7 +1176,7 @@ function reset_db() {
     end "Expecting to find $config_dir/$source/db/fetched.sql or fetched.sql.gz; file not found."
   fi
 
-  has_option nobu || export_db "reset_backup-$(date8601 -c)" "" "Creating a backup of the local db..."
+  has_option skip-backup || export_db "reset_backup-$(date8601 -c)" "" "Creating a backup of the local db..."
 
   import_db_silent=true
   import_db "$fetched_db_dump"

@@ -6,74 +6,233 @@ additional_config:
 stage_may_pull_prod: false
 migration:
   max_db_age: 1800
-
-# These can be used to control the database export configuration
-# @link https://mysqldump.guru/run-mysqldump-without-locking-the-tables.html
 mysqldump_flags:
   - single-transaction
   - skip-lock-tables
-
 commands:
   config:
     help: 'Open $EDITOR with the configuration file to make changes.'
   init:
     help: 'Initialize the current directory with a .loft_deploy folder.'
-    arguments: { prod: { help: 'Configure the current directory as a production source.' }, staging: { help: 'Configure the current directory as a staging source.' }, dev: { help: 'Configure the current directory as a development source.' } }
+    arguments:
+      prod:
+        help: 'Configure the current directory as a production source.'
+      staging:
+        help: 'Configure the current directory as a staging source.'
+      dev:
+        help: 'Configure the current directory as a development source.'
   get:
     help: 'Print out an individual configuration value.'
   push:
     help: 'Push assets to staging. Does not push individual files.'
-    options: { f: { type: boolean, help: 'Push only files, skip the database.' }, d: { type: boolean, help: 'Push only database, ignoring files.' }, verbose: { type: boolean, aliases: [ v ], help: 'Display verbose output.' }, 'yes': { type: boolean, aliases: [ 'y' ], help: 'Answer yes to all confirmations, bypassing user input.' } }
+    options:
+      f:
+        type: boolean
+        help: 'Push only files, skip the database.'
+      d:
+        type: boolean
+        help: 'Push only database, ignoring files.'
+      verbose:
+        type: boolean
+        aliases:
+          - v
+        help: 'Display verbose output.'
+      'yes':
+        type: boolean
+        aliases:
+          - 'y'
+        help: 'Answer yes to all confirmations, bypassing user input.'
   pull:
     help: 'Combine the fetch and reset commands in one step.'
-    arguments: { prod: { help: 'Pull from the production server; this is the default.' }, staging: { help: 'Pull from the staging server rather than the production server.' } }
-    options: { f: { type: boolean, help: 'Pull only files, skip the database.' }, d: { type: boolean, help: 'Pull only database, ignoring files.' }, 'yes': { type: boolean, aliases: [ 'y' ], help: 'Answer yes to all confirmations, bypassing user input.' }, ind: { type: boolean, aliases: [ i ], help: 'Only pull the individual files as defined by copy_production_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you often will pair it with -f, e.g. loft_deploy pull -fi' } }
+    arguments:
+      prod:
+        help: 'Pull from the production server; this is the default.'
+      staging:
+        help: 'Pull from the staging server rather than the production server.'
+    options:
+      f:
+        type: boolean
+        help: 'Pull only files, skip the database.'
+      d:
+        type: boolean
+        help: 'Pull only database, ignoring files.'
+      skip-backup:
+        type: boolean
+        help: 'Do not backup the local database first.'
+      'yes':
+        type: boolean
+        aliases:
+          - 'y'
+        help: 'Answer yes to all confirmations, bypassing user input.'
+      ind:
+        type: boolean
+        aliases:
+          - i
+        help: 'Only pull the individual files as defined by copy_production_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you often will pair it with -f, e.g. loft_deploy pull -fi'
   fetch:
     help: 'Fetch assets from remote and stash for use by the reset command; this does not affect local database or files; use reset for that.'
-    arguments: { prod: { help: 'Pull from the production server; this is the default.' }, staging: { help: 'Pull from the staging server rather than the production server.' } }
-    options: { f: { type: boolean, help: 'Fetch only files, skip the database.' }, d: { type: boolean, help: 'Fetch only database, ignoring files.' }, ind: { type: boolean, aliases: [ i ], help: 'Only fetch the individual files as defined by copy_production_to, copy_staging_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you may pair it with -f to ignore the database, e.g. loft_deploy fetch -fi' }, 'yes': { type: boolean, aliases: [ 'y' ], help: 'Answer yes to all confirmations, bypassing user input.' } }
+    arguments:
+      prod:
+        help: 'Pull from the production server; this is the default.'
+      staging:
+        help: 'Pull from the staging server rather than the production server.'
+    options:
+      f:
+        type: boolean
+        help: 'Fetch only files, skip the database.'
+      d:
+        type: boolean
+        help: 'Fetch only database, ignoring files.'
+      ind:
+        type: boolean
+        aliases:
+          - i
+        help: 'Only fetch the individual files as defined by copy_production_to, copy_staging_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you may pair it with -f to ignore the database, e.g. loft_deploy fetch -fi'
+      'yes':
+        type: boolean
+        aliases:
+          - 'y'
+        help: 'Answer yes to all confirmations, bypassing user input.'
   reset:
     help: 'Reset local with fetched assets.'
-    arguments: { prod: { help: 'Pull from the production server; this is the default.' }, staging: { help: 'Pull from the staging server rather than the production server.' } }
-    options: { d: { type: boolean, help: 'Reset only database, ignoring files.' }, f: { type: boolean, help: 'Reset only files, skip the database.' }, 'yes': { type: boolean, aliases: [ 'y' ], help: 'Answer yes to all confirmations, bypassing user input.' }, ind: { type: boolean, aliases: [ i ], help: 'Only reset the individual files as defined by copy_production_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you often will pair it with -f, e.g. loft_deploy reset -fi' }, local: { type: boolean, help: 'Limit the file operation to only those files as defined by copy_local_to.  Ignores individual files from prod or staging.  Combine with -f to ignore the database.' } }
+    arguments:
+      prod:
+        help: 'Pull from the production server; this is the default.'
+      staging:
+        help: 'Pull from the staging server rather than the production server.'
+    options:
+      d:
+        type: boolean
+        help: 'Reset only database, ignoring files.'
+      f:
+        type: boolean
+        help: 'Reset only files, skip the database.'
+      skip-backup:
+        type: boolean
+        help: 'Do not backup the local database before reset.'
+      'yes':
+        type: boolean
+        aliases:
+          - 'y'
+        help: 'Answer yes to all confirmations, bypassing user input.'
+      ind:
+        type: boolean
+        aliases:
+          - i
+        help: 'Only reset the individual files as defined by copy_production_to and copy_local_to.  Ignore files defined in the files array.  This option does not exclude the database so you often will pair it with -f, e.g. loft_deploy reset -fi'
+      local:
+        type: boolean
+        help: 'Limit the file operation to only those files as defined by copy_local_to.  Ignores individual files from prod or staging.  Combine with -f to ignore the database.'
   export:
     help: 'Dump the local database to a file.  The file is named after the database, but this can be modified using the suffix and the --time option.'
-    arguments: { suffix: { help: 'An optional suffix to append to the filename of the dump file.' } }
-    options: { time: { help: 'Append a UTC ISO8601 datestamp to the filename (after the suffix, if used).', type: boolean, aliases: [ t ] }, 'yes': { type: boolean, aliases: [ 'y' ], help: 'Answer yes to all confirmations, bypassing user input.' }, force: { help: 'Overwrite file, if it exists.', type: boolean, aliases: [ f ] }, dir: { help: 'An alternative directory for the export file to save to.', type: string } }
+    arguments:
+      suffix:
+        help: 'An optional suffix to append to the filename of the dump file.'
+    options:
+      time:
+        help: 'Append a UTC ISO8601 datestamp to the filename (after the suffix, if used).'
+        type: boolean
+        aliases:
+          - t
+      'yes':
+        type: boolean
+        aliases:
+          - 'y'
+        help: 'Answer yes to all confirmations, bypassing user input.'
+      force:
+        help: 'Overwrite file, if it exists.'
+        type: boolean
+        aliases:
+          - f
+      dir:
+        help: 'An alternative directory for the export file to save to.'
+        type: string
   export-purge:
-    aliases: [ purge ]
+    aliases:
+      - purge
     help: 'Purge (delete) database exports in the export directory older than N days.  Only files ending in .sql.gz or .sql are considered.  This can be called from anywhere as it always acts on the export directory.'
-    arguments: { days: { required: true, help: 'The age in days to keep.  Exports older than this will be deleted.' } }
-    options: { 'yes': { type: boolean, aliases: [ 'y' ], help: 'Answer yes to all confirmations, bypassing user input.' }, dry-run: { type: boolean, help: 'List out files without the option of deleting.' } }
+    arguments:
+      days:
+        required: true
+        help: 'The age in days to keep.  Exports older than this will be deleted.'
+    options:
+      'yes':
+        type: boolean
+        aliases:
+          - 'y'
+        help: 'Answer yes to all confirmations, bypassing user input.'
+      dry-run:
+        type: boolean
+        help: 'List out files without the option of deleting.'
   import:
     help: 'Empty your local database and import a database dump.'
-    arguments: { suffix: { help: 'If you used export with a suffix, you may provide only the suffix here, e.g. loft_deploy export rollback, then you can use loft_deploy import rollback.  You may also provide a complete path to an exact filename, or a basename in the database directory or the current directory.' } }
-    options: { 'yes': { type: boolean, aliases: [ 'y' ], help: 'Answer yes to all confirmations, bypassing user input.' } }
+    arguments:
+      suffix:
+        help: 'If you used export with a suffix, you may provide only the suffix here, e.g. loft_deploy export rollback, then you can use loft_deploy import rollback.  You may also provide a complete path to an exact filename, or a basename in the database directory or the current directory.'
+    options:
+      'yes':
+        type: boolean
+        aliases:
+          - 'y'
+        help: 'Answer yes to all confirmations, bypassing user input.'
   mysql:
     help: 'Start mysql shell using local credentials. Pass an SQL statement to immediately execute it, e.g. loft_deploy mysql "SHOW TABLES;".'
-    arguments: { sql: { help: 'An optional SQL statement in double quotes to execute, e.g. loft_deploy mysql "SHOW TABLES;"' } }
+    arguments:
+      sql:
+        help: 'An optional SQL statement in double quotes to execute, e.g. loft_deploy mysql "SHOW TABLES;"'
   help:
     help: 'Show this help screen.'
   info:
     help: 'Show configuration information.'
   configtest:
     help: 'Run a suite of tests to reveal possible configuration issues.  This is a good step to take after all configuration changes, as it checks your connections to your remote servers, files, databases, etc.'
-    aliases: [ ct ]
+    aliases:
+      - ct
   config-export:
     help: 'Export prod or staging configuration to use in another location''s config.yml.'
-    aliases: [ cex ]
+    aliases:
+      - cex
   ls:
     help: 'List the contents of various directories.  You may pass ls flags, e.g. loft_deploy ls -f -la'
-    options: { d: { type: boolean, help: 'Specify the database directory.' }, f: { type: boolean, help: 'Specify the files directory.' } }
+    options:
+      d:
+        type: boolean
+        help: 'Specify the database directory.'
+      f:
+        type: boolean
+        help: 'Specify the files directory.'
   pass:
     help: 'Display password(s)'
   terminus:
-    help: 'Authenticate Terminus with the production site.'
+    help: 'Shortcut to authenticate using the production machine code.'
   hook:
     help: 'Run the indicated hook, e.g. hook reset'
   clear-cache:
-    aliases: [ clearcache, cc ]
+    aliases:
+      - clearcache
+      - cc
     help: 'Clear all cached data.'
   migrate:
     help: 'Migrate database and/or files from another server that does not have Loft Deploy installed.  See online help for more info.'
-    options: { files: { type: boolean, help: 'Migrate only files, skip the database.', aliases: [ f ] }, database: { type: boolean, help: 'Migreate only database, ignoring files.', aliases: [ d ] }, quiet: { help: 'Run in quiet mode, i.e., less verbose output.', type: boolean, aliases: [ q ] }, nobu: { type: boolean, help: 'Do not perform a backup of the local database.' }, push: { type: boolean, help: 'Generate the manual steps to push your production migration.' } }
+    options:
+      files:
+        type: boolean
+        help: 'Migrate only files, skip the database.'
+        aliases:
+          - f
+      database:
+        type: boolean
+        help: 'Migrate only database, ignoring files.'
+        aliases:
+          - d
+      quiet:
+        help: 'Run in quiet mode, i.e., less verbose output.'
+        type: boolean
+        aliases:
+          - q
+      skip-backup:
+        type: boolean
+        help: 'Do not backup the local database before migration.'
+      push:
+        type: boolean
+        help: 'Generate the manual steps to push your production migration.'

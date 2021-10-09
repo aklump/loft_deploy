@@ -13,25 +13,6 @@
             "type": "string",
             "pattern": "^http"
         },
-        "pantheon": {
-            "type": "object",
-            "properties": {
-                "uuid": {
-                    "type": "string"
-                },
-                "site": {
-                    "type": "string"
-                },
-                "machine_token": {
-                    "type": "string"
-                }
-            },
-            "required": [
-                "uuid",
-                "site",
-                "machine_token"
-            ]
-        },
         "migration_resource": {
             "type": "object",
             "properties": {
@@ -117,31 +98,19 @@
                             "$ref": "#/definitions/title"
                         },
                         "copy_source": {
-                            "type": [
-                                "array",
-                                "object"
-                            ],
+                            "type": ["array", "object"],
                             "uniqueItems": false
                         },
                         "copy_local_to": {
-                            "type": [
-                                "array",
-                                "object"
-                            ],
+                            "type": ["array", "object"],
                             "uniqueItems": true
                         },
                         "copy_production_to": {
-                            "type": [
-                                "array",
-                                "object"
-                            ],
+                            "type": ["array", "object"],
                             "uniqueItems": true
                         },
                         "copy_staging_to": {
-                            "type": [
-                                "array",
-                                "object"
-                            ],
+                            "type": ["array", "object"],
                             "uniqueItems": true
                         },
                         "location": {
@@ -292,7 +261,25 @@
                         "files": {
                             "$ref": "#/definitions/files"
                         },
-                        "pantheon": "#/definitions/pantheon"
+                        "pantheon": {
+                            "type": "object",
+                            "properties": {
+                                "uuid": {
+                                    "type": "string"
+                                },
+                                "site": {
+                                    "type": "string"
+                                },
+                                "machine_token": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "uuid",
+                                "site",
+                                "machine_token"
+                            ]
+                        }
                     },
                     "additionalProperties": false,
                     "required": [
@@ -331,8 +318,7 @@
                                 "~/.profile",
                                 "export LOFT_DEPLOY_PHP=/usr/local/bin/php72"
                             ]
-                        },
-                        "pantheon": "#/definitions/pantheon"
+                        }
                     },
                     "additionalProperties": false,
                     "required": [

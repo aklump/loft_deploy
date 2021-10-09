@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.21.0] - 2021-10-09
+
+### Added
+
+- `--skip-backup` option to _migrate, reset, pull_ operations. This will skip the local backup before overwriting; use with care!
+
+### Changed
+
+- `--nobu` is now `--skip-backup` for the _migrate_ route.
+
 ## [0.20.0] - 2021-10-08
 
 ### Changed
