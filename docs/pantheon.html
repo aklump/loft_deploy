@@ -30,9 +30,8 @@
 <h2>Install Terminus</h2>
 
 <ul>
-<li>Once your local <em>.loft_deploy</em> exists you may install Terminus.</li>
-<li>Descend into that directory, e.g. <code>cd .loft_deploy</code></li>
-<li>Install using composer <code>composer require pantheon-systems/terminus</code></li>
+<li>Install with Composer at the same level as you installed Loft Deploy, e.g. <code>composer require pantheon-systems/terminus</code></li>
+<li>Check installation using <code>loft_deploy.sh configtest</code></li>
 </ul>
 
 <h2>Configure Terminus</h2>
@@ -56,7 +55,7 @@
 <pre><code>    private
 </code></pre>
 
-<p>Then you should setup the second array element as <code>files/private</code> as shown above and then that will transfer your private directory, if you so desire.</p>
+<p>Then you should set up the second array element as <code>files/private</code> as shown above and then that will transfer your private directory, if you so desire.</p>
 
 <h3>Configuration Hints</h3>
 
@@ -79,7 +78,6 @@
 
 <pre><code>ldp terminus site:list
 </code></pre></li>
-<li><p>You will then see the absolute path to the terminus binary to use for further commands.</p></li>
 </ol>
 
 <hr />
@@ -110,7 +108,7 @@ pantheon_live_uuid=''
 <footer>
   <div class="pager"><a href="sanitize.html" class="prev sanitize">&laquo;Sanitize Settings Files</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="configuration.html" class="next config">The _config.yml_ File Explained&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.19.0 &bull; Last Updated: Fri, 08 Oct 2021 13:14:41 -0700</p>
+    <p class="legaleeze center">Version: 0.20.0 &bull; Last Updated: Fri, 08 Oct 2021 17:04:01 -0700</p>
   </div>
 </footer>
 
