@@ -386,6 +386,9 @@
                 "title"
             ]
         },
+        "mysqldump_flags": {
+            "type": "array"
+        },
         "bin": {
             "type": "object",
             "properties": {
