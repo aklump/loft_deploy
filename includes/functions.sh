@@ -2163,6 +2163,12 @@ function _access_check() {
       fail_because "You can allow this operation by setting \"stage_may_pull_prod\" to true, in your configuration."
       return 1
       ;;
+    'fetch')
+      eval $(get_config stage_may_pull_prod false)
+      [[ "$stage_may_pull_prod" == true ]] && return 0
+      fail_because "You can allow this operation by setting \"stage_may_pull_prod\" to true, in your configuration."
+      return 1
+      ;;
     'pull')
       eval $(get_config stage_may_pull_prod false)
       [[ "$stage_may_pull_prod" == true ]] && return 0
