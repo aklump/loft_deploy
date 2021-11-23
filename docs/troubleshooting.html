@@ -28,6 +28,24 @@
 <h2>Trouble Connecting to Prod or Staging</h2>
 
 <p>You may need force a load of <em>~/.profile</em> by using the <code>production.ssh</code> configuration.</p>
+
+<h2>Getting Error: <code>mysqldump: Error: 'Access denied; you need (at least one of) the PROCESS privilege(s) for this operation' when trying to dump tablespaces</code></h2>
+
+<ol>
+<li>Open <em>loft_deploy.yml</em> and find <code>mysqldump_flags</code></li>
+<li>Copy that section including value.</li>
+<li>On the server where this error shows up run <code>ldp config</code></li>
+<li>Add the copied value.</li>
+<li>Append the value <code>no-tablespaces</code>, so it looks somewhat like this:</li>
+</ol>
+
+<pre><code class="yaml">mysqldump_flags:
+  - single-transaction
+  - skip-lock-tables
+  - no-tablespaces
+</code></pre>
+
+<p><a href="https://anothercoffee.net/how-to-fix-the-mysqldump-access-denied-process-privilege-error/">Learn more</a></p>
 </section>
 
 <div class="search__results">
@@ -37,7 +55,7 @@
 <footer>
   <div class="pager"><a href="configuration.html" class="prev configuration">&laquo;The _config.yml_ File Explained</a><a href="index.html" class="index pager__book-title">Loft Deploy</a><a href="update.html" class="next update">Update&raquo;</a></div>  
   <div id="footer-legaleeze">
-    <p class="legaleeze center">Version: 0.21.3 &bull; Last Updated: Mon, 22 Nov 2021 16:37:16 -0800</p>
+    <p class="legaleeze center">Version: 0.21.4 &bull; Last Updated: Mon, 22 Nov 2021 17:43:50 -0800</p>
   </div>
 </footer>
 
