@@ -314,6 +314,7 @@ function load_config() {
   fi
 
   test -f "$config_dir/cache/config.yml.sh" && source "$config_dir/cache/config.yml.sh"
+
   #
   # Database is coming in from Drupal settings file.
   #
@@ -345,6 +346,10 @@ function load_config() {
     local_db_pass=${settings[3]}
     local_db_port=${settings[4]}
   fi
+
+  # We source this one more time to make sure any local_db specific settings
+  # will have the last word.
+  source "$config_dir/cache/config.yml.sh"
 
   if [[ ! "$local_db_protocol" ]]; then
     local_db_protocol='tcp'
