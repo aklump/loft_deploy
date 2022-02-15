@@ -1482,13 +1482,15 @@ function import_db() {
 #
 function _drop_tables() {
   local status=true
-  tables=$($ld_mysql --defaults-file=$local_db_cnf $local_db_name -e 'show tables' | awk '{ print $1}' | grep -v '^Tables')
+
+  tables=$(mysql --defaults-file="$local_db_cnf" $local_db_name -e 'SHOW TABLES' | awk '{ print $1}' | grep -v '^Tables')
+  sql="DROP TABLE "
   for t in $tables; do
     has_option v && echo "$LI $t"
-    $ld_mysql --defaults-file=$local_db_cnf $local_db_name -e "DROP TABLE $t" || status=false
+    sql="$sql\`$t\`,"
   done
-
-  if [[ "$status" == true ]]; then
+  sql="${sql%,}"
+  if $ld_mysql --defaults-file="$local_db_cnf" $local_db_name -e "$sql"; then
     echo_green "$LI $(time_local) All tables dropped from $local_db_name."
     return 0
   fi
