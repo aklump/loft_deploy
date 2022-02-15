@@ -2,7 +2,7 @@
     "license": "BSD-3-Clause",
     "name": "aklump\/loft-deploy",
     "description": "A bridge across website instances\/environments to simplify the exchange of database and files not under SCM.",
-    "version": "0.21.5",
+    "version": "0.21.6",
     "authors": [
         {
             "name": "Aaron Klump",
