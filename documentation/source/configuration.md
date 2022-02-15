@@ -143,3 +143,8 @@ If you're calling this from the CLI you can do like this:
 ```bash
 export LOFT_DEPLOY_PHP=/Applications/MAMP/bin/php/php7.1.12/bin/php; ldp export foo_bar -fy
 ```
+
+### On Remote Server
+
+1. Open _~/.bashrc_ and add this line (adjusted per correct path to php).
+2. `export LOFT_DEPLOY_PHP=/usr/local/php74/bin/php`
