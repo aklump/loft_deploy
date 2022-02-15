@@ -26,6 +26,9 @@ commands:
   push:
     help: 'Push assets to staging. Does not push individual files.'
     options:
+      v:
+        type: boolean
+        help: 'Increase message verbosity.'
       f:
         type: boolean
         help: 'Push only files, skip the database.'
@@ -50,6 +53,9 @@ commands:
       staging:
         help: 'Pull from the staging server rather than the production server.'
     options:
+      v:
+        type: boolean
+        help: 'Increase message verbosity.'
       f:
         type: boolean
         help: 'Pull only files, skip the database.'
@@ -77,6 +83,9 @@ commands:
       staging:
         help: 'Pull from the staging server rather than the production server.'
     options:
+      v:
+        type: boolean
+        help: 'Increase message verbosity.'
       f:
         type: boolean
         help: 'Fetch only files, skip the database.'
