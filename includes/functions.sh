@@ -2457,6 +2457,7 @@ function ssh_staging() {
 #
 # Returns nothing
 function _in_the_background {
+  $(which ionice) || return
   ionice -c 2 -n 7 -p $BASHPID >/dev/null
   renice  +10 -p  $BASHPID >/dev/null
 }
