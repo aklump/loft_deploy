@@ -1397,7 +1397,7 @@ function export_db() {
     "$ld_mysqldump" --defaults-file="$local_db_cnf" $local_db_name $data --no-create-info$ld_mysqldump_flags >>"$file"
   else
     echo_yellow "$LI $(time_local) Exporting all data."
-    "$ld_mysqldump" --defaults-file="$local_db_cnf" $local_db_name -r$ld_mysqldump_flags "$file"
+    "$ld_mysqldump" --defaults-file="$local_db_cnf" $local_db_name $ld_mysqldump_flags -r "$file"
   fi
   local status=$?
 
