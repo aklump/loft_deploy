@@ -1485,6 +1485,9 @@ function _drop_tables() {
 
   has_option v && echo_heading "Dropping tables..."
   tables=$($ld_mysql --defaults-file="$local_db_cnf" $local_db_name -e 'SHOW TABLES' | awk '{ print $1}' | grep -v '^Tables')
+  if [[ ! "$tables" ]]; then
+    return 0
+  fi
   sql="DROP TABLE "
   for t in $tables; do
     has_option v && echo "$LI $t"
