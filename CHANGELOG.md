@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.22.0] - 2022-05-02
+  
+### Fixed
+
+- An issue with `mysqldump` preventing `reset -d`
+
 ## [0.21.0] - 2021-10-09
 
 ### Added
