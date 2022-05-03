@@ -9,6 +9,7 @@ migration:
 mysqldump_flags:
   - single-transaction
   - skip-lock-tables
+  - no-tablespaces
 commands:
   config:
     help: 'Open $EDITOR with the configuration file to make changes.'
