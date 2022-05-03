@@ -6,6 +6,7 @@
  */
 
 use AKlump\Data\Data;
+use Ckr\Util\ArrayMerger;
 use Symfony\Component\Yaml\Yaml;
 use Jasny\DotKey;
 
@@ -69,6 +70,7 @@ function yaml_to_json($yaml) {
  */
 function json_get_value($path, $json) {
   $subject = json_decode($json);
+
   return DotKey::on($subject)->get($path);
 }
 
@@ -80,10 +82,14 @@ function json_get_value($path, $json) {
  *
  * @return array|mixed
  */
-function load_configuration_data($filepath) {
+function load_configuration_data($filepath, $exception_if_not_exists = TRUE) {
   $data = [];
   if (!file_exists($filepath)) {
-    throw new \RuntimeException("Missing configuration file: " . $filepath);
+    if ($exception_if_not_exists) {
+      throw new \RuntimeException("Missing configuration file: " . $filepath);
+    }
+
+    return $data;
   }
   if (!($contents = file_get_contents($filepath))) {
     // TODO Need a php method to write a log file, and then log this.
@@ -93,8 +99,15 @@ function load_configuration_data($filepath) {
     switch (($extension = pathinfo($filepath, PATHINFO_EXTENSION))) {
       case 'yml':
       case 'yaml':
-        if ($yaml = Yaml::parse($contents)) {
-          $data += $yaml;
+        try {
+          if ($yaml = Yaml::parse($contents)) {
+            $data += $yaml;
+          }
+        }
+        catch (\Exception $exception) {
+          $class = get_class($exception);
+          $message = sprintf("Syntax error in configuration file: %s: %s", $filepath, $exception->getMessage());
+          throw new $class($message, $exception->getCode());
         }
         break;
 
@@ -121,34 +134,14 @@ function load_configuration_data($filepath) {
  * @return array|mixed
  *   The merged array.
  */
-function merge_config($arrays) {
-  $arrays = func_get_args();
-  $master = array_shift($arrays);
-  foreach ($arrays as $merge) {
-    if (is_numeric(key($merge))) {
-      $master = array_merge($master, $merge);
-    }
-    else {
-      foreach ($merge as $key => $value) {
-        $type = NULL;
-        if (isset($master[$key])) {
-          $type = gettype($master[$key]);
-        }
-        if ($type && $type !== gettype($value)) {
-          throw new \RuntimeException("Cannot merge key $key; values are not the same type.");
-        }
-
-        if (is_scalar($value) || empty($master[$key])) {
-          $master[$key] = $value;
-        }
-        else {
-          $master[$key] = merge_config($master[$key], $value);
-        }
-      }
-    }
+function merge_config() {
+  $stack = func_get_args();
+  $merged = [];
+  while (($array = array_shift($stack))) {
+    $merged = ArrayMerger::doMerge($merged, $array);
   }
 
-  return $master;
+  return $merged;
 }
 
 /**

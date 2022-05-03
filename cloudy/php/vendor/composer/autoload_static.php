@@ -37,6 +37,10 @@ class ComposerStaticInit161edfef4d39909e83d990466d457059
             'Doctrine\\Inflector\\' => 19,
             'Doctrine\\Common\\Inflector\\' => 26,
         ),
+        'C' => 
+        array (
+            'Ckr\\Util\\' => 9,
+        ),
         'A' => 
         array (
             'AKlump\\LoftLib\\' => 15,
@@ -81,6 +85,10 @@ class ComposerStaticInit161edfef4d39909e83d990466d457059
         array (
             0 => __DIR__ . '/..' . '/doctrine/inflector/lib/Doctrine/Common/Inflector',
         ),
+        'Ckr\\Util\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/ckr/arraymerger/src',
+        ),
         'AKlump\\LoftLib\\' => 
         array (
             0 => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib',
@@ -114,6 +122,7 @@ class ComposerStaticInit161edfef4d39909e83d990466d457059
         'AKlump\\LoftLib\\Code\\ObjectCacheTrait' => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib/Code/ObjectCacheTrait.php',
         'AKlump\\LoftLib\\Code\\PersistentSequence' => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib/Code/PersistentSequence.php',
         'AKlump\\LoftLib\\Code\\ShortCodes' => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib/Code/ShortCodes.php',
+        'AKlump\\LoftLib\\Code\\ShortCodesInterface' => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib/Code/ShortCodesInterface.php',
         'AKlump\\LoftLib\\Code\\StandardPhpErrorException' => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib/Code/StandardPhpErrorException.php',
         'AKlump\\LoftLib\\Code\\Strings' => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib/Code/Strings.php',
         'AKlump\\LoftLib\\Code\\ThrowableErrorsTrait' => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib/Code/ThrowableErrorsTrait.php',
@@ -124,6 +133,7 @@ class ComposerStaticInit161edfef4d39909e83d990466d457059
         'AKlump\\LoftLib\\Storage\\FilePath' => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib/Storage/FilePath.php',
         'AKlump\\LoftLib\\Storage\\FilePathCollection' => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib/Storage/FilePathCollection.php',
         'AKlump\\LoftLib\\Storage\\PersistentInterface' => __DIR__ . '/..' . '/aklump/loft-lib/src/AKlump/LoftLib/Storage/PersistentInterface.php',
+        'Ckr\\Util\\ArrayMerger' => __DIR__ . '/..' . '/ckr/arraymerger/src/ArrayMerger.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Doctrine\\Common\\Inflector\\Inflector' => __DIR__ . '/..' . '/doctrine/inflector/lib/Doctrine/Common/Inflector/Inflector.php',
         'Doctrine\\Inflector\\CachedWordInflector' => __DIR__ . '/..' . '/doctrine/inflector/lib/Doctrine/Inflector/CachedWordInflector.php',

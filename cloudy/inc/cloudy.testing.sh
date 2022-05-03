@@ -275,7 +275,7 @@ function assert_not_contains() {
     local key=$1
     local array_var_name=$2
 
-    eval array_has_value__array=(\${"$array_var_name"[@]})
+    eval "array_has_value__array=(\"\${$array_var_name[@]}\")"
     let CLOUDY_ASSERTION_COUNT=(CLOUDY_ASSERTION_COUNT + 1)
     ! array_has_value "$1" && return 0
     _cloudy_assert_failed "$key" "should not exist in array \$$array_var_name, but it does."
@@ -307,7 +307,7 @@ function assert_contains() {
     local key="$1"
     local array_var_name="$2"
 
-    eval array_has_value__array=(\${"$array_var_name"[@]})
+    eval "array_has_value__array=(\"\${$array_var_name[@]}\")"
     let CLOUDY_ASSERTION_COUNT=(CLOUDY_ASSERTION_COUNT + 1)
     array_has_value "$1" && return 0
     _cloudy_assert_failed "$key" "should exist in array \$$array_var_name"

@@ -406,7 +406,7 @@ function array_has_value() {
 #   eval $(array_map titles)
 # @endcode
 #
-# $1 - string The name of the defined array.
+# $1 - string The VARIABLE NAME of the defined array.
 #
 # Returns nothing.
 function array_map() {
@@ -421,6 +421,25 @@ function array_map() {
         stash=("${stash[@]}" "\"$(array_map__callback "$item")\"")
     done
     echo "$array_name=(${stash[@]})"
+}
+
+# Remove duplicate values from an array.
+#
+# Beware the order of the array will most likely be altered.
+#
+# @code
+#   declare -a duplicated=("blue" "red" "blue" "yellow");
+#   eval $(array_dedupe duplicated)
+# @endcode
+#
+# $1 - string The VARIABLE NAME of the defined array.
+#
+# Returns nothing.
+function array_dedupe() {
+    local array_name=$1
+
+    eval subject=(\"\${$array_name[@]}\")
+    echo "$array_name=($(for i in  "${subject[@]}" ; do  echo "\"$i\"" ; done|sort -u))"
 }
 
 # Determine if a function has been defined.
