@@ -121,6 +121,7 @@ eval $(get_config_as "ld_mysql" "bin.mysql" "/usr/bin/mysql")
 eval $(get_config_as "ld_mysqldump" "bin.mysqldump" "/usr/bin/mysqldump")
 
 eval $(get_config -a "mysqldump_flags")
+eval $(array_dedupe "mysqldump_flags")
 ld_mysqldump_flags=''
 for flag in "${mysqldump_flags[@]}"; do
    ld_mysqldump_flags="$ld_mysqldump_flags --${flag#--}"
