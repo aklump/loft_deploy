@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 
 #
-# This file shows how to remove sensitive info from files.
+# @file
+# Remove secrets from install files
 #
 
 list_clear
-file="$4/install/default/settings.local.dev.php"
-hooks_empty_array_key $file 'password' || return 1
-hooks_empty_drupal_conf $file "reroute_email.settings']['address" || return 1
-list_add_item "Sensitive data removed from: ${file##*/}"
+declare -a environments=('dev' 'staging' 'prod');
+for env in ${environments[@]}; do
+  file="$4/install/default/.env.$env"
+  if [ -f "$file" ]; then
+    hooks_env_set_var $file "HASH_SALT" || return 1
+    hooks_env_sanitize_url $file "DATABASE_URL" || return 1
+    list_add_item "Sensitive data removed from: ${file##*/}"
+  fi
+done
 echo_green_list
 echo
-
 return 0
-
